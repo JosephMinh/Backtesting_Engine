@@ -1,0 +1,382 @@
+{
+  "stage_cases": [
+    {
+      "case_id": "initial_booked_close",
+      "close_id": "ledger_close_oneoz_2026-03-11_stage1",
+      "account_id": "acct_paper_oneoz",
+      "symbol": "1OZ",
+      "events": [
+        {
+          "sequence_id": 1,
+          "event_id": "evt_fill_open_001",
+          "event_class": "booked_fill",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:00+00:00",
+          "description": "Book one opening 1OZ fill",
+          "position_delta_contracts": "1"
+        },
+        {
+          "sequence_id": 2,
+          "event_id": "evt_commission_001",
+          "event_class": "booked_commission",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:02+00:00",
+          "description": "Book opening commission",
+          "cash_delta_usd": "-1.105",
+          "commission_delta_usd": "1.105"
+        },
+        {
+          "sequence_id": 3,
+          "event_id": "evt_fee_001",
+          "event_class": "booked_fee",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:03+00:00",
+          "description": "Book exchange and clearing fees",
+          "cash_delta_usd": "-0.255",
+          "fee_delta_usd": "0.255"
+        },
+        {
+          "sequence_id": 4,
+          "event_id": "evt_cash_variation_001",
+          "event_class": "booked_cash_movement",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:00+00:00",
+          "description": "Book end-of-day variation margin cash movement",
+          "cash_delta_usd": "12.345",
+          "realized_pnl_delta_usd": "12.345"
+        },
+        {
+          "sequence_id": 5,
+          "event_id": "evt_broker_position_001",
+          "event_class": "broker_eod_position",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:30+00:00",
+          "description": "Broker authoritative end-of-day position snapshot",
+          "authoritative_position_contracts": "1"
+        },
+        {
+          "sequence_id": 6,
+          "event_id": "evt_broker_margin_001",
+          "event_class": "broker_eod_margin_snapshot",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:31+00:00",
+          "description": "Broker authoritative end-of-day margin snapshot",
+          "authoritative_initial_margin_requirement_usd": "1400.000",
+          "authoritative_maintenance_margin_requirement_usd": "1275.000"
+        }
+      ],
+      "expected_status": "pass",
+      "expected_reason_code": "LEDGER_CLOSE_READY",
+      "expected_unresolved_discrepancy_ids": [],
+      "expected_trace_event_ids": [
+        "evt_fill_open_001",
+        "evt_commission_001",
+        "evt_fee_001",
+        "evt_cash_variation_001",
+        "evt_broker_position_001",
+        "evt_broker_margin_001"
+      ],
+      "expected_as_booked_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.985",
+        "realized_pnl_usd": "12.345",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.105"
+      },
+      "expected_as_reconciled_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.985",
+        "realized_pnl_usd": "12.345",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.105"
+      },
+      "expected_differences": {
+        "cash_balance_usd": {
+          "booked_vs_reconciled_delta": "0.000"
+        },
+        "commission_total_usd": {
+          "booked_vs_reconciled_delta": "0.000"
+        },
+        "position_contracts": {
+          "reconciled_vs_authoritative_delta": "0"
+        }
+      }
+    },
+    {
+      "case_id": "open_discrepancy_requires_review",
+      "close_id": "ledger_close_oneoz_2026-03-11_stage2",
+      "account_id": "acct_paper_oneoz",
+      "symbol": "1OZ",
+      "events": [
+        {
+          "sequence_id": 1,
+          "event_id": "evt_fill_open_001",
+          "event_class": "booked_fill",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:00+00:00",
+          "description": "Book one opening 1OZ fill",
+          "position_delta_contracts": "1"
+        },
+        {
+          "sequence_id": 2,
+          "event_id": "evt_commission_001",
+          "event_class": "booked_commission",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:02+00:00",
+          "description": "Book opening commission",
+          "cash_delta_usd": "-1.105",
+          "commission_delta_usd": "1.105"
+        },
+        {
+          "sequence_id": 3,
+          "event_id": "evt_fee_001",
+          "event_class": "booked_fee",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:03+00:00",
+          "description": "Book exchange and clearing fees",
+          "cash_delta_usd": "-0.255",
+          "fee_delta_usd": "0.255"
+        },
+        {
+          "sequence_id": 4,
+          "event_id": "evt_cash_variation_001",
+          "event_class": "booked_cash_movement",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:00+00:00",
+          "description": "Book end-of-day variation margin cash movement",
+          "cash_delta_usd": "12.345",
+          "realized_pnl_delta_usd": "12.345"
+        },
+        {
+          "sequence_id": 5,
+          "event_id": "evt_broker_position_001",
+          "event_class": "broker_eod_position",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:30+00:00",
+          "description": "Broker authoritative end-of-day position snapshot",
+          "authoritative_position_contracts": "1"
+        },
+        {
+          "sequence_id": 6,
+          "event_id": "evt_broker_margin_001",
+          "event_class": "broker_eod_margin_snapshot",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:31+00:00",
+          "description": "Broker authoritative end-of-day margin snapshot",
+          "authoritative_initial_margin_requirement_usd": "1400.000",
+          "authoritative_maintenance_margin_requirement_usd": "1275.000"
+        },
+        {
+          "sequence_id": 7,
+          "event_id": "evt_discrepancy_001",
+          "event_class": "unresolved_discrepancy",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-12T00:15:00+00:00",
+          "description": "Broker statement reports a commission difference that still needs review",
+          "discrepancy_id": "disc_commission_restated_001"
+        }
+      ],
+      "expected_status": "review_required",
+      "expected_reason_code": "LEDGER_UNRESOLVED_DISCREPANCY",
+      "expected_unresolved_discrepancy_ids": [
+        "disc_commission_restated_001"
+      ],
+      "expected_trace_event_ids": [
+        "evt_fill_open_001",
+        "evt_commission_001",
+        "evt_fee_001",
+        "evt_cash_variation_001",
+        "evt_broker_position_001",
+        "evt_broker_margin_001",
+        "evt_discrepancy_001"
+      ],
+      "expected_as_booked_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.985",
+        "realized_pnl_usd": "12.345",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.105"
+      },
+      "expected_as_reconciled_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.985",
+        "realized_pnl_usd": "12.345",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.105"
+      },
+      "expected_differences": {
+        "cash_balance_usd": {
+          "booked_vs_reconciled_delta": "0.000"
+        },
+        "commission_total_usd": {
+          "booked_vs_reconciled_delta": "0.000"
+        },
+        "position_contracts": {
+          "reconciled_vs_authoritative_delta": "0"
+        }
+      }
+    },
+    {
+      "case_id": "restated_close_is_explicitly_reconciled",
+      "close_id": "ledger_close_oneoz_2026-03-11_stage3",
+      "account_id": "acct_paper_oneoz",
+      "symbol": "1OZ",
+      "events": [
+        {
+          "sequence_id": 1,
+          "event_id": "evt_fill_open_001",
+          "event_class": "booked_fill",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:00+00:00",
+          "description": "Book one opening 1OZ fill",
+          "position_delta_contracts": "1"
+        },
+        {
+          "sequence_id": 2,
+          "event_id": "evt_commission_001",
+          "event_class": "booked_commission",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:02+00:00",
+          "description": "Book opening commission",
+          "cash_delta_usd": "-1.105",
+          "commission_delta_usd": "1.105"
+        },
+        {
+          "sequence_id": 3,
+          "event_id": "evt_fee_001",
+          "event_class": "booked_fee",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T18:00:03+00:00",
+          "description": "Book exchange and clearing fees",
+          "cash_delta_usd": "-0.255",
+          "fee_delta_usd": "0.255"
+        },
+        {
+          "sequence_id": 4,
+          "event_id": "evt_cash_variation_001",
+          "event_class": "booked_cash_movement",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:00+00:00",
+          "description": "Book end-of-day variation margin cash movement",
+          "cash_delta_usd": "12.345",
+          "realized_pnl_delta_usd": "12.345"
+        },
+        {
+          "sequence_id": 5,
+          "event_id": "evt_broker_position_001",
+          "event_class": "broker_eod_position",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:30+00:00",
+          "description": "Broker authoritative end-of-day position snapshot",
+          "authoritative_position_contracts": "1"
+        },
+        {
+          "sequence_id": 6,
+          "event_id": "evt_broker_margin_001",
+          "event_class": "broker_eod_margin_snapshot",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-11T23:59:31+00:00",
+          "description": "Broker authoritative end-of-day margin snapshot",
+          "authoritative_initial_margin_requirement_usd": "1400.000",
+          "authoritative_maintenance_margin_requirement_usd": "1275.000"
+        },
+        {
+          "sequence_id": 7,
+          "event_id": "evt_discrepancy_001",
+          "event_class": "unresolved_discrepancy",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-12T00:15:00+00:00",
+          "description": "Broker statement reports a commission difference that still needs review",
+          "discrepancy_id": "disc_commission_restated_001"
+        },
+        {
+          "sequence_id": 8,
+          "event_id": "evt_recon_adjustment_001",
+          "event_class": "reconciliation_adjustment",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-12T00:16:00+00:00",
+          "description": "Broker commission true-up applied during reconciliation",
+          "discrepancy_id": "disc_commission_restated_001",
+          "cash_delta_usd": "-0.010",
+          "commission_delta_usd": "0.010"
+        },
+        {
+          "sequence_id": 9,
+          "event_id": "evt_restatement_001",
+          "event_class": "restatement",
+          "account_id": "acct_paper_oneoz",
+          "symbol": "1OZ",
+          "occurred_at": "2026-03-12T00:17:00+00:00",
+          "description": "Late broker variation margin restatement applied to the close",
+          "reference_event_id": "evt_cash_variation_001",
+          "discrepancy_id": "disc_commission_restated_001",
+          "cash_delta_usd": "0.005",
+          "realized_pnl_delta_usd": "0.005"
+        }
+      ],
+      "expected_status": "pass",
+      "expected_reason_code": "LEDGER_CLOSE_READY",
+      "expected_unresolved_discrepancy_ids": [],
+      "expected_trace_event_ids": [
+        "evt_fill_open_001",
+        "evt_commission_001",
+        "evt_fee_001",
+        "evt_cash_variation_001",
+        "evt_broker_position_001",
+        "evt_broker_margin_001",
+        "evt_discrepancy_001",
+        "evt_recon_adjustment_001",
+        "evt_restatement_001"
+      ],
+      "expected_as_booked_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.985",
+        "realized_pnl_usd": "12.345",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.105"
+      },
+      "expected_as_reconciled_totals": {
+        "position_contracts": "1",
+        "cash_balance_usd": "10.980",
+        "realized_pnl_usd": "12.350",
+        "fee_total_usd": "0.255",
+        "commission_total_usd": "1.115"
+      },
+      "expected_differences": {
+        "cash_balance_usd": {
+          "booked_vs_reconciled_delta": "-0.005"
+        },
+        "realized_pnl_usd": {
+          "booked_vs_reconciled_delta": "0.005"
+        },
+        "commission_total_usd": {
+          "booked_vs_reconciled_delta": "0.010"
+        },
+        "position_contracts": {
+          "reconciled_vs_authoritative_delta": "0"
+        }
+      }
+    }
+  ]
+}
