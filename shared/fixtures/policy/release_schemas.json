@@ -1,0 +1,133 @@
+{
+  "publication_cases": [
+    {
+      "case_id": "allow_dataset_release_publication",
+      "release_kind": "dataset_release",
+      "payload": {
+        "release_id": "dataset_release_gold_2026q1_v1",
+        "raw_input_hashes": ["raw_sha256_a", "raw_sha256_b"],
+        "reference_version_hashes": ["calendar_sha256_v3", "contracts_sha256_v5"],
+        "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+        "validation_rules_version": "validation_rules_v7",
+        "catalog_version": "catalog_v4",
+        "protocol_versions": {
+          "ingestion_protocol": "ingest_v2",
+          "normalization_protocol": "norm_v3"
+        },
+        "vendor_revision_watermark": "databento_revision_2026-03-01",
+        "correction_horizon": "t_plus_2_business_days",
+        "certification_report_hash": "cert_report_sha256_001",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "lifecycle_state": "approved",
+        "schema_version": 1
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_SCHEMA_PUBLISHABLE"
+    },
+    {
+      "case_id": "reject_dataset_release_missing_required_hashes",
+      "release_kind": "dataset_release",
+      "payload": {
+        "release_id": "dataset_release_gold_2026q1_v2",
+        "raw_input_hashes": [],
+        "reference_version_hashes": ["calendar_sha256_v3"],
+        "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+        "validation_rules_version": "validation_rules_v7",
+        "catalog_version": "catalog_v4",
+        "protocol_versions": {
+          "ingestion_protocol": "ingest_v2"
+        },
+        "vendor_revision_watermark": "databento_revision_2026-03-01",
+        "correction_horizon": "t_plus_2_business_days",
+        "certification_report_hash": "cert_report_sha256_002",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "lifecycle_state": "approved",
+        "schema_version": 1
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "RELEASE_SCHEMA_MISSING_REQUIRED_FIELDS"
+    },
+    {
+      "case_id": "reject_analytic_release_unsupported_schema_version",
+      "release_kind": "analytic_release",
+      "payload": {
+        "release_id": "analytic_release_gold_features_v2",
+        "dataset_release_id": "dataset_release_gold_2026q1_v1",
+        "feature_version": "feature_defs_v9",
+        "analytic_series_version": "analytic_series_v3",
+        "feature_block_manifests": ["manifest://feature_block/core_v9"],
+        "feature_availability_contracts": ["availability://gold/core_v9"],
+        "slice_manifests": ["slice://training_2026q1"],
+        "artifact_root_hash": "artifact_root_sha256_001",
+        "lifecycle_state": "published",
+        "schema_version": 2
+      },
+      "expected_status": "incompatible",
+      "expected_reason_code": "RELEASE_SCHEMA_VERSION_UNSUPPORTED"
+    },
+    {
+      "case_id": "reject_data_profile_release_without_parity_expectations",
+      "release_kind": "data_profile_release",
+      "payload": {
+        "release_id": "ibkr_1oz_comex_bars_1m_v2",
+        "source_feeds": ["ibkr_historical_bars", "ibkr_live_bars"],
+        "venue_dataset_ids": ["ibkr:comex:1oz:bars:1m"],
+        "schema_selection_rules": ["prefer_ibkr_trade_bar_schema_v2"],
+        "timestamp_precedence_rule": "exchange_end_timestamp_then_vendor_arrival",
+        "bar_construction_rules": ["one_minute_session_anchored_bars", "exchange_calendar_bounded"],
+        "session_anchor_rule": "comex_metals_globex_v1",
+        "trade_quote_precedence_rule": "trade_first_then_quote_fallback",
+        "zero_volume_bar_policy": "emit_with_explicit_zero_volume_flag",
+        "late_print_policy": "quarantine_for_recertification_review",
+        "correction_policy": "apply_vendor_corrections_via_delta_release",
+        "gap_policy": "preserve_gaps_explicitly",
+        "forward_fill_policy": "never_forward_fill_prices",
+        "symbology_mapping_rules": ["bind_to_resolved_context_bundle_symbology_v4"],
+        "live_historical_parity_expectations": [],
+        "lifecycle_state": "approved",
+        "schema_version": 1
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "RELEASE_SCHEMA_MISSING_REQUIRED_FIELDS"
+    }
+  ],
+  "binding_cases": [
+    {
+      "case_id": "allow_replay_binding_to_one_approved_profile",
+      "surface_name": "replay_certification",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "approved_data_profile_release_ids": [
+        "ibkr_1oz_comex_bars_1m_v1",
+        "ibkr_1oz_comex_bars_5m_v1"
+      ],
+      "mutable_feed_semantics": [],
+      "expected_status": "pass",
+      "expected_reason_code": "DATA_PROFILE_RELEASE_BINDING_ALLOWED"
+    },
+    {
+      "case_id": "reject_live_activation_with_unapproved_profile",
+      "surface_name": "live_activation",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v0",
+      "approved_data_profile_release_ids": [
+        "ibkr_1oz_comex_bars_1m_v1"
+      ],
+      "mutable_feed_semantics": [],
+      "expected_status": "violation",
+      "expected_reason_code": "DATA_PROFILE_RELEASE_NOT_APPROVED"
+    },
+    {
+      "case_id": "reject_shadow_live_binding_with_mutable_feed_semantics",
+      "surface_name": "shadow_live_activation",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "approved_data_profile_release_ids": [
+        "ibkr_1oz_comex_bars_1m_v1"
+      ],
+      "mutable_feed_semantics": [
+        "infer_zero_volume_bars_from_runtime_gateway",
+        "accept_live_schema_if_vendor_changes_fields"
+      ],
+      "expected_status": "violation",
+      "expected_reason_code": "DATA_PROFILE_RELEASE_MUTABLE_FEED_SEMANTICS"
+    }
+  ]
+}

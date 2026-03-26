@@ -1,0 +1,2 @@
+ts=2026-03-26T12:00:00Z sequence=1 event=position_flat digest=sha256:seed
+ts=2026-03-26T12:05:00Z sequence=2 event=backup_completed manifest=restore-drill-manifest-001

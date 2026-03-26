@@ -1,0 +1,140 @@
+{
+  "bundle_id": "charter.initial_live_lane.v1",
+  "version": 1,
+  "scope": "program_charter",
+  "summary": "Mission-aligned posture constraints for the first approved live lane.",
+  "program_questions": [
+    "Which strategy families deserve budget?",
+    "Which parameter regions are stable enough to validate?",
+    "Which candidates survive realistic fills, null comparisons, robustness tests, omission tests, and a frozen final holdout?",
+    "If research is done on MGC but live execution is on 1OZ, has portability and execution-symbol tradability been explicitly certified rather than assumed?",
+    "Can the exact frozen candidate be replayed through the operational stack without research/live drift, including data-profile, contract-state, and signal-kernel parity?",
+    "Can the candidate survive paper trading, shadow-live, account-fit, session resets, broker reconciliation, and solo-operator operational risk on the live contract?"
+  ],
+  "constraints": [
+    {
+      "id": "research_symbol_is_mgc",
+      "field": "research_symbol",
+      "operator": "equals",
+      "expected": "MGC",
+      "rule_code": "LIVE_LANE_RESEARCH_SYMBOL_MGC",
+      "failure_reason_code": "CHARTER_RESEARCH_SYMBOL_REQUIRED",
+      "description": "Historical research is centered on MGC."
+    },
+    {
+      "id": "execution_symbol_is_1oz",
+      "field": "live_execution_symbol",
+      "operator": "equals",
+      "expected": "1OZ",
+      "rule_code": "LIVE_LANE_EXECUTION_SYMBOL_1OZ",
+      "failure_reason_code": "CHARTER_EXECUTION_SYMBOL_REQUIRED",
+      "description": "Paper, shadow-live, and live execution are centered on 1OZ."
+    },
+    {
+      "id": "live_market_data_provider_is_ibkr",
+      "field": "live_market_data_provider",
+      "operator": "equals",
+      "expected": "IBKR",
+      "rule_code": "LIVE_LANE_MARKET_DATA_IBKR",
+      "failure_reason_code": "CHARTER_MARKET_DATA_PROVIDER_REQUIRED",
+      "description": "Live market data is IBKR in v1."
+    },
+    {
+      "id": "live_execution_broker_is_ibkr",
+      "field": "live_execution_broker",
+      "operator": "equals",
+      "expected": "IBKR",
+      "rule_code": "LIVE_LANE_EXECUTION_BROKER_IBKR",
+      "failure_reason_code": "CHARTER_EXECUTION_BROKER_REQUIRED",
+      "description": "Live execution broker is IBKR in v1."
+    },
+    {
+      "id": "live_account_size_capped_at_5000",
+      "field": "live_account_size_usd",
+      "operator": "less_than_or_equal",
+      "expected": 5000,
+      "rule_code": "LIVE_LANE_ACCOUNT_SIZE_MAX_5000",
+      "failure_reason_code": "CHARTER_ACCOUNT_SIZE_EXCEEDS_APPROVED_PROFILE",
+      "description": "The approved live account posture is capped at $5,000."
+    },
+    {
+      "id": "max_live_contracts_is_one",
+      "field": "max_live_contracts",
+      "operator": "less_than_or_equal",
+      "expected": 1,
+      "rule_code": "LIVE_LANE_MAX_ONE_CONTRACT",
+      "failure_reason_code": "CHARTER_MAX_LIVE_CONTRACTS_EXCEEDED",
+      "description": "The approved live account posture allows at most one live 1OZ contract."
+    },
+    {
+      "id": "decision_interval_is_one_minute_or_slower",
+      "field": "decision_interval_seconds",
+      "operator": "greater_than_or_equal",
+      "expected": 60,
+      "rule_code": "LIVE_LANE_DECISION_INTERVAL_GTE_60S",
+      "failure_reason_code": "CHARTER_DECISION_INTERVAL_TOO_FAST",
+      "description": "Live-eligible strategies must be bar-based with decision intervals of one minute or slower."
+    },
+    {
+      "id": "no_depth_dependent_logic",
+      "field": "uses_depth_dependent_logic",
+      "operator": "equals",
+      "expected": false,
+      "rule_code": "LIVE_LANE_NO_DEPTH_DEPENDENCE",
+      "failure_reason_code": "CHARTER_DEPTH_DEPENDENT_LIVE_FORBIDDEN",
+      "description": "Depth-dependent strategies are research-only."
+    },
+    {
+      "id": "no_queue_dependent_logic",
+      "field": "uses_queue_dependent_logic",
+      "operator": "equals",
+      "expected": false,
+      "rule_code": "LIVE_LANE_NO_QUEUE_DEPENDENCE",
+      "failure_reason_code": "CHARTER_QUEUE_DEPENDENT_LIVE_FORBIDDEN",
+      "description": "Queue-dependent strategies are research-only."
+    },
+    {
+      "id": "no_subminute_decisions",
+      "field": "uses_subminute_decisions",
+      "operator": "equals",
+      "expected": false,
+      "rule_code": "LIVE_LANE_NO_SUBMINUTE_DECISIONS",
+      "failure_reason_code": "CHARTER_SUBMINUTE_LIVE_FORBIDDEN",
+      "description": "Sub-minute decision logic is research-only."
+    },
+    {
+      "id": "one_active_live_bundle_per_account_product",
+      "field": "active_live_bundles_per_account_product",
+      "operator": "less_than_or_equal",
+      "expected": 1,
+      "rule_code": "LIVE_LANE_ONE_ACTIVE_BUNDLE",
+      "failure_reason_code": "CHARTER_ACTIVE_LIVE_BUNDLE_LIMIT_EXCEEDED",
+      "description": "The default live posture is one active live bundle per account/product."
+    },
+    {
+      "id": "deployment_target_is_single_linux_host_or_vm",
+      "field": "deployment_target",
+      "operator": "one_of",
+      "allowed_values": [
+        "linux_host",
+        "linux_vm"
+      ],
+      "rule_code": "LIVE_LANE_SINGLE_LINUX_DEPLOYMENT",
+      "failure_reason_code": "CHARTER_DEPLOYMENT_TARGET_NOT_APPROVED",
+      "description": "The first production deployment targets one Linux host or VM."
+    },
+    {
+      "id": "overnight_requires_strict_candidate_class",
+      "field": "overnight_candidate_class",
+      "operator": "conditional_equals",
+      "when": {
+        "field": "overnight_holding_requested",
+        "expected": true
+      },
+      "expected": "strict",
+      "rule_code": "LIVE_LANE_OVERNIGHT_STRICT_ONLY",
+      "failure_reason_code": "CHARTER_OVERNIGHT_REQUIRES_STRICT_CLASS",
+      "description": "Overnight holding is permitted only as a stricter candidate class with additional gates."
+    }
+  ]
+}

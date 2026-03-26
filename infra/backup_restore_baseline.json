@@ -1,0 +1,53 @@
+{
+  "baseline_id": "durability.backup_restore_baseline.v1",
+  "canonical_metadata_store": {
+    "engine": "postgresql",
+    "backup_strategy": "automated_backups_with_wal_archiving",
+    "recovery_granularity": "point_in_time"
+  },
+  "artifact_store": {
+    "mode": "off_host_versioned_or_append_only",
+    "same_failure_domain_allowed": false,
+    "covered_surfaces": [
+      "releases",
+      "evidence",
+      "snapshots",
+      "journals",
+      "raw_archives"
+    ]
+  },
+  "journal_integrity": {
+    "tamper_evident_hash_chaining_required": true,
+    "snapshot_barrier_hash_required": true
+  },
+  "restore_manifest": {
+    "binds_database_backup_to_artifact_checkpoint": true,
+    "requires_file_count_and_hash_verification": true
+  },
+  "targets": {
+    "canonical_metadata_and_live_state_rpo_minutes": 15,
+    "replacement_host_rto_hours": 4,
+    "raw_historical_reingestion_mode": "allowed_only_with_deterministic_vendor_repull"
+  },
+  "drill_policy": {
+    "required_before_live_approval": true,
+    "cadence_after_live_activation": "quarterly",
+    "backup_freshness_gate_required": true,
+    "last_restore_drill_green_required": true,
+    "safe_repeated_test_execution_required": true
+  },
+  "structured_log_requirements": [
+    "correlation_id",
+    "data_loss_window_minutes",
+    "recovery_point_verified",
+    "restore_duration_minutes",
+    "rpo_target_minutes",
+    "rto_target_minutes",
+    "expected_file_count",
+    "actual_file_count",
+    "hash_mismatches",
+    "missing_files",
+    "extra_files",
+    "reason_codes"
+  ]
+}

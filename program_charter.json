@@ -1,0 +1,186 @@
+{
+  "schema_version": "2026-03-26",
+  "charter_id": "backtesting_engine.program_charter.v1",
+  "source_documents": [
+    "Plan_1.md#1.1",
+    "Plan_1.md#1.2",
+    "Plan_1.md#1.3",
+    "Plan_1.md#2.1",
+    "Plan_1.md#2.3",
+    "Plan_1.md#3.1",
+    "Plan_1.md#11.7"
+  ],
+  "mission": {
+    "summary": "Build a production-capable platform that can make honest promotion decisions about gold futures strategies and then operate approved strategies safely in paper, shadow-live, and live trading.",
+    "forbidden_optimization": "Do not optimize for attractive backtests at the expense of deployability.",
+    "design_questions": [
+      "Which strategy families deserve budget?",
+      "Which parameter regions are stable enough to validate?",
+      "Which candidates survive realistic fills, null comparisons, robustness tests, omission tests, and a frozen final holdout?",
+      "If research is done on MGC but live execution is on 1OZ, has portability and execution-symbol tradability been explicitly certified rather than assumed?",
+      "Can the exact frozen candidate be replayed through the operational stack without research/live drift, including data-profile, contract-state, and signal-kernel parity?",
+      "Can the candidate survive paper trading, shadow-live, account-fit, session resets, broker reconciliation, and solo-operator operational risk on the actual live contract?"
+    ]
+  },
+  "initial_live_lane": {
+    "research_symbol": "MGC",
+    "execution_symbol": "1OZ",
+    "broker": "IBKR",
+    "approved_live_account_usd": 5000,
+    "max_live_contracts": 1,
+    "max_active_live_bundles_per_account_product": 1,
+    "host_topology": "single_linux_host_or_vm",
+    "live_eligible_requires_bar_based": true,
+    "minimum_decision_interval_seconds": 60,
+    "depth_dependent_live_eligible": false,
+    "queue_dependent_live_eligible": false,
+    "subminute_live_eligible": false,
+    "overnight_holding": {
+      "allowed": true,
+      "requires_candidate_class": "strict"
+    }
+  },
+  "non_negotiable_principles": [
+    {
+      "id": "NGP-01",
+      "title": "No custom historical matching engine in v1",
+      "rule_type": "require_equal",
+      "field": "historical_simulation_engine",
+      "expected": "nautilus_high_level_backtesting",
+      "reason_code": "CHARTER_NGP_01_HISTORICAL_ENGINE_REQUIRED"
+    },
+    {
+      "id": "NGP-02",
+      "title": "No ad-hoc files in promotable research",
+      "rule_type": "require_true",
+      "field": "promotion_inputs_certified",
+      "reason_code": "CHARTER_NGP_02_CERTIFIED_INPUTS_REQUIRED"
+    },
+    {
+      "id": "NGP-03",
+      "title": "No mutable reference resolution after freeze",
+      "rule_type": "require_true",
+      "field": "freeze_references_pinned",
+      "reason_code": "CHARTER_NGP_03_MUTABLE_FREEZE_CONTEXT"
+    },
+    {
+      "id": "NGP-04",
+      "title": "No promotion on gross PnL",
+      "rule_type": "require_true",
+      "field": "promotion_uses_net_benchmarks",
+      "reason_code": "CHARTER_NGP_04_NET_ECONOMICS_REQUIRED"
+    },
+    {
+      "id": "NGP-05",
+      "title": "No notebook-only evidence for promotion",
+      "rule_type": "forbid_equal",
+      "field": "promotion_evidence_source",
+      "expected": "notebook_only",
+      "reason_code": "CHARTER_NGP_05_NOTEBOOK_ONLY_PROMOTION_EVIDENCE"
+    },
+    {
+      "id": "NGP-06",
+      "title": "No live activation without replay, paper, shadow-live, and reconciliation controls",
+      "rule_type": "require_all_true",
+      "fields": [
+        "replay_certified",
+        "paper_trading_evidence",
+        "shadow_live_evidence",
+        "broker_reconciliation_controls"
+      ],
+      "reason_code": "CHARTER_NGP_06_LIVE_EVIDENCE_INCOMPLETE"
+    },
+    {
+      "id": "NGP-07",
+      "title": "No operational state ambiguity",
+      "rule_type": "require_all_true",
+      "fields": [
+        "state_journaled",
+        "state_replayable",
+        "state_recoverable",
+        "intraday_broker_crosscheck",
+        "eod_broker_crosscheck"
+      ],
+      "reason_code": "CHARTER_NGP_07_OPERATIONAL_STATE_AMBIGUOUS"
+    },
+    {
+      "id": "NGP-08",
+      "title": "No hidden optimization surfaces",
+      "rule_type": "require_all_true",
+      "fields": [
+        "lockbox_enforced",
+        "null_suite_enforced",
+        "discovery_accounting_enforced",
+        "operational_evidence_admissibility_enforced"
+      ],
+      "reason_code": "CHARTER_NGP_08_HIDDEN_OPTIMIZATION_SURFACE"
+    },
+    {
+      "id": "NGP-09",
+      "title": "No premature infrastructure",
+      "rule_type": "baseline_stack",
+      "expected": {
+        "host_count": 1,
+        "metadata_store": "postgresql",
+        "artifact_store": "off_host_object_storage",
+        "mailbox_mode": "in_process"
+      },
+      "reason_code": "CHARTER_NGP_09_PREMATURE_INFRASTRUCTURE"
+    },
+    {
+      "id": "NGP-10",
+      "title": "No research/live logic fork for live-eligible strategies",
+      "rule_type": "require_true",
+      "field": "has_shared_signal_kernel",
+      "reason_code": "CHARTER_NGP_10_SHARED_KERNEL_REQUIRED"
+    },
+    {
+      "id": "NGP-11",
+      "title": "No broker mutation without durable intent identity",
+      "rule_type": "require_all_true",
+      "fields": [
+        "broker_mutations_journaled",
+        "broker_mutations_idempotent"
+      ],
+      "reason_code": "CHARTER_NGP_11_INTENT_IDENTITY_REQUIRED"
+    },
+    {
+      "id": "NGP-12",
+      "title": "No live-capable stack without operational recoverability",
+      "rule_type": "require_all_true",
+      "fields": [
+        "backup_restore_ready",
+        "migration_controls_ready",
+        "clock_discipline_ready",
+        "secret_handling_ready",
+        "tamper_evident_durability_ready"
+      ],
+      "reason_code": "CHARTER_NGP_12_RECOVERABILITY_CONTROLS_MISSING"
+    },
+    {
+      "id": "NGP-13",
+      "title": "No deep promotable budget before the intended execution lane clears the early viability gate",
+      "rule_type": "conditional_gate",
+      "if_field": "deep_promotable_budget_requested",
+      "gate_field": "early_viability_gate_passed",
+      "reason_code": "CHARTER_NGP_13_EARLY_VIABILITY_GATE_REQUIRED"
+    },
+    {
+      "id": "NGP-14",
+      "title": "No new tradeable session without a green session_readiness_packet and broker contract-conformance checks",
+      "rule_type": "require_all_true",
+      "fields": [
+        "session_readiness_green",
+        "broker_contract_conformance_green"
+      ],
+      "reason_code": "CHARTER_NGP_14_SESSION_READINESS_REQUIRED"
+    },
+    {
+      "id": "NGP-15",
+      "title": "No single-path emergency control for live safety",
+      "rule_type": "require_true",
+      "field": "guardian_path_enabled",
+      "reason_code": "CHARTER_NGP_15_GUARDIAN_PATH_REQUIRED"
+    }
+  ]
+}

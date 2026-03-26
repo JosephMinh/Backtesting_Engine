@@ -1,0 +1,22 @@
+[project]
+name = "backtesting-engine"
+version = "0.1.0"
+description = "Production-capable platform for honest promotion decisions about gold futures strategies"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["shared", "python"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

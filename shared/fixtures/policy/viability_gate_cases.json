@@ -1,0 +1,128 @@
+{
+  "execution_symbol_viability_cases": [
+    {
+      "case_id": "mgc_research_oneoz_execution_pass",
+      "research_symbol": "MGC",
+      "execution_symbol": "1OZ",
+      "candidate_id": "candidate-001",
+      "research_artifact_id": "research-run-001",
+      "native_execution_history_obtained": true,
+      "live_or_paper_observations_obtained": true,
+      "dimensions": [
+        {
+          "kind": "quote_print_presence",
+          "session_class": "rth",
+          "quote_presence_ratio": 0.99,
+          "print_presence_ratio": 0.98,
+          "min_quote_presence_ratio": 0.95,
+          "min_print_presence_ratio": 0.95,
+          "data_source_reference": "native_1oz_quotes_rth_2026q1"
+        },
+        {
+          "kind": "spread_and_bar_completeness",
+          "session_class": "rth",
+          "median_spread_bps": 12.0,
+          "max_allowed_spread_bps": 20.0,
+          "bar_completeness_ratio": 0.99,
+          "min_bar_completeness_ratio": 0.97,
+          "data_source_reference": "native_1oz_bars_rth_2026q1"
+        },
+        {
+          "kind": "fee_and_slippage_feasibility",
+          "session_class": "rth",
+          "intended_contract_count": 1,
+          "approved_contract_count": 1,
+          "estimated_round_trip_cost_bps": 18.0,
+          "max_allowed_round_trip_cost_bps": 25.0,
+          "estimated_round_trip_cost_usd": 4.0,
+          "max_allowed_round_trip_cost_usd": 6.0,
+          "data_source_reference": "oneoz_cost_surface_rth_v1"
+        },
+        {
+          "kind": "tradable_session_coverage",
+          "session_class": "rth",
+          "tradable_session_coverage_ratio": 0.95,
+          "min_tradable_session_coverage_ratio": 0.90,
+          "protected_windows_respected": true,
+          "maintenance_fence_respected": true,
+          "data_source_reference": "oneoz_session_coverage_rth_v1"
+        },
+        {
+          "kind": "holding_period_compatibility",
+          "session_class": "rth",
+          "intended_holding_period_minutes": 30,
+          "liquidity_supported_holding_period_minutes": 90,
+          "data_source_reference": "oneoz_liquidity_windows_rth_v1"
+        }
+      ],
+      "expected": {
+        "deep_promotable_budget_allowed": true,
+        "reason_code": "EXECUTION_SYMBOL_FIRST_VIABILITY_PASSED",
+        "outcome_recommendation": "continue",
+        "portability_study_required": true
+      }
+    },
+    {
+      "case_id": "mgc_research_oneoz_execution_fail",
+      "research_symbol": "MGC",
+      "execution_symbol": "1OZ",
+      "candidate_id": "candidate-002",
+      "research_artifact_id": "research-run-002",
+      "native_execution_history_obtained": true,
+      "live_or_paper_observations_obtained": true,
+      "dimensions": [
+        {
+          "kind": "quote_print_presence",
+          "session_class": "overnight",
+          "quote_presence_ratio": 0.72,
+          "print_presence_ratio": 0.68,
+          "min_quote_presence_ratio": 0.95,
+          "min_print_presence_ratio": 0.95,
+          "data_source_reference": "native_1oz_quotes_overnight_2026q1"
+        },
+        {
+          "kind": "spread_and_bar_completeness",
+          "session_class": "overnight",
+          "median_spread_bps": 32.0,
+          "max_allowed_spread_bps": 20.0,
+          "bar_completeness_ratio": 0.91,
+          "min_bar_completeness_ratio": 0.97,
+          "data_source_reference": "native_1oz_bars_overnight_2026q1"
+        },
+        {
+          "kind": "fee_and_slippage_feasibility",
+          "session_class": "overnight",
+          "intended_contract_count": 1,
+          "approved_contract_count": 1,
+          "estimated_round_trip_cost_bps": 41.0,
+          "max_allowed_round_trip_cost_bps": 25.0,
+          "estimated_round_trip_cost_usd": 9.5,
+          "max_allowed_round_trip_cost_usd": 6.0,
+          "data_source_reference": "oneoz_cost_surface_overnight_v1"
+        },
+        {
+          "kind": "tradable_session_coverage",
+          "session_class": "overnight",
+          "tradable_session_coverage_ratio": 0.62,
+          "min_tradable_session_coverage_ratio": 0.90,
+          "protected_windows_respected": false,
+          "maintenance_fence_respected": true,
+          "data_source_reference": "oneoz_session_coverage_overnight_v1"
+        },
+        {
+          "kind": "holding_period_compatibility",
+          "session_class": "overnight",
+          "intended_holding_period_minutes": 120,
+          "liquidity_supported_holding_period_minutes": 45,
+          "data_source_reference": "oneoz_liquidity_windows_overnight_v1"
+        }
+      ],
+      "expected": {
+        "deep_promotable_budget_allowed": false,
+        "reason_code": "EXECUTION_SYMBOL_FIRST_VIABILITY_BLOCKED",
+        "outcome_recommendation": "terminate",
+        "portability_study_required": true
+      }
+    }
+  ]
+}

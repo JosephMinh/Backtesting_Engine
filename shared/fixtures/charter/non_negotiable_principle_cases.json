@@ -1,0 +1,167 @@
+{
+  "valid_case": {
+    "name": "baseline_green",
+    "context": {
+      "historical_execution_kernel": "nautilus_high_level_backtesting",
+      "promotable_research_uses_certified_releases": true,
+      "promotable_research_uses_immutable_artifacts": true,
+      "freeze_uses_resolved_context_bundle": true,
+      "data_profile_release_pinned_by_digest": true,
+      "promotion_uses_realistic_costs": true,
+      "promotion_uses_passive_gold_benchmark": true,
+      "promotion_uses_lower_touch_cash_benchmark": true,
+      "promotion_has_non_notebook_evidence": true,
+      "live_activation_has_deterministic_replay": true,
+      "live_activation_has_paper_evidence": true,
+      "live_activation_has_shadow_live_evidence": true,
+      "broker_reconciliation_controls_present": true,
+      "operational_state_journaled": true,
+      "operational_state_replayable": true,
+      "operational_state_recoverable": true,
+      "intraday_broker_cross_check_enabled": true,
+      "end_of_day_broker_cross_check_enabled": true,
+      "lockbox_policy_enforced": true,
+      "null_suite_enforced": true,
+      "discovery_accounting_enforced": true,
+      "operational_evidence_admissibility_enforced": true,
+      "deployment_topology": "one_linux_host_or_vm",
+      "canonical_metadata_store": "postgresql16",
+      "immutable_artifact_store": "off_host_versioned_object_storage",
+      "operational_mailboxes": "in_process",
+      "canonical_shared_signal_kernel": true,
+      "broker_mutation_has_durable_intent_identity": true,
+      "broker_mutation_idempotent": true,
+      "backup_restore_controls_present": true,
+      "migration_controls_present": true,
+      "clock_discipline_controls_present": true,
+      "sensitive_material_controls_present": true,
+      "tamper_evident_off_host_durability_present": true,
+      "viability_gate_cleared_before_deep_promotable_budget": true,
+      "session_readiness_packet_green": true,
+      "broker_contract_conformance_green": true,
+      "guardian_emergency_path_available": true
+    }
+  },
+  "violation_cases": [
+    {
+      "name": "custom_matching_engine",
+      "principle_id": "NGP-01",
+      "expected_reason_code": "NGP01_CUSTOM_HISTORICAL_ENGINE_FORBIDDEN",
+      "context_overrides": {
+        "historical_execution_kernel": "custom_matching_engine"
+      }
+    },
+    {
+      "name": "ad_hoc_promotable_files",
+      "principle_id": "NGP-02",
+      "expected_reason_code": "NGP02_PROMOTABLE_RESEARCH_REQUIRES_CERTIFIED_IMMUTABLE_ARTIFACTS",
+      "context_overrides": {
+        "promotable_research_uses_certified_releases": false
+      }
+    },
+    {
+      "name": "mutable_reference_resolution",
+      "principle_id": "NGP-03",
+      "expected_reason_code": "NGP03_MUTABLE_REFERENCE_RESOLUTION_AFTER_FREEZE",
+      "context_overrides": {
+        "freeze_uses_resolved_context_bundle": false
+      }
+    },
+    {
+      "name": "promotion_on_gross_pnl_only",
+      "principle_id": "NGP-04",
+      "expected_reason_code": "NGP04_GROSS_PNL_ONLY_PROMOTION_FORBIDDEN",
+      "context_overrides": {
+        "promotion_uses_realistic_costs": false
+      }
+    },
+    {
+      "name": "notebook_only_evidence",
+      "principle_id": "NGP-05",
+      "expected_reason_code": "NGP05_NOTEBOOK_ONLY_PROMOTION_EVIDENCE_FORBIDDEN",
+      "context_overrides": {
+        "promotion_has_non_notebook_evidence": false
+      }
+    },
+    {
+      "name": "missing_live_activation_precondition",
+      "principle_id": "NGP-06",
+      "expected_reason_code": "NGP06_LIVE_ACTIVATION_EVIDENCE_OR_RECONCILIATION_MISSING",
+      "context_overrides": {
+        "live_activation_has_shadow_live_evidence": false
+      }
+    },
+    {
+      "name": "operational_state_not_recoverable",
+      "principle_id": "NGP-07",
+      "expected_reason_code": "NGP07_OPERATIONAL_STATE_RECOVERABILITY_REQUIRED",
+      "context_overrides": {
+        "operational_state_recoverable": false
+      }
+    },
+    {
+      "name": "hidden_optimization_surface",
+      "principle_id": "NGP-08",
+      "expected_reason_code": "NGP08_HIDDEN_OPTIMIZATION_SURFACE_FORBIDDEN",
+      "context_overrides": {
+        "discovery_accounting_enforced": false
+      }
+    },
+    {
+      "name": "premature_infrastructure_upgrade",
+      "principle_id": "NGP-09",
+      "expected_reason_code": "NGP09_BASELINE_INFRASTRUCTURE_DRIFT_FORBIDDEN",
+      "context_overrides": {
+        "deployment_topology": "distributed_multi_service"
+      }
+    },
+    {
+      "name": "missing_shared_signal_kernel",
+      "principle_id": "NGP-10",
+      "expected_reason_code": "NGP10_SHARED_SIGNAL_KERNEL_REQUIRED",
+      "context_overrides": {
+        "canonical_shared_signal_kernel": false
+      }
+    },
+    {
+      "name": "non_idempotent_broker_mutation",
+      "principle_id": "NGP-11",
+      "expected_reason_code": "NGP11_BROKER_MUTATION_IDEMPOTENT_INTENT_REQUIRED",
+      "context_overrides": {
+        "broker_mutation_idempotent": false
+      }
+    },
+    {
+      "name": "missing_operational_recoverability",
+      "principle_id": "NGP-12",
+      "expected_reason_code": "NGP12_LIVE_STACK_RECOVERABILITY_CONTROLS_REQUIRED",
+      "context_overrides": {
+        "backup_restore_controls_present": false
+      }
+    },
+    {
+      "name": "execution_lane_viability_not_proven",
+      "principle_id": "NGP-13",
+      "expected_reason_code": "NGP13_VIABILITY_GATE_REQUIRED_BEFORE_DEEP_BUDGET",
+      "context_overrides": {
+        "viability_gate_cleared_before_deep_promotable_budget": false
+      }
+    },
+    {
+      "name": "session_not_ready",
+      "principle_id": "NGP-14",
+      "expected_reason_code": "NGP14_SESSION_READINESS_AND_CONTRACT_CONFORMANCE_REQUIRED",
+      "context_overrides": {
+        "session_readiness_packet_green": false
+      }
+    },
+    {
+      "name": "guardian_path_missing",
+      "principle_id": "NGP-15",
+      "expected_reason_code": "NGP15_GUARDIAN_PATH_REQUIRED",
+      "context_overrides": {
+        "guardian_emergency_path_available": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,317 @@
+{
+  "bundle_id": "program.non_negotiable_principles.v1",
+  "version": 1,
+  "source": {
+    "document": "Plan_1.md",
+    "section": "1.3"
+  },
+  "principles": [
+    {
+      "principle_id": "NGP-01",
+      "slug": "no_custom_historical_matching_engine_v1",
+      "title": "No custom historical matching engine in v1",
+      "statement": "Historical simulation uses NautilusTrader high-level backtesting.",
+      "reason_code": "NGP01_CUSTOM_HISTORICAL_ENGINE_FORBIDDEN",
+      "violation_type": "forbidden_historical_engine",
+      "conditions": [
+        {
+          "field": "historical_execution_kernel",
+          "op": "eq",
+          "expected": "nautilus_high_level_backtesting"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-02",
+      "slug": "no_ad_hoc_files_in_promotable_research",
+      "title": "No ad-hoc files in promotable research",
+      "statement": "Experiments point to certified releases and immutable artifacts.",
+      "reason_code": "NGP02_PROMOTABLE_RESEARCH_REQUIRES_CERTIFIED_IMMUTABLE_ARTIFACTS",
+      "violation_type": "artifact_integrity_violation",
+      "conditions": [
+        {
+          "field": "promotable_research_uses_certified_releases",
+          "op": "truthy"
+        },
+        {
+          "field": "promotable_research_uses_immutable_artifacts",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-03",
+      "slug": "no_mutable_reference_resolution_after_freeze",
+      "title": "No mutable reference resolution after freeze",
+      "statement": "Frozen candidates, replay, paper, shadow-live, and live use resolved-context bundles and approved data-profile releases by digest.",
+      "reason_code": "NGP03_MUTABLE_REFERENCE_RESOLUTION_AFTER_FREEZE",
+      "violation_type": "mutable_freeze_time_state",
+      "conditions": [
+        {
+          "field": "freeze_uses_resolved_context_bundle",
+          "op": "truthy"
+        },
+        {
+          "field": "data_profile_release_pinned_by_digest",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-04",
+      "slug": "no_promotion_on_gross_pnl",
+      "title": "No promotion on gross PnL",
+      "statement": "Promotion decisions use realistic costs, slippage, recurring operational costs, and both passive-gold and lower-touch cash benchmarks.",
+      "reason_code": "NGP04_GROSS_PNL_ONLY_PROMOTION_FORBIDDEN",
+      "violation_type": "promotion_evidence_incomplete",
+      "conditions": [
+        {
+          "field": "promotion_uses_realistic_costs",
+          "op": "truthy"
+        },
+        {
+          "field": "promotion_uses_passive_gold_benchmark",
+          "op": "truthy"
+        },
+        {
+          "field": "promotion_uses_lower_touch_cash_benchmark",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-05",
+      "slug": "no_notebook_only_evidence_for_promotion",
+      "title": "No notebook-only evidence for promotion",
+      "statement": "Notebooks may explore; they may not directly advance promotable state.",
+      "reason_code": "NGP05_NOTEBOOK_ONLY_PROMOTION_EVIDENCE_FORBIDDEN",
+      "violation_type": "notebook_only_evidence",
+      "conditions": [
+        {
+          "field": "promotion_has_non_notebook_evidence",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-06",
+      "slug": "no_live_activation_without_evidence_and_reconciliation_controls",
+      "title": "No live activation without deterministic replay, paper evidence, shadow-live evidence, and broker reconciliation controls",
+      "statement": "Live activation requires replay, paper, shadow-live, and broker reconciliation evidence.",
+      "reason_code": "NGP06_LIVE_ACTIVATION_EVIDENCE_OR_RECONCILIATION_MISSING",
+      "violation_type": "missing_live_activation_evidence",
+      "conditions": [
+        {
+          "field": "live_activation_has_deterministic_replay",
+          "op": "truthy"
+        },
+        {
+          "field": "live_activation_has_paper_evidence",
+          "op": "truthy"
+        },
+        {
+          "field": "live_activation_has_shadow_live_evidence",
+          "op": "truthy"
+        },
+        {
+          "field": "broker_reconciliation_controls_present",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-07",
+      "slug": "no_operational_state_ambiguity",
+      "title": "No operational state ambiguity",
+      "statement": "Economically significant state is journaled, replayable, recoverable, and cross-checked against broker state intraday and at end of day.",
+      "reason_code": "NGP07_OPERATIONAL_STATE_RECOVERABILITY_REQUIRED",
+      "violation_type": "unrecoverable_operational_state",
+      "conditions": [
+        {
+          "field": "operational_state_journaled",
+          "op": "truthy"
+        },
+        {
+          "field": "operational_state_replayable",
+          "op": "truthy"
+        },
+        {
+          "field": "operational_state_recoverable",
+          "op": "truthy"
+        },
+        {
+          "field": "intraday_broker_cross_check_enabled",
+          "op": "truthy"
+        },
+        {
+          "field": "end_of_day_broker_cross_check_enabled",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-08",
+      "slug": "no_hidden_optimization_surfaces",
+      "title": "No hidden optimization surfaces",
+      "statement": "Lockboxes, nulls, discovery accounting, and operational-evidence admissibility rules are enforced.",
+      "reason_code": "NGP08_HIDDEN_OPTIMIZATION_SURFACE_FORBIDDEN",
+      "violation_type": "optimization_surface_not_governed",
+      "conditions": [
+        {
+          "field": "lockbox_policy_enforced",
+          "op": "truthy"
+        },
+        {
+          "field": "null_suite_enforced",
+          "op": "truthy"
+        },
+        {
+          "field": "discovery_accounting_enforced",
+          "op": "truthy"
+        },
+        {
+          "field": "operational_evidence_admissibility_enforced",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-09",
+      "slug": "no_premature_infrastructure",
+      "title": "No premature infrastructure",
+      "statement": "One host, PostgreSQL, off-host object storage, and in-process mailboxes remain the baseline until measured thresholds justify upgrades.",
+      "reason_code": "NGP09_BASELINE_INFRASTRUCTURE_DRIFT_FORBIDDEN",
+      "violation_type": "premature_infrastructure_expansion",
+      "conditions": [
+        {
+          "field": "deployment_topology",
+          "op": "eq",
+          "expected": "one_linux_host_or_vm"
+        },
+        {
+          "field": "canonical_metadata_store",
+          "op": "eq",
+          "expected": "postgresql16"
+        },
+        {
+          "field": "immutable_artifact_store",
+          "op": "eq",
+          "expected": "off_host_versioned_object_storage"
+        },
+        {
+          "field": "operational_mailboxes",
+          "op": "eq",
+          "expected": "in_process"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-10",
+      "slug": "no_research_live_logic_fork",
+      "title": "No research/live logic fork for live-eligible strategies",
+      "statement": "Research and operations must execute the same canonical signal kernel.",
+      "reason_code": "NGP10_SHARED_SIGNAL_KERNEL_REQUIRED",
+      "violation_type": "missing_shared_signal_kernel",
+      "conditions": [
+        {
+          "field": "canonical_shared_signal_kernel",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-11",
+      "slug": "no_broker_mutation_without_durable_intent_identity",
+      "title": "No broker mutation without durable intent identity",
+      "statement": "Submit, modify, cancel, and flatten actions must be journaled and idempotent across retry, restart, and reconnect.",
+      "reason_code": "NGP11_BROKER_MUTATION_IDEMPOTENT_INTENT_REQUIRED",
+      "violation_type": "non_idempotent_broker_mutation",
+      "conditions": [
+        {
+          "field": "broker_mutation_has_durable_intent_identity",
+          "op": "truthy"
+        },
+        {
+          "field": "broker_mutation_idempotent",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-12",
+      "slug": "no_live_capable_stack_without_operational_recoverability",
+      "title": "No live-capable stack without operational recoverability",
+      "statement": "Backup/restore, migration, clock-discipline, secret-handling, and off-host tamper-evident durability controls are required before live approval.",
+      "reason_code": "NGP12_LIVE_STACK_RECOVERABILITY_CONTROLS_REQUIRED",
+      "violation_type": "missing_recoverability_controls",
+      "conditions": [
+        {
+          "field": "backup_restore_controls_present",
+          "op": "truthy"
+        },
+        {
+          "field": "migration_controls_present",
+          "op": "truthy"
+        },
+        {
+          "field": "clock_discipline_controls_present",
+          "op": "truthy"
+        },
+        {
+          "field": "sensitive_material_controls_present",
+          "op": "truthy"
+        },
+        {
+          "field": "tamper_evident_off_host_durability_present",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-13",
+      "slug": "no_deep_promotable_budget_before_viability_gate",
+      "title": "No deep promotable budget before the intended execution lane clears the early viability gate",
+      "statement": "Deep promotable budget remains blocked until the intended execution lane clears the viability gate.",
+      "reason_code": "NGP13_VIABILITY_GATE_REQUIRED_BEFORE_DEEP_BUDGET",
+      "violation_type": "viability_gate_bypass",
+      "conditions": [
+        {
+          "field": "viability_gate_cleared_before_deep_promotable_budget",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-14",
+      "slug": "no_new_tradeable_session_without_green_readiness_and_contract_checks",
+      "title": "No new tradeable session without a green session_readiness_packet and broker contract-conformance checks",
+      "statement": "Every new tradeable session requires a green readiness packet and green contract-conformance checks.",
+      "reason_code": "NGP14_SESSION_READINESS_AND_CONTRACT_CONFORMANCE_REQUIRED",
+      "violation_type": "tradeable_session_not_ready",
+      "conditions": [
+        {
+          "field": "session_readiness_packet_green",
+          "op": "truthy"
+        },
+        {
+          "field": "broker_contract_conformance_green",
+          "op": "truthy"
+        }
+      ]
+    },
+    {
+      "principle_id": "NGP-15",
+      "slug": "no_single_path_emergency_control",
+      "title": "No single-path emergency control for live safety",
+      "statement": "Emergency cancel/flatten remains possible through a minimal out-of-band guardian path.",
+      "reason_code": "NGP15_GUARDIAN_PATH_REQUIRED",
+      "violation_type": "guardian_bypass_attempt",
+      "conditions": [
+        {
+          "field": "guardian_emergency_path_available",
+          "op": "truthy"
+        }
+      ]
+    }
+  ]
+}

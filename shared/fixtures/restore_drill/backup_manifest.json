@@ -1,0 +1,18 @@
+{
+  "manifest_id": "restore-drill-manifest-001",
+  "database_backup_label": "pg-basebackup-2026-03-26T12:00:00Z",
+  "artifact_checkpoint_id": "artifact-checkpoint-001",
+  "backup_completed_at": "2026-03-26T12:00:00Z",
+  "restore_started_at": "2026-03-26T12:10:00Z",
+  "restore_completed_at": "2026-03-26T12:25:00Z",
+  "files": [
+    {
+      "relative_path": "evidence/run-001.json",
+      "sha256": "6f6985bb2e1ab97965bf074a9f121a491258c988bbeed6a5addd3f8dbf3ade5d"
+    },
+    {
+      "relative_path": "journals/ledger-001.log",
+      "sha256": "17a3efe45b8a2e2734da7cd27dcd21c6053cff5925daa6d0d127d11de0b0dad0"
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "binding_cases": [
+    {
+      "case_id": "allow_oneoz_live_binding",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_lane": "live",
+      "requested_symbol": "1OZ",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": false,
+      "broker_contract_descriptor": {
+        "symbol": "1OZ",
+        "exchange": "COMEX",
+        "currency": "USD",
+        "contract_size_oz": 1,
+        "minimum_price_fluctuation_usd_per_oz": 0.25,
+        "settlement_type": "cash_settled",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PROFILE_BINDING_ALLOWED",
+      "expected_difference_keys": []
+    },
+    {
+      "case_id": "reject_stale_oneoz_data_profile",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_lane": "live",
+      "requested_symbol": "1OZ",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v0",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": false,
+      "broker_contract_descriptor": {
+        "symbol": "1OZ",
+        "exchange": "COMEX",
+        "currency": "USD",
+        "contract_size_oz": 1,
+        "minimum_price_fluctuation_usd_per_oz": 0.25,
+        "settlement_type": "cash_settled",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "stale",
+      "expected_reason_code": "PROFILE_BINDING_STALE_DATA_PROFILE_RELEASE",
+      "expected_difference_keys": [
+        "requested_data_profile_release_id"
+      ]
+    },
+    {
+      "case_id": "reject_mgc_for_small_live_account",
+      "product_profile_id": "mgc_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_lane": "paper",
+      "requested_symbol": "MGC",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "databento_mgc_comex_trades_1m_v1",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": false,
+      "broker_contract_descriptor": {
+        "symbol": "MGC",
+        "exchange": "COMEX",
+        "currency": "USD",
+        "contract_size_oz": 10,
+        "minimum_price_fluctuation_usd_per_oz": 0.1,
+        "settlement_type": "deliverable",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "incompatible",
+      "expected_reason_code": "PROFILE_BINDING_INCOMPATIBLE",
+      "expected_difference_keys": [
+        "requested_lane",
+        "approved_symbols",
+        "position_sizing"
+      ]
+    },
+    {
+      "case_id": "reject_unknown_account_profile",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v9",
+      "requested_lane": "live",
+      "requested_symbol": "1OZ",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": false,
+      "broker_contract_descriptor": {
+        "symbol": "1OZ",
+        "exchange": "COMEX",
+        "currency": "USD",
+        "contract_size_oz": 1,
+        "minimum_price_fluctuation_usd_per_oz": 0.25,
+        "settlement_type": "cash_settled",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "PROFILE_BINDING_UNKNOWN_ACCOUNT_PROFILE",
+      "expected_difference_keys": [
+        "account_profile_id"
+      ]
+    },
+    {
+      "case_id": "reject_contract_descriptor_mismatch",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_lane": "live",
+      "requested_symbol": "1OZ",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": false,
+      "broker_contract_descriptor": {
+        "symbol": "1OZ",
+        "exchange": "NYMEX",
+        "currency": "USD",
+        "contract_size_oz": 1,
+        "minimum_price_fluctuation_usd_per_oz": 0.1,
+        "settlement_type": "cash_settled",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "incompatible",
+      "expected_reason_code": "PROFILE_BINDING_INCOMPATIBLE",
+      "expected_difference_keys": [
+        "broker_contract.exchange",
+        "broker_contract.minimum_price_fluctuation_usd_per_oz"
+      ]
+    },
+    {
+      "case_id": "reject_overnight_without_strict_posture",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_lane": "live",
+      "requested_symbol": "1OZ",
+      "requested_broker": "IBKR",
+      "requested_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "requested_contract_count": 1,
+      "requested_initial_margin_fraction": 0.2,
+      "requested_maintenance_margin_fraction": 0.3,
+      "requested_operating_posture": "intraday_flat_default",
+      "overnight_requested": true,
+      "broker_contract_descriptor": {
+        "symbol": "1OZ",
+        "exchange": "COMEX",
+        "currency": "USD",
+        "contract_size_oz": 1,
+        "minimum_price_fluctuation_usd_per_oz": 0.25,
+        "settlement_type": "cash_settled",
+        "session_calendar_id": "comex_metals_globex_v1"
+      },
+      "expected_status": "incompatible",
+      "expected_reason_code": "PROFILE_BINDING_INCOMPATIBLE",
+      "expected_difference_keys": [
+        "overnight_requested"
+      ]
+    }
+  ]
+}

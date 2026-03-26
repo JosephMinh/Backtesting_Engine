@@ -1,0 +1,132 @@
+{
+  "tier_assignment_cases": [
+    {
+      "case_id": "allow_raw_vendor_payload_in_tier_a",
+      "artifact_type": "raw_vendor_payload",
+      "requested_tier": "tier_a",
+      "expected_status": "pass",
+      "expected_reason_code": "STORAGE_TIER_ASSIGNMENT_ALLOWED",
+      "expected_tier": "tier_a"
+    },
+    {
+      "case_id": "allow_resolved_context_bundle_in_tier_b",
+      "artifact_type": "resolved_context_bundle",
+      "requested_tier": "tier_b",
+      "expected_status": "pass",
+      "expected_reason_code": "STORAGE_TIER_ASSIGNMENT_ALLOWED",
+      "expected_tier": "tier_b"
+    },
+    {
+      "case_id": "allow_dataset_release_in_tier_c",
+      "artifact_type": "dataset_release",
+      "requested_tier": "tier_c",
+      "expected_status": "pass",
+      "expected_reason_code": "STORAGE_TIER_ASSIGNMENT_ALLOWED",
+      "expected_tier": "tier_c"
+    },
+    {
+      "case_id": "allow_analytic_release_in_tier_d",
+      "artifact_type": "analytic_release",
+      "requested_tier": "tier_d",
+      "expected_status": "pass",
+      "expected_reason_code": "STORAGE_TIER_ASSIGNMENT_ALLOWED",
+      "expected_tier": "tier_d"
+    },
+    {
+      "case_id": "reject_paper_evidence_in_tier_d",
+      "artifact_type": "paper_pass_evidence",
+      "requested_tier": "tier_d",
+      "expected_status": "violation",
+      "expected_reason_code": "STORAGE_TIER_MISPLACED_ARTIFACT",
+      "expected_tier": "tier_e"
+    },
+    {
+      "case_id": "reject_unknown_artifact_type",
+      "artifact_type": "mutable_reference_table",
+      "requested_tier": "tier_b",
+      "expected_status": "invalid",
+      "expected_reason_code": "STORAGE_TIER_UNKNOWN_ARTIFACT",
+      "expected_tier": null
+    }
+  ],
+  "binding_cases": [
+    {
+      "case_id": "allow_frozen_promotable_binding",
+      "experiment_id": "run-allow-001",
+      "dataset_release_id": "dataset_release_gold_2026q1_v1",
+      "analytic_release_id": "analytic_release_gold_masks_v1",
+      "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+      "resolved_context_bundle_id": "resolved_context_bundle_xnys_comex_2026q1_v1",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "compatibility_matrix_version": "compat_matrix_v1",
+      "mutable_reference_reads": [],
+      "binding_mutated_after_freeze": false,
+      "expected_status": "pass",
+      "expected_reason_code": "PROMOTABLE_BINDING_FROZEN"
+    },
+    {
+      "case_id": "reject_missing_observation_cutoff",
+      "experiment_id": "run-missing-cutoff",
+      "dataset_release_id": "dataset_release_gold_2026q1_v1",
+      "analytic_release_id": null,
+      "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "observation_cutoff_utc": "",
+      "resolved_context_bundle_id": "resolved_context_bundle_xnys_comex_2026q1_v1",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "compatibility_matrix_version": "compat_matrix_v1",
+      "mutable_reference_reads": [],
+      "binding_mutated_after_freeze": false,
+      "expected_status": "invalid",
+      "expected_reason_code": "PROMOTABLE_BINDING_MISSING_REQUIRED_ARTIFACTS"
+    },
+    {
+      "case_id": "reject_mutable_reference_read",
+      "experiment_id": "run-mutable-read",
+      "dataset_release_id": "dataset_release_gold_2026q1_v1",
+      "analytic_release_id": null,
+      "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+      "resolved_context_bundle_id": "resolved_context_bundle_xnys_comex_2026q1_v1",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "compatibility_matrix_version": "compat_matrix_v1",
+      "mutable_reference_reads": [
+        "contract_definition_table",
+        "calendar_definition_table"
+      ],
+      "binding_mutated_after_freeze": false,
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTABLE_BINDING_MUTABLE_REFERENCE_READ"
+    },
+    {
+      "case_id": "reject_binding_mutation_after_freeze",
+      "experiment_id": "run-freeze-mutation",
+      "dataset_release_id": "dataset_release_gold_2026q1_v1",
+      "analytic_release_id": "analytic_release_gold_masks_v1",
+      "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+      "resolved_context_bundle_id": "resolved_context_bundle_xnys_comex_2026q1_v1",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "compatibility_matrix_version": "compat_matrix_v1",
+      "mutable_reference_reads": [],
+      "binding_mutated_after_freeze": true,
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTABLE_BINDING_MUTATED_AFTER_FREEZE"
+    },
+    {
+      "case_id": "reject_invalid_cutoff_timezone",
+      "experiment_id": "run-bad-cutoff",
+      "dataset_release_id": "dataset_release_gold_2026q1_v1",
+      "analytic_release_id": null,
+      "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "observation_cutoff_utc": "2026-03-01T00:00:00",
+      "resolved_context_bundle_id": "resolved_context_bundle_xnys_comex_2026q1_v1",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "compatibility_matrix_version": "compat_matrix_v1",
+      "mutable_reference_reads": [],
+      "binding_mutated_after_freeze": false,
+      "expected_status": "invalid",
+      "expected_reason_code": "PROMOTABLE_BINDING_INVALID_OBSERVATION_CUTOFF"
+    }
+  ]
+}

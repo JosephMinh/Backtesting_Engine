@@ -1,0 +1,53 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.res
+cc*.cdtor.c
+cc*.cdtor.o
+
+# Logs
+*.log
+logs/
+!shared/fixtures/restore_drill/restored_ok/journals/ledger-001.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Coverage
+coverage/
+*.lcov
+.pytest_cache/
+.ruff_cache/
+.ntm/
+.claude/settings.local.json
+ubs-ruff.*
+uv-*.lock
+
+# bv (beads viewer) local config and caches
+.bv/

@@ -1,0 +1,154 @@
+{
+  "cases": [
+    {
+      "id": "approved_baseline",
+      "description": "The approved baseline lane stays inside the narrow v1 live posture.",
+      "candidate": {
+        "candidate_id": "approved_baseline",
+        "research_symbol": "MGC",
+        "live_execution_symbol": "1OZ",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 5000,
+        "max_live_contracts": 1,
+        "decision_interval_seconds": 60,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": false,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_host",
+        "overnight_holding_requested": false,
+        "overnight_candidate_class": "none"
+      },
+      "expected_approved": true,
+      "expected_failure_reason_codes": []
+    },
+    {
+      "id": "reject_research_symbol",
+      "description": "Research outside the approved MGC lane is rejected.",
+      "candidate": {
+        "candidate_id": "reject_research_symbol",
+        "research_symbol": "GC",
+        "live_execution_symbol": "1OZ",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 5000,
+        "max_live_contracts": 1,
+        "decision_interval_seconds": 60,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": false,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_vm",
+        "overnight_holding_requested": false,
+        "overnight_candidate_class": "none"
+      },
+      "expected_approved": false,
+      "expected_failure_reason_codes": [
+        "CHARTER_RESEARCH_SYMBOL_REQUIRED"
+      ]
+    },
+    {
+      "id": "reject_execution_symbol",
+      "description": "Execution outside the approved 1OZ lane is rejected.",
+      "candidate": {
+        "candidate_id": "reject_execution_symbol",
+        "research_symbol": "MGC",
+        "live_execution_symbol": "MGC",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 5000,
+        "max_live_contracts": 1,
+        "decision_interval_seconds": 60,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": false,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_host",
+        "overnight_holding_requested": false,
+        "overnight_candidate_class": "none"
+      },
+      "expected_approved": false,
+      "expected_failure_reason_codes": [
+        "CHARTER_EXECUTION_SYMBOL_REQUIRED"
+      ]
+    },
+    {
+      "id": "reject_account_profile_overreach",
+      "description": "Oversized accounts and more than one live contract violate the approved account posture.",
+      "candidate": {
+        "candidate_id": "reject_account_profile_overreach",
+        "research_symbol": "MGC",
+        "live_execution_symbol": "1OZ",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 7500,
+        "max_live_contracts": 2,
+        "decision_interval_seconds": 60,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": false,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_host",
+        "overnight_holding_requested": false,
+        "overnight_candidate_class": "none"
+      },
+      "expected_approved": false,
+      "expected_failure_reason_codes": [
+        "CHARTER_ACCOUNT_SIZE_EXCEEDS_APPROVED_PROFILE",
+        "CHARTER_MAX_LIVE_CONTRACTS_EXCEEDED"
+      ]
+    },
+    {
+      "id": "reject_too_fast_strategy",
+      "description": "Sub-minute live decisions are rejected.",
+      "candidate": {
+        "candidate_id": "reject_too_fast_strategy",
+        "research_symbol": "MGC",
+        "live_execution_symbol": "1OZ",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 5000,
+        "max_live_contracts": 1,
+        "decision_interval_seconds": 30,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": true,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_host",
+        "overnight_holding_requested": false,
+        "overnight_candidate_class": "none"
+      },
+      "expected_approved": false,
+      "expected_failure_reason_codes": [
+        "CHARTER_DECISION_INTERVAL_TOO_FAST",
+        "CHARTER_SUBMINUTE_LIVE_FORBIDDEN"
+      ]
+    },
+    {
+      "id": "reject_overnight_without_strict_class",
+      "description": "Overnight holding requires the stricter candidate class.",
+      "candidate": {
+        "candidate_id": "reject_overnight_without_strict_class",
+        "research_symbol": "MGC",
+        "live_execution_symbol": "1OZ",
+        "live_market_data_provider": "IBKR",
+        "live_execution_broker": "IBKR",
+        "live_account_size_usd": 5000,
+        "max_live_contracts": 1,
+        "decision_interval_seconds": 60,
+        "uses_depth_dependent_logic": false,
+        "uses_queue_dependent_logic": false,
+        "uses_subminute_decisions": false,
+        "active_live_bundles_per_account_product": 1,
+        "deployment_target": "linux_vm",
+        "overnight_holding_requested": true,
+        "overnight_candidate_class": "standard"
+      },
+      "expected_approved": false,
+      "expected_failure_reason_codes": [
+        "CHARTER_OVERNIGHT_REQUIRES_STRICT_CLASS"
+      ]
+    }
+  ]
+}

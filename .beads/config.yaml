@@ -1,0 +1,4 @@
+sync:
+  branch: beads-sync
+display:
+  color: true
