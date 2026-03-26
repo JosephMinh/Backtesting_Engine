@@ -310,6 +310,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="execution_symbol_portability_and_native_validation",
+        module="shared.policy.viability_gate",
+        source_path="shared/policy/viability_gate.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="6.6-6.7",
+        purpose=(
+            "Formal portability certification and mandatory native 1OZ validation before "
+            "finalist promotion"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="fast_screening_governance",
         module="shared.policy.fast_screening",
         source_path="shared/policy/fast_screening.py",
@@ -322,6 +337,23 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         purpose=(
             "Optional fast-screening eligibility, Nautilus equivalence retention, and "
             "non-promotable survivor-routing controls"
+        ),
+    ),
+    SharedContractSurface(
+        surface_id="strategy_contracts_and_canonical_signal_kernel",
+        module="shared.policy.strategy_contract",
+        source_path="shared/policy/strategy_contract.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.PYTHON_BINDINGS,
+            PlaneId.RUST_KERNELS,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.1-7.2",
+        purpose=(
+            "Stable strategy-family contracts, one canonical promotable signal-kernel "
+            "rule, and pre-freeze equivalence-certification requirements"
         ),
     ),
     SharedContractSurface(

@@ -1,0 +1,816 @@
+{
+  "evaluation_cases": [
+    {
+      "case_id": "research_only_python_prototype_allowed",
+      "contract": {
+        "contract_id": "slow_bar_momentum_contract",
+        "strategy_family_id": "slow_bar_momentum",
+        "lifecycle_class": "research_only",
+        "parameter_schema_id": "slow_bar_params_v1",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 200,
+          "min_history_minutes": 0,
+          "requires_state_seed": false
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "py_kernel_sha256_001",
+          "research_kernel_hash": "py_kernel_sha256_001",
+          "live_kernel_hash": "py_kernel_sha256_001",
+          "canonical_implementation_kind": "python",
+          "rust_crate": null,
+          "python_binding_module": null,
+          "python_promotable_logic_present": true,
+          "kernel_abi_version": "abi_v1",
+          "state_serialization_version": "state_v1",
+          "semantic_version": "0.1.0"
+        },
+        "candidate_freeze_ready": false,
+        "equivalence_certification": {
+          "certification_id": null,
+          "golden_session_fixture_id": null,
+          "property_case_count": 0
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": "STRATEGY_CONTRACT_PASS",
+        "stable_contract_complete": true,
+        "canonical_kernel_rule_satisfied": true,
+        "equivalence_certification_required": false,
+        "equivalence_certification_ready": false
+      }
+    },
+    {
+      "case_id": "promotable_rust_kernel_passes",
+      "contract": {
+        "contract_id": "gold_momentum_contract",
+        "strategy_family_id": "gold_momentum",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_momentum_params_v2",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "volatility.surface"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 300,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "risk",
+            "depends_on": [
+              "signal"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "risk"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_001",
+          "research_kernel_hash": "rust_kernel_sha256_001",
+          "live_kernel_hash": "rust_kernel_sha256_001",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_momentum",
+          "python_binding_module": "python.bindings.gold_momentum",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v2",
+          "state_serialization_version": "state_v2",
+          "semantic_version": "1.2.0"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": "equivalence_gold_momentum_v1",
+          "golden_session_fixture_id": "golden_session_gold_momentum_v1",
+          "property_case_count": 64
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": "STRATEGY_CONTRACT_PASS",
+        "stable_contract_complete": true,
+        "canonical_kernel_rule_satisfied": true,
+        "equivalence_certification_required": true,
+        "equivalence_certification_ready": true
+      }
+    },
+    {
+      "case_id": "promotable_python_fork_rejected",
+      "contract": {
+        "contract_id": "gold_mean_reversion_contract",
+        "strategy_family_id": "gold_mean_reversion",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_mean_reversion_params_v1",
+        "required_inputs": [
+          "bars.5m",
+          "calendar.rth"
+        ],
+        "decision_cadence": {
+          "decision_basis": "one_bar_late",
+          "interval_seconds": 300
+        },
+        "warmup": {
+          "min_history_bars": 120,
+          "min_history_minutes": 0,
+          "requires_state_seed": false
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "signal",
+            "depends_on": []
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_010",
+          "research_kernel_hash": "py_kernel_sha256_010",
+          "live_kernel_hash": "rust_kernel_sha256_010",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_mean_reversion",
+          "python_binding_module": "python.bindings.gold_mean_reversion",
+          "python_promotable_logic_present": true,
+          "kernel_abi_version": "abi_v1",
+          "state_serialization_version": "state_v1",
+          "semantic_version": "1.0.0"
+        },
+        "candidate_freeze_ready": false,
+        "equivalence_certification": {
+          "certification_id": null,
+          "golden_session_fixture_id": null,
+          "property_case_count": 0
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "STRATEGY_CONTRACT_PYTHON_FORK_PRESENT",
+        "stable_contract_complete": true,
+        "canonical_kernel_rule_satisfied": false,
+        "equivalence_certification_required": false,
+        "equivalence_certification_ready": false
+      }
+    },
+    {
+      "case_id": "candidate_freeze_requires_equivalence",
+      "contract": {
+        "contract_id": "gold_breakout_contract",
+        "strategy_family_id": "gold_breakout",
+        "lifecycle_class": "live_eligible",
+        "parameter_schema_id": "gold_breakout_params_v3",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "regime.snapshot"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 180,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_020",
+          "research_kernel_hash": "rust_kernel_sha256_020",
+          "live_kernel_hash": "rust_kernel_sha256_020",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_breakout",
+          "python_binding_module": "python.bindings.gold_breakout",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v3",
+          "state_serialization_version": "state_v2",
+          "semantic_version": "2.1.0"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": null,
+          "golden_session_fixture_id": null,
+          "property_case_count": 0
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "STRATEGY_CONTRACT_EQUIVALENCE_REQUIRED",
+        "stable_contract_complete": true,
+        "canonical_kernel_rule_satisfied": true,
+        "equivalence_certification_required": true,
+        "equivalence_certification_ready": false
+      }
+    }
+  ],
+  "compatibility_cases": [
+    {
+      "case_id": "patch_release_with_new_digest",
+      "previous": {
+        "contract_id": "gold_momentum_contract",
+        "strategy_family_id": "gold_momentum",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_momentum_params_v2",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "volatility.surface"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 300,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "risk",
+            "depends_on": [
+              "signal"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "risk"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_001",
+          "research_kernel_hash": "rust_kernel_sha256_001",
+          "live_kernel_hash": "rust_kernel_sha256_001",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_momentum",
+          "python_binding_module": "python.bindings.gold_momentum",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v2",
+          "state_serialization_version": "state_v2",
+          "semantic_version": "1.2.0"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": "equivalence_gold_momentum_v1",
+          "golden_session_fixture_id": "golden_session_gold_momentum_v1",
+          "property_case_count": 64
+        }
+      },
+      "current": {
+        "contract_id": "gold_momentum_contract",
+        "strategy_family_id": "gold_momentum",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_momentum_params_v2",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "volatility.surface"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 300,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "risk",
+            "depends_on": [
+              "signal"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "risk"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_002",
+          "research_kernel_hash": "rust_kernel_sha256_002",
+          "live_kernel_hash": "rust_kernel_sha256_002",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_momentum",
+          "python_binding_module": "python.bindings.gold_momentum",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v2",
+          "state_serialization_version": "state_v2",
+          "semantic_version": "1.2.1"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": "equivalence_gold_momentum_v2",
+          "golden_session_fixture_id": "golden_session_gold_momentum_v2",
+          "property_case_count": 64
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": "STRATEGY_CONTRACT_COMPATIBLE",
+        "compatible": true,
+        "requires_recertification": true,
+        "changed_fields": [
+          "signal_kernel_digest"
+        ],
+        "broken_guarantees": []
+      }
+    },
+    {
+      "case_id": "required_input_removed_without_major_bump",
+      "previous": {
+        "contract_id": "gold_mean_reversion_contract",
+        "strategy_family_id": "gold_mean_reversion",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_mean_reversion_params_v1",
+        "required_inputs": [
+          "bars.5m",
+          "calendar.rth"
+        ],
+        "decision_cadence": {
+          "decision_basis": "one_bar_late",
+          "interval_seconds": 300
+        },
+        "warmup": {
+          "min_history_bars": 120,
+          "min_history_minutes": 0,
+          "requires_state_seed": false
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "signal",
+            "depends_on": []
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_010",
+          "research_kernel_hash": "rust_kernel_sha256_010",
+          "live_kernel_hash": "rust_kernel_sha256_010",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_mean_reversion",
+          "python_binding_module": "python.bindings.gold_mean_reversion",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v1",
+          "state_serialization_version": "state_v1",
+          "semantic_version": "1.2.0"
+        },
+        "candidate_freeze_ready": false,
+        "equivalence_certification": {
+          "certification_id": null,
+          "golden_session_fixture_id": null,
+          "property_case_count": 0
+        }
+      },
+      "current": {
+        "contract_id": "gold_mean_reversion_contract",
+        "strategy_family_id": "gold_mean_reversion",
+        "lifecycle_class": "promotable",
+        "parameter_schema_id": "gold_mean_reversion_params_v1",
+        "required_inputs": [
+          "bars.5m"
+        ],
+        "decision_cadence": {
+          "decision_basis": "one_bar_late",
+          "interval_seconds": 300
+        },
+        "warmup": {
+          "min_history_bars": 120,
+          "min_history_minutes": 0,
+          "requires_state_seed": false
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "signal",
+            "depends_on": []
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_011",
+          "research_kernel_hash": "rust_kernel_sha256_011",
+          "live_kernel_hash": "rust_kernel_sha256_011",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_mean_reversion",
+          "python_binding_module": "python.bindings.gold_mean_reversion",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v1",
+          "state_serialization_version": "state_v1",
+          "semantic_version": "1.3.0"
+        },
+        "candidate_freeze_ready": false,
+        "equivalence_certification": {
+          "certification_id": null,
+          "golden_session_fixture_id": null,
+          "property_case_count": 0
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "STRATEGY_CONTRACT_SEMVER_VIOLATION",
+        "compatible": false,
+        "requires_recertification": true,
+        "changed_fields": [
+          "required_inputs",
+          "signal_kernel_digest"
+        ],
+        "broken_guarantees": [
+          "interface.required_inputs"
+        ]
+      }
+    },
+    {
+      "case_id": "state_serialization_change_with_major_bump",
+      "previous": {
+        "contract_id": "gold_breakout_contract",
+        "strategy_family_id": "gold_breakout",
+        "lifecycle_class": "live_eligible",
+        "parameter_schema_id": "gold_breakout_params_v3",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "regime.snapshot"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 180,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_020",
+          "research_kernel_hash": "rust_kernel_sha256_020",
+          "live_kernel_hash": "rust_kernel_sha256_020",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_breakout",
+          "python_binding_module": "python.bindings.gold_breakout",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v3",
+          "state_serialization_version": "state_v2",
+          "semantic_version": "2.1.0"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": "equivalence_gold_breakout_v2",
+          "golden_session_fixture_id": "golden_session_gold_breakout_v2",
+          "property_case_count": 32
+        }
+      },
+      "current": {
+        "contract_id": "gold_breakout_contract",
+        "strategy_family_id": "gold_breakout",
+        "lifecycle_class": "live_eligible",
+        "parameter_schema_id": "gold_breakout_params_v3",
+        "required_inputs": [
+          "bars.1m",
+          "calendar.rth",
+          "regime.snapshot"
+        ],
+        "decision_cadence": {
+          "decision_basis": "bar_close",
+          "interval_seconds": 60
+        },
+        "warmup": {
+          "min_history_bars": 180,
+          "min_history_minutes": 0,
+          "requires_state_seed": true
+        },
+        "risk_control_hooks": [
+          "max_position_check",
+          "daily_loss_lockout",
+          "delivery_fence_check"
+        ],
+        "order_intent_schema": {
+          "schema_id": "order_intent_v1",
+          "required_fields": [
+            "intent_id",
+            "strategy_decision_id",
+            "symbol",
+            "side",
+            "quantity",
+            "order_type",
+            "time_in_force"
+          ]
+        },
+        "dependency_dag": [
+          {
+            "node_id": "features",
+            "depends_on": []
+          },
+          {
+            "node_id": "signal",
+            "depends_on": [
+              "features"
+            ]
+          },
+          {
+            "node_id": "orders",
+            "depends_on": [
+              "signal"
+            ]
+          }
+        ],
+        "signal_kernel": {
+          "signal_kernel_digest": "rust_kernel_sha256_021",
+          "research_kernel_hash": "rust_kernel_sha256_021",
+          "live_kernel_hash": "rust_kernel_sha256_021",
+          "canonical_implementation_kind": "rust",
+          "rust_crate": "rust/kernels/gold_breakout",
+          "python_binding_module": "python.bindings.gold_breakout",
+          "python_promotable_logic_present": false,
+          "kernel_abi_version": "abi_v3",
+          "state_serialization_version": "state_v3",
+          "semantic_version": "3.0.0"
+        },
+        "candidate_freeze_ready": true,
+        "equivalence_certification": {
+          "certification_id": "equivalence_gold_breakout_v3",
+          "golden_session_fixture_id": "golden_session_gold_breakout_v3",
+          "property_case_count": 32
+        }
+      },
+      "expected": {
+        "status": "incompatible",
+        "reason_code": "STRATEGY_CONTRACT_BREAKING_CHANGE",
+        "compatible": false,
+        "requires_recertification": true,
+        "changed_fields": [
+          "state_serialization_version",
+          "signal_kernel_digest"
+        ],
+        "broken_guarantees": [
+          "state.state_serialization_version"
+        ]
+      }
+    }
+  ]
+}

@@ -18,17 +18,25 @@ import pytest
 
 from shared.policy.viability_gate import (
     GateOutcome,
+    check_after_cost_degradation,
     check_bar_sufficiency,
+    check_cost_sensitivity,
+    check_directional_agreement,
+    check_event_timing_alignment,
     check_deterministic_bar_construction,
     check_end_to_end_dummy_flow,
     check_execution_symbol_tradability,
+    check_fill_sensitivity,
     check_market_data_entitlement,
     check_no_lane_blockers,
     check_passive_assumption_credibility,
     check_session_conditioned_liquidity,
     check_slippage_realism,
+    check_trade_count_drift,
+    check_turnover_drift,
     evaluate_fidelity_calibration,
     evaluate_lower_frequency_live_lane,
+    evaluate_portability_and_native_validation,
     evaluate_viability_gate,
 )
 
@@ -612,3 +620,121 @@ class TestFidelityCalibrationReport:
         ]
         assert "queue_reactive_scalper" in report.rationale
         assert payload["failed_count"] == 4
+
+
+class TestPortabilityAndNativeValidation:
+    def test_portability_dimensions_cover_all_required_axes(self):
+        dimensions = [
+            check_directional_agreement(
+                directional_agreement_ratio=0.95,
+                min_directional_agreement_ratio=0.90,
+                data_source_reference="portability_directional_gold_v1",
+            ),
+            check_event_timing_alignment(
+                median_timing_delta_seconds=6.0,
+                max_median_timing_delta_seconds=15.0,
+                data_source_reference="portability_timing_gold_v1",
+            ),
+            check_trade_count_drift(
+                trade_count_drift_ratio=0.08,
+                max_trade_count_drift_ratio=0.12,
+                data_source_reference="portability_trade_count_gold_v1",
+            ),
+            check_fill_sensitivity(
+                fill_sensitivity_bps=2.0,
+                max_fill_sensitivity_bps=5.0,
+                data_source_reference="portability_fill_gold_v1",
+            ),
+            check_cost_sensitivity(
+                cost_sensitivity_bps=3.0,
+                max_cost_sensitivity_bps=6.0,
+                data_source_reference="portability_cost_gold_v1",
+            ),
+            check_turnover_drift(
+                turnover_drift_ratio=0.05,
+                max_turnover_drift_ratio=0.10,
+                data_source_reference="portability_turnover_gold_v1",
+            ),
+            check_after_cost_degradation(
+                after_cost_degradation_bps=10.0,
+                max_after_cost_degradation_bps=12.0,
+                data_source_reference="portability_after_cost_gold_v1",
+            ),
+        ]
+
+        assert len(dimensions) == 7
+        assert all(dimension.passed for dimension in dimensions)
+
+    def test_missing_native_1oz_validation_blocks_finalist_promotion(self):
+        dimensions = [
+            check_directional_agreement(
+                directional_agreement_ratio=0.95,
+                min_directional_agreement_ratio=0.90,
+                data_source_reference="portability_directional_gold_v1",
+            ),
+            check_event_timing_alignment(
+                median_timing_delta_seconds=6.0,
+                max_median_timing_delta_seconds=15.0,
+                data_source_reference="portability_timing_gold_v1",
+            ),
+            check_trade_count_drift(
+                trade_count_drift_ratio=0.08,
+                max_trade_count_drift_ratio=0.12,
+                data_source_reference="portability_trade_count_gold_v1",
+            ),
+            check_fill_sensitivity(
+                fill_sensitivity_bps=2.0,
+                max_fill_sensitivity_bps=5.0,
+                data_source_reference="portability_fill_gold_v1",
+            ),
+            check_cost_sensitivity(
+                cost_sensitivity_bps=3.0,
+                max_cost_sensitivity_bps=6.0,
+                data_source_reference="portability_cost_gold_v1",
+            ),
+            check_turnover_drift(
+                turnover_drift_ratio=0.05,
+                max_turnover_drift_ratio=0.10,
+                data_source_reference="portability_turnover_gold_v1",
+            ),
+            check_after_cost_degradation(
+                after_cost_degradation_bps=10.0,
+                max_after_cost_degradation_bps=12.0,
+                data_source_reference="portability_after_cost_gold_v1",
+            ),
+        ]
+
+        report = evaluate_portability_and_native_validation(
+            research_symbol="MGC",
+            execution_symbol="1OZ",
+            finalist_id="finalist-001",
+            execution_symbol_viability_report_id="viability-report-001",
+            execution_symbol_viability_passed=True,
+            portability_study_id="portability-study-001",
+            portability_dimensions=dimensions,
+            sufficient_native_1oz_history_exists=True,
+            native_1oz_validation_study_id=None,
+            native_1oz_validation_passed=None,
+        )
+
+        assert not report.promotable_finalist_allowed
+        assert report.outcome_recommendation == GateOutcome.NARROW.value
+        assert report.reason_code == "NATIVE_1OZ_VALIDATION_REQUIRED"
+
+    def test_failed_viability_screen_cannot_reach_finalist_gate(self):
+        report = evaluate_portability_and_native_validation(
+            research_symbol="MGC",
+            execution_symbol="1OZ",
+            finalist_id="finalist-002",
+            execution_symbol_viability_report_id="viability-report-002",
+            execution_symbol_viability_passed=False,
+            portability_study_id=None,
+            portability_dimensions=[],
+            sufficient_native_1oz_history_exists=False,
+            native_1oz_validation_study_id=None,
+            native_1oz_validation_passed=None,
+        )
+
+        assert not report.promotable_finalist_allowed
+        assert report.outcome_recommendation == GateOutcome.TERMINATE.value
+        assert "must not be carried" in report.rationale

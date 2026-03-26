@@ -848,6 +848,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="strategy_contracts_and_canonical_signal_kernel",
+        title="Strategy contracts and canonical signal kernels",
+        related_beads=("backtesting_engine-ltc.5.1",),
+        phase_gates=("phase_5", "phase_6"),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH, VerificationClass.PARITY_CERTIFICATION),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="structured_logging_and_artifact_capture",
         title="Structured logs, trace correlation, and artifact capture",
         related_beads=("backtesting_engine-ltc.11.6",),

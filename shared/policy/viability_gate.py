@@ -433,6 +433,78 @@ class ExecutionSymbolViabilityReport:
         return json.dumps(self.to_dict(), default=str)
 
 
+@unique
+class PortabilityDimensionID(Enum):
+    """Stable identifiers for portability certification dimensions."""
+
+    DIRECTIONAL_AGREEMENT = "PT01"
+    TIMING_ALIGNMENT = "PT02"
+    TRADE_COUNT_DRIFT = "PT03"
+    FILL_SENSITIVITY = "PT04"
+    COST_SENSITIVITY = "PT05"
+    TURNOVER_DRIFT = "PT06"
+    AFTER_COST_DEGRADATION = "PT07"
+
+
+@dataclass(frozen=True)
+class PortabilityDimensionResult:
+    """Structured result for one portability-certification dimension."""
+
+    dimension_id: str
+    dimension_name: str
+    passed: bool
+    reason_code: str
+    diagnostic: str
+    measured_value: dict[str, Any]
+    threshold: dict[str, Any]
+    data_source_reference: str
+    timestamp: str = field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+
+@dataclass(frozen=True)
+class ExecutionSymbolCertificationReport:
+    """Portability and native-validation gate before finalist promotion."""
+
+    research_symbol: str
+    execution_symbol: str
+    finalist_id: str
+    execution_symbol_viability_report_id: str
+    execution_symbol_viability_passed: bool
+    portability_study_required: bool
+    portability_study_completed: bool
+    portability_study_id: str | None
+    portability_certified: bool
+    portability_dimensions: list[dict[str, Any]]
+    portability_passed_count: int
+    portability_failed_count: int
+    sufficient_native_1oz_history_exists: bool
+    native_1oz_validation_required: bool
+    native_1oz_validation_completed: bool
+    native_1oz_validation_study_id: str | None
+    native_1oz_validation_passed: bool
+    promotable_finalist_allowed: bool
+    outcome_recommendation: str
+    rationale: str
+    reason_code: str
+    timestamp: str = field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+
 def check_quote_print_presence_by_session_class(
     *,
     session_class: str,
@@ -778,6 +850,294 @@ def _determine_screen_failure_outcome(
     if failed_ids & fundamental:
         return GateOutcome.PIVOT.value
     return GateOutcome.NARROW.value
+
+
+def check_directional_agreement(
+    *,
+    directional_agreement_ratio: float,
+    min_directional_agreement_ratio: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT01: Directional agreement between research and execution symbols."""
+
+    passed = directional_agreement_ratio >= min_directional_agreement_ratio
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.DIRECTIONAL_AGREEMENT.value,
+        dimension_name="directional_agreement",
+        passed=passed,
+        reason_code="PORTABILITY_PT01_DIRECTIONAL_AGREEMENT",
+        diagnostic=(
+            "Directional agreement satisfies portability policy"
+            if passed
+            else "Directional agreement falls below portability policy threshold"
+        ),
+        measured_value={"directional_agreement_ratio": directional_agreement_ratio},
+        threshold={"min_directional_agreement_ratio": min_directional_agreement_ratio},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_event_timing_alignment(
+    *,
+    median_timing_delta_seconds: float,
+    max_median_timing_delta_seconds: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT02: Event timing alignment between research and execution symbols."""
+
+    passed = median_timing_delta_seconds <= max_median_timing_delta_seconds
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.TIMING_ALIGNMENT.value,
+        dimension_name="event_timing_alignment",
+        passed=passed,
+        reason_code="PORTABILITY_PT02_EVENT_TIMING_ALIGNMENT",
+        diagnostic=(
+            "Event timing alignment remains within portability tolerance"
+            if passed
+            else "Event timing drift exceeds portability tolerance"
+        ),
+        measured_value={"median_timing_delta_seconds": median_timing_delta_seconds},
+        threshold={"max_median_timing_delta_seconds": max_median_timing_delta_seconds},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_trade_count_drift(
+    *,
+    trade_count_drift_ratio: float,
+    max_trade_count_drift_ratio: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT03: Trade-count drift under the execution symbol."""
+
+    passed = trade_count_drift_ratio <= max_trade_count_drift_ratio
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.TRADE_COUNT_DRIFT.value,
+        dimension_name="trade_count_drift",
+        passed=passed,
+        reason_code="PORTABILITY_PT03_TRADE_COUNT_DRIFT",
+        diagnostic=(
+            "Trade-count drift is acceptable for portability"
+            if passed
+            else "Trade-count drift is too large for portability certification"
+        ),
+        measured_value={"trade_count_drift_ratio": trade_count_drift_ratio},
+        threshold={"max_trade_count_drift_ratio": max_trade_count_drift_ratio},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_fill_sensitivity(
+    *,
+    fill_sensitivity_bps: float,
+    max_fill_sensitivity_bps: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT04: Fill-sensitivity drift under the execution symbol."""
+
+    passed = fill_sensitivity_bps <= max_fill_sensitivity_bps
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.FILL_SENSITIVITY.value,
+        dimension_name="fill_sensitivity",
+        passed=passed,
+        reason_code="PORTABILITY_PT04_FILL_SENSITIVITY",
+        diagnostic=(
+            "Fill sensitivity stays within the allowed portability envelope"
+            if passed
+            else "Fill sensitivity exceeds the allowed portability envelope"
+        ),
+        measured_value={"fill_sensitivity_bps": fill_sensitivity_bps},
+        threshold={"max_fill_sensitivity_bps": max_fill_sensitivity_bps},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_cost_sensitivity(
+    *,
+    cost_sensitivity_bps: float,
+    max_cost_sensitivity_bps: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT05: Cost-sensitivity drift under the execution symbol."""
+
+    passed = cost_sensitivity_bps <= max_cost_sensitivity_bps
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.COST_SENSITIVITY.value,
+        dimension_name="cost_sensitivity",
+        passed=passed,
+        reason_code="PORTABILITY_PT05_COST_SENSITIVITY",
+        diagnostic=(
+            "Cost sensitivity stays within the allowed portability envelope"
+            if passed
+            else "Cost sensitivity exceeds the portability envelope"
+        ),
+        measured_value={"cost_sensitivity_bps": cost_sensitivity_bps},
+        threshold={"max_cost_sensitivity_bps": max_cost_sensitivity_bps},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_turnover_drift(
+    *,
+    turnover_drift_ratio: float,
+    max_turnover_drift_ratio: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT06: Turnover drift under the execution symbol."""
+
+    passed = turnover_drift_ratio <= max_turnover_drift_ratio
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.TURNOVER_DRIFT.value,
+        dimension_name="turnover_drift",
+        passed=passed,
+        reason_code="PORTABILITY_PT06_TURNOVER_DRIFT",
+        diagnostic=(
+            "Turnover drift stays within the allowed portability envelope"
+            if passed
+            else "Turnover drift exceeds the portability envelope"
+        ),
+        measured_value={"turnover_drift_ratio": turnover_drift_ratio},
+        threshold={"max_turnover_drift_ratio": max_turnover_drift_ratio},
+        data_source_reference=data_source_reference,
+    )
+
+
+def check_after_cost_degradation(
+    *,
+    after_cost_degradation_bps: float,
+    max_after_cost_degradation_bps: float,
+    data_source_reference: str,
+) -> PortabilityDimensionResult:
+    """PT07: After-cost performance degradation under the execution symbol."""
+
+    passed = after_cost_degradation_bps <= max_after_cost_degradation_bps
+    return PortabilityDimensionResult(
+        dimension_id=PortabilityDimensionID.AFTER_COST_DEGRADATION.value,
+        dimension_name="after_cost_degradation",
+        passed=passed,
+        reason_code="PORTABILITY_PT07_AFTER_COST_DEGRADATION",
+        diagnostic=(
+            "After-cost degradation remains within portability policy"
+            if passed
+            else "After-cost degradation exceeds portability policy"
+        ),
+        measured_value={"after_cost_degradation_bps": after_cost_degradation_bps},
+        threshold={"max_after_cost_degradation_bps": max_after_cost_degradation_bps},
+        data_source_reference=data_source_reference,
+    )
+
+
+def evaluate_portability_and_native_validation(
+    *,
+    research_symbol: str,
+    execution_symbol: str,
+    finalist_id: str,
+    execution_symbol_viability_report_id: str,
+    execution_symbol_viability_passed: bool,
+    portability_study_id: str | None,
+    portability_dimensions: list[PortabilityDimensionResult],
+    sufficient_native_1oz_history_exists: bool,
+    native_1oz_validation_study_id: str | None,
+    native_1oz_validation_passed: bool | None,
+) -> ExecutionSymbolCertificationReport:
+    """Gate finalist promotion on portability certification and native 1OZ validation."""
+
+    portability_study_required = research_symbol != execution_symbol
+    portability_study_completed = bool(portability_study_id) and bool(portability_dimensions)
+    portability_passed_count = sum(1 for dimension in portability_dimensions if dimension.passed)
+    portability_failed_count = len(portability_dimensions) - portability_passed_count
+    portability_certified = (
+        not portability_study_required
+        or (portability_study_completed and portability_failed_count == 0)
+    )
+
+    native_1oz_validation_required = (
+        execution_symbol == "1OZ" and sufficient_native_1oz_history_exists
+    )
+    native_1oz_validation_completed = (
+        bool(native_1oz_validation_study_id) and native_1oz_validation_passed is not None
+    )
+    native_validation_passed = (
+        not native_1oz_validation_required
+        or (
+            native_1oz_validation_completed
+            and bool(native_1oz_validation_passed)
+        )
+    )
+
+    promotable_finalist_allowed = (
+        execution_symbol_viability_passed and portability_certified and native_validation_passed
+    )
+
+    if not execution_symbol_viability_passed:
+        outcome_recommendation = GateOutcome.TERMINATE.value
+        reason_code = "EXECUTION_SYMBOL_VIABILITY_REQUIRED_BEFORE_FINALIST"
+        rationale = (
+            "Families that fail the earlier execution-symbol-first viability screen must not be "
+            "carried into finalist status."
+        )
+    elif portability_study_required and not portability_study_completed:
+        outcome_recommendation = GateOutcome.NARROW.value
+        reason_code = "PORTABILITY_STUDY_REQUIRED"
+        rationale = (
+            "Research and execution symbols differ, so a formal portability study must be "
+            "completed before finalist promotion."
+        )
+    elif portability_study_required and not portability_certified:
+        failed_dimensions = [
+            dimension.dimension_name for dimension in portability_dimensions if not dimension.passed
+        ]
+        outcome_recommendation = GateOutcome.PIVOT.value
+        reason_code = "PORTABILITY_CERTIFICATION_FAILED"
+        rationale = (
+            "Portability certification failed for the research-to-execution symbol mapping. "
+            f"Failed dimensions: {failed_dimensions or ['none']}."
+        )
+    elif native_1oz_validation_required and not native_1oz_validation_completed:
+        outcome_recommendation = GateOutcome.NARROW.value
+        reason_code = "NATIVE_1OZ_VALIDATION_REQUIRED"
+        rationale = (
+            "Sufficient native 1OZ history exists, so finalists must complete native 1OZ "
+            "validation instead of relying only on portability inference."
+        )
+    elif native_1oz_validation_required and not native_validation_passed:
+        outcome_recommendation = GateOutcome.TERMINATE.value
+        reason_code = "NATIVE_1OZ_VALIDATION_FAILED"
+        rationale = (
+            "Native 1OZ validation was completed and failed, so the finalist is not promotable "
+            "on the execution symbol."
+        )
+    else:
+        outcome_recommendation = GateOutcome.CONTINUE.value
+        reason_code = "EXECUTION_SYMBOL_CERTIFICATION_PASSED"
+        rationale = (
+            "Execution-symbol viability, portability certification, and native 1OZ validation "
+            "all satisfy finalist-promotion policy."
+        )
+
+    return ExecutionSymbolCertificationReport(
+        research_symbol=research_symbol,
+        execution_symbol=execution_symbol,
+        finalist_id=finalist_id,
+        execution_symbol_viability_report_id=execution_symbol_viability_report_id,
+        execution_symbol_viability_passed=execution_symbol_viability_passed,
+        portability_study_required=portability_study_required,
+        portability_study_completed=portability_study_completed,
+        portability_study_id=portability_study_id,
+        portability_certified=portability_certified,
+        portability_dimensions=[dimension.to_dict() for dimension in portability_dimensions],
+        portability_passed_count=portability_passed_count,
+        portability_failed_count=portability_failed_count,
+        sufficient_native_1oz_history_exists=sufficient_native_1oz_history_exists,
+        native_1oz_validation_required=native_1oz_validation_required,
+        native_1oz_validation_completed=native_1oz_validation_completed,
+        native_1oz_validation_study_id=native_1oz_validation_study_id,
+        native_1oz_validation_passed=native_validation_passed,
+        promotable_finalist_allowed=promotable_finalist_allowed,
+        outcome_recommendation=outcome_recommendation,
+        rationale=rationale,
+        reason_code=reason_code,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -5,17 +5,25 @@ from pathlib import Path
 
 from shared.policy.viability_gate import (
     GateOutcome,
+    check_after_cost_degradation,
     check_bar_sufficiency,
+    check_cost_sensitivity,
+    check_directional_agreement,
+    check_event_timing_alignment,
     check_fee_and_slippage_feasibility,
+    check_fill_sensitivity,
     check_holding_period_compatibility,
     check_passive_assumption_credibility,
     check_quote_print_presence_by_session_class,
     check_session_conditioned_liquidity,
     check_slippage_realism,
     check_spread_and_bar_completeness,
+    check_trade_count_drift,
     check_tradable_session_coverage,
+    check_turnover_drift,
     evaluate_fidelity_calibration,
     evaluate_execution_symbol_first_viability_screen,
+    evaluate_portability_and_native_validation,
 )
 
 
@@ -36,6 +44,11 @@ def load_cases() -> list[dict[str, object]]:
 def load_fidelity_cases() -> list[dict[str, object]]:
     with FIXTURE_PATH.open("r", encoding="utf-8") as fixture_file:
         return json.load(fixture_file)["fidelity_calibration_cases"]
+
+
+def load_portability_cases() -> list[dict[str, object]]:
+    with FIXTURE_PATH.open("r", encoding="utf-8") as fixture_file:
+        return json.load(fixture_file)["portability_and_native_validation_cases"]
 
 
 def build_dimension(payload: dict[str, object]):
@@ -66,6 +79,26 @@ def build_fidelity_dimension(payload: dict[str, object]):
     if kind == "session_conditioned_liquidity":
         return check_session_conditioned_liquidity(**kwargs)
     raise AssertionError(f"Unknown fidelity dimension kind: {kind}")
+
+
+def build_portability_dimension(payload: dict[str, object]):
+    kind = payload["kind"]
+    kwargs = {key: value for key, value in payload.items() if key != "kind"}
+    if kind == "directional_agreement":
+        return check_directional_agreement(**kwargs)
+    if kind == "event_timing_alignment":
+        return check_event_timing_alignment(**kwargs)
+    if kind == "trade_count_drift":
+        return check_trade_count_drift(**kwargs)
+    if kind == "fill_sensitivity":
+        return check_fill_sensitivity(**kwargs)
+    if kind == "cost_sensitivity":
+        return check_cost_sensitivity(**kwargs)
+    if kind == "turnover_drift":
+        return check_turnover_drift(**kwargs)
+    if kind == "after_cost_degradation":
+        return check_after_cost_degradation(**kwargs)
+    raise AssertionError(f"Unknown portability dimension kind: {kind}")
 
 
 class ExecutionSymbolDimensionTests(unittest.TestCase):
@@ -140,6 +173,31 @@ class ExecutionSymbolDimensionTests(unittest.TestCase):
         self.assertFalse(result.passed)
         self.assertEqual(120, result.measured_value["intended_holding_period_minutes"])
         self.assertEqual(120, result.threshold["min_liquidity_supported_holding_period_minutes"])
+
+
+class PortabilityDimensionTests(unittest.TestCase):
+    def test_directional_agreement_emits_structured_thresholds(self) -> None:
+        result = check_directional_agreement(
+            directional_agreement_ratio=0.88,
+            min_directional_agreement_ratio=0.90,
+            data_source_reference="portability_directional_gold_v1",
+        )
+
+        self.assertFalse(result.passed)
+        self.assertEqual("PORTABILITY_PT01_DIRECTIONAL_AGREEMENT", result.reason_code)
+        self.assertEqual(0.88, result.measured_value["directional_agreement_ratio"])
+        self.assertEqual(0.90, result.threshold["min_directional_agreement_ratio"])
+
+    def test_after_cost_degradation_reports_policy_thresholds(self) -> None:
+        result = check_after_cost_degradation(
+            after_cost_degradation_bps=18.0,
+            max_after_cost_degradation_bps=15.0,
+            data_source_reference="portability_after_cost_gold_v1",
+        )
+
+        self.assertFalse(result.passed)
+        self.assertEqual(18.0, result.measured_value["after_cost_degradation_bps"])
+        self.assertEqual(15.0, result.threshold["max_after_cost_degradation_bps"])
 
 
 class ExecutionSymbolViabilityReportTests(unittest.TestCase):
@@ -228,6 +286,114 @@ class ExecutionSymbolViabilityReportTests(unittest.TestCase):
                     "threshold",
                     "data_source_reference",
                     "session_class",
+                }.issubset(dimension.keys())
+            )
+
+
+class ExecutionSymbolCertificationReportTests(unittest.TestCase):
+    def test_fixture_cases_match_expected_finalist_gate(self) -> None:
+        for payload in load_portability_cases():
+            with self.subTest(case_id=payload["case_id"]):
+                dimensions = [
+                    build_portability_dimension(item)
+                    for item in payload["portability_dimensions"]
+                ]
+                report = evaluate_portability_and_native_validation(
+                    research_symbol=payload["research_symbol"],
+                    execution_symbol=payload["execution_symbol"],
+                    finalist_id=payload["finalist_id"],
+                    execution_symbol_viability_report_id=payload[
+                        "execution_symbol_viability_report_id"
+                    ],
+                    execution_symbol_viability_passed=payload[
+                        "execution_symbol_viability_passed"
+                    ],
+                    portability_study_id=payload["portability_study_id"],
+                    portability_dimensions=dimensions,
+                    sufficient_native_1oz_history_exists=payload[
+                        "sufficient_native_1oz_history_exists"
+                    ],
+                    native_1oz_validation_study_id=payload[
+                        "native_1oz_validation_study_id"
+                    ],
+                    native_1oz_validation_passed=payload[
+                        "native_1oz_validation_passed"
+                    ],
+                )
+                expected = payload["expected"]
+                self.assertEqual(
+                    expected["promotable_finalist_allowed"],
+                    report.promotable_finalist_allowed,
+                )
+                self.assertEqual(expected["reason_code"], report.reason_code)
+                self.assertEqual(
+                    expected["outcome_recommendation"],
+                    report.outcome_recommendation,
+                )
+                self.assertEqual(
+                    expected["portability_study_required"],
+                    report.portability_study_required,
+                )
+                self.assertEqual(
+                    expected["native_1oz_validation_required"],
+                    report.native_1oz_validation_required,
+                )
+
+    def test_failed_viability_screen_blocks_finalist_promotion(self) -> None:
+        case = load_portability_cases()[0]
+        dimensions = [
+            build_portability_dimension(item)
+            for item in case["portability_dimensions"]
+        ]
+        report = evaluate_portability_and_native_validation(
+            research_symbol=case["research_symbol"],
+            execution_symbol=case["execution_symbol"],
+            finalist_id=case["finalist_id"],
+            execution_symbol_viability_report_id=case["execution_symbol_viability_report_id"],
+            execution_symbol_viability_passed=False,
+            portability_study_id=case["portability_study_id"],
+            portability_dimensions=dimensions,
+            sufficient_native_1oz_history_exists=case["sufficient_native_1oz_history_exists"],
+            native_1oz_validation_study_id=case["native_1oz_validation_study_id"],
+            native_1oz_validation_passed=case["native_1oz_validation_passed"],
+        )
+
+        self.assertFalse(report.promotable_finalist_allowed)
+        self.assertEqual(GateOutcome.TERMINATE.value, report.outcome_recommendation)
+        self.assertIn("must not be carried", report.rationale)
+
+    def test_portability_dimensions_are_operator_readable(self) -> None:
+        case = load_portability_cases()[0]
+        dimensions = [
+            build_portability_dimension(item)
+            for item in case["portability_dimensions"]
+        ]
+        report = evaluate_portability_and_native_validation(
+            research_symbol=case["research_symbol"],
+            execution_symbol=case["execution_symbol"],
+            finalist_id=case["finalist_id"],
+            execution_symbol_viability_report_id=case["execution_symbol_viability_report_id"],
+            execution_symbol_viability_passed=case["execution_symbol_viability_passed"],
+            portability_study_id=case["portability_study_id"],
+            portability_dimensions=dimensions,
+            sufficient_native_1oz_history_exists=case["sufficient_native_1oz_history_exists"],
+            native_1oz_validation_study_id=case["native_1oz_validation_study_id"],
+            native_1oz_validation_passed=case["native_1oz_validation_passed"],
+        )
+        payload = report.to_dict()
+
+        self.assertEqual(7, len(payload["portability_dimensions"]))
+        for dimension in payload["portability_dimensions"]:
+            self.assertTrue(
+                {
+                    "dimension_id",
+                    "dimension_name",
+                    "passed",
+                    "reason_code",
+                    "diagnostic",
+                    "measured_value",
+                    "threshold",
+                    "data_source_reference",
                 }.issubset(dimension.keys())
             )
 

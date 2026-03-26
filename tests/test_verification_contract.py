@@ -457,6 +457,47 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
 
+    def test_bead_51_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.5.1" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "strategy_contracts_and_canonical_signal_kernel",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_5", "phase_6"), matching[0].phase_gates)
+
+    def test_bead_51_profile_declares_contract_and_equivalence_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "strategy_contracts_and_canonical_signal_kernel"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.PARITY_CERTIFICATION,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.REPRODUCIBILITY_STAMPS,
+            profile.retained_artifacts,
+        )
+
     def test_bead_82_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile

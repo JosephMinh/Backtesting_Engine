@@ -248,5 +248,153 @@
         ]
       }
     }
+  ],
+  "portability_and_native_validation_cases": [
+    {
+      "case_id": "mgc_to_oneoz_certified_finalist",
+      "research_symbol": "MGC",
+      "execution_symbol": "1OZ",
+      "finalist_id": "finalist-001",
+      "execution_symbol_viability_report_id": "viability-report-001",
+      "execution_symbol_viability_passed": true,
+      "portability_study_id": "portability-study-001",
+      "portability_dimensions": [
+        {
+          "kind": "directional_agreement",
+          "directional_agreement_ratio": 0.94,
+          "min_directional_agreement_ratio": 0.9,
+          "data_source_reference": "portability_directional_gold_v1"
+        },
+        {
+          "kind": "event_timing_alignment",
+          "median_timing_delta_seconds": 7.0,
+          "max_median_timing_delta_seconds": 15.0,
+          "data_source_reference": "portability_timing_gold_v1"
+        },
+        {
+          "kind": "trade_count_drift",
+          "trade_count_drift_ratio": 0.08,
+          "max_trade_count_drift_ratio": 0.12,
+          "data_source_reference": "portability_trade_count_gold_v1"
+        },
+        {
+          "kind": "fill_sensitivity",
+          "fill_sensitivity_bps": 3.0,
+          "max_fill_sensitivity_bps": 5.0,
+          "data_source_reference": "portability_fill_gold_v1"
+        },
+        {
+          "kind": "cost_sensitivity",
+          "cost_sensitivity_bps": 4.0,
+          "max_cost_sensitivity_bps": 6.0,
+          "data_source_reference": "portability_cost_gold_v1"
+        },
+        {
+          "kind": "turnover_drift",
+          "turnover_drift_ratio": 0.06,
+          "max_turnover_drift_ratio": 0.1,
+          "data_source_reference": "portability_turnover_gold_v1"
+        },
+        {
+          "kind": "after_cost_degradation",
+          "after_cost_degradation_bps": 9.0,
+          "max_after_cost_degradation_bps": 12.0,
+          "data_source_reference": "portability_after_cost_gold_v1"
+        }
+      ],
+      "sufficient_native_1oz_history_exists": true,
+      "native_1oz_validation_study_id": "native-1oz-validation-001",
+      "native_1oz_validation_passed": true,
+      "expected": {
+        "promotable_finalist_allowed": true,
+        "reason_code": "EXECUTION_SYMBOL_CERTIFICATION_PASSED",
+        "outcome_recommendation": "continue",
+        "portability_study_required": true,
+        "native_1oz_validation_required": true
+      }
+    },
+    {
+      "case_id": "mgc_to_oneoz_portability_failure",
+      "research_symbol": "MGC",
+      "execution_symbol": "1OZ",
+      "finalist_id": "finalist-002",
+      "execution_symbol_viability_report_id": "viability-report-002",
+      "execution_symbol_viability_passed": true,
+      "portability_study_id": "portability-study-002",
+      "portability_dimensions": [
+        {
+          "kind": "directional_agreement",
+          "directional_agreement_ratio": 0.93,
+          "min_directional_agreement_ratio": 0.9,
+          "data_source_reference": "portability_directional_gold_v2"
+        },
+        {
+          "kind": "event_timing_alignment",
+          "median_timing_delta_seconds": 8.0,
+          "max_median_timing_delta_seconds": 15.0,
+          "data_source_reference": "portability_timing_gold_v2"
+        },
+        {
+          "kind": "trade_count_drift",
+          "trade_count_drift_ratio": 0.09,
+          "max_trade_count_drift_ratio": 0.12,
+          "data_source_reference": "portability_trade_count_gold_v2"
+        },
+        {
+          "kind": "fill_sensitivity",
+          "fill_sensitivity_bps": 4.0,
+          "max_fill_sensitivity_bps": 5.0,
+          "data_source_reference": "portability_fill_gold_v2"
+        },
+        {
+          "kind": "cost_sensitivity",
+          "cost_sensitivity_bps": 4.5,
+          "max_cost_sensitivity_bps": 6.0,
+          "data_source_reference": "portability_cost_gold_v2"
+        },
+        {
+          "kind": "turnover_drift",
+          "turnover_drift_ratio": 0.08,
+          "max_turnover_drift_ratio": 0.1,
+          "data_source_reference": "portability_turnover_gold_v2"
+        },
+        {
+          "kind": "after_cost_degradation",
+          "after_cost_degradation_bps": 18.0,
+          "max_after_cost_degradation_bps": 12.0,
+          "data_source_reference": "portability_after_cost_gold_v2"
+        }
+      ],
+      "sufficient_native_1oz_history_exists": false,
+      "native_1oz_validation_study_id": null,
+      "native_1oz_validation_passed": null,
+      "expected": {
+        "promotable_finalist_allowed": false,
+        "reason_code": "PORTABILITY_CERTIFICATION_FAILED",
+        "outcome_recommendation": "pivot",
+        "portability_study_required": true,
+        "native_1oz_validation_required": false
+      }
+    },
+    {
+      "case_id": "oneoz_native_validation_missing",
+      "research_symbol": "1OZ",
+      "execution_symbol": "1OZ",
+      "finalist_id": "finalist-003",
+      "execution_symbol_viability_report_id": "viability-report-003",
+      "execution_symbol_viability_passed": true,
+      "portability_study_id": null,
+      "portability_dimensions": [],
+      "sufficient_native_1oz_history_exists": true,
+      "native_1oz_validation_study_id": null,
+      "native_1oz_validation_passed": null,
+      "expected": {
+        "promotable_finalist_allowed": false,
+        "reason_code": "NATIVE_1OZ_VALIDATION_REQUIRED",
+        "outcome_recommendation": "narrow",
+        "portability_study_required": false,
+        "native_1oz_validation_required": true
+      }
+    }
   ]
 }
