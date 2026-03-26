@@ -212,6 +212,34 @@ class VerificationContractTest(unittest.TestCase):
         self.assertIn(ArtifactRequirement.OPERATOR_REASON_BUNDLES, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS, profile.retained_artifacts)
 
+    def test_bead_310_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.3.10" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("data_reference_and_release_pipeline", matching[0].surface_id)
+        self.assertEqual(("phase_1", "phase_2"), matching[0].phase_gates)
+
+    def test_bead_310_profile_keeps_fixture_and_explainability_requirements(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "data_reference_and_release_pipeline"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertIn(VerificationClass.PARITY_CERTIFICATION, profile.golden_path)
+        self.assertIn(ArtifactRequirement.DECISION_TRACES, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+
 
 if __name__ == "__main__":
     unittest.main()

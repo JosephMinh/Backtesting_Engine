@@ -193,6 +193,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
             "backtesting_engine-ltc.3.4",
             "backtesting_engine-ltc.3.8",
             "backtesting_engine-ltc.3.9",
+            "backtesting_engine-ltc.3.10",
         ),
         phase_gates=("phase_1", "phase_2"),
         fixture_sources=(

@@ -1,0 +1,220 @@
+{
+  "feature_gate_cases": [
+    {
+      "case_id": "allow_live_bar_close_feature_block",
+      "surface_name": "live_activation",
+      "decision_latency_class": "bar_close",
+      "bound_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "feature_contracts": [
+        {
+          "feature_block_id": "bar_close_signal_block_v1",
+          "source_artifact_ids": [
+            "analytic_release_gold_core_v1",
+            "dataset_release_gold_2026q1_v1"
+          ],
+          "source_fields": [
+            "close",
+            "volume"
+          ],
+          "value_timestamp_rule": "derived_from_bar_close_timestamp",
+          "available_at_rule": "available_immediately_after_bar_close",
+          "requires_bar_close": true,
+          "requires_session_close": false,
+          "decision_latency_class": "bar_close",
+          "fallback_behavior": "block_surface",
+          "compatible_data_profile_release_ids": [
+            "ibkr_1oz_comex_bars_1m_v1"
+          ],
+          "feature_contract_hash": "sha256:barclose001"
+        }
+      ],
+      "expected_status": "pass",
+      "expected_reason_code": "FEATURE_GATE_ALL_CONTRACTS_COMPATIBLE",
+      "expected_accepted_feature_block_ids": [
+        "bar_close_signal_block_v1"
+      ],
+      "expected_rejected_feature_block_ids": []
+    },
+    {
+      "case_id": "reject_session_close_feature_for_bar_close_surface",
+      "surface_name": "paper_activation",
+      "decision_latency_class": "bar_close",
+      "bound_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "feature_contracts": [
+        {
+          "feature_block_id": "session_close_regime_block_v1",
+          "source_artifact_ids": [
+            "analytic_release_gold_regime_v1",
+            "dataset_release_gold_2026q1_v1"
+          ],
+          "source_fields": [
+            "session_close",
+            "settlement_reference"
+          ],
+          "value_timestamp_rule": "derived_from_session_close_timestamp",
+          "available_at_rule": "available_after_session_close_review",
+          "requires_bar_close": true,
+          "requires_session_close": true,
+          "decision_latency_class": "session_close",
+          "fallback_behavior": "skip_feature_block",
+          "compatible_data_profile_release_ids": [
+            "ibkr_1oz_comex_bars_1m_v1"
+          ],
+          "feature_contract_hash": "sha256:sessionclose001"
+        }
+      ],
+      "expected_status": "incompatible",
+      "expected_reason_code": "FEATURE_GATE_DECISION_TIMING_INCOMPATIBLE",
+      "expected_accepted_feature_block_ids": [],
+      "expected_rejected_feature_block_ids": [
+        "session_close_regime_block_v1"
+      ]
+    },
+    {
+      "case_id": "reject_data_profile_mismatch_with_partial_acceptance",
+      "surface_name": "replay_certification",
+      "decision_latency_class": "session_close",
+      "bound_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+      "feature_contracts": [
+        {
+          "feature_block_id": "core_replay_feature_block_v1",
+          "source_artifact_ids": [
+            "analytic_release_gold_core_v1"
+          ],
+          "source_fields": [
+            "close",
+            "range"
+          ],
+          "value_timestamp_rule": "derived_from_bar_close_timestamp",
+          "available_at_rule": "available_immediately_after_bar_close",
+          "requires_bar_close": true,
+          "requires_session_close": false,
+          "decision_latency_class": "bar_close",
+          "fallback_behavior": "block_surface",
+          "compatible_data_profile_release_ids": [
+            "ibkr_1oz_comex_bars_1m_v1"
+          ],
+          "feature_contract_hash": "sha256:core-replay-001"
+        },
+        {
+          "feature_block_id": "databento_only_feature_block_v1",
+          "source_artifact_ids": [
+            "analytic_release_gold_crossvenue_v1"
+          ],
+          "source_fields": [
+            "trade_price",
+            "quote_spread"
+          ],
+          "value_timestamp_rule": "derived_from_vendor_trade_then_quote_merge",
+          "available_at_rule": "available_immediately_after_bar_close",
+          "requires_bar_close": true,
+          "requires_session_close": false,
+          "decision_latency_class": "bar_close",
+          "fallback_behavior": "skip_feature_block",
+          "compatible_data_profile_release_ids": [
+            "databento_mgc_comex_trades_1m_v1"
+          ],
+          "feature_contract_hash": "sha256:databento-only-001"
+        }
+      ],
+      "expected_status": "incompatible",
+      "expected_reason_code": "FEATURE_GATE_DATA_PROFILE_INCOMPATIBLE",
+      "expected_accepted_feature_block_ids": [
+        "core_replay_feature_block_v1"
+      ],
+      "expected_rejected_feature_block_ids": [
+        "databento_only_feature_block_v1"
+      ]
+    }
+  ],
+  "roll_policy_cases": [
+    {
+      "case_id": "allow_live_reviewed_roll_to_next_segment",
+      "surface_name": "live",
+      "product_profile_id": "mgc_comex_v1",
+      "resolved_context_bundle_id": "resolved_context_bundle_mgc_rolls_v1",
+      "roll_map_id": "roll_map_mgc_v1",
+      "roll_calendar_source": "resolved_context_bundle_roll_windows",
+      "contract_series_mode": "actual_segments",
+      "continuous_series_usage": "none",
+      "selected_contract_segment_id": "MGCM6",
+      "next_contract_segment_id": "MGCQ6",
+      "active_contract_is_point_in_time": true,
+      "active_contract_is_delivery_aware": true,
+      "delivery_fence_enforced": true,
+      "delivery_window_active": true,
+      "reviewed_roll_approved": true,
+      "backtest_evaluation_mode": "segment_based",
+      "expected_status": "pass",
+      "expected_reason_code": "ROLL_POLICY_ALLOWED",
+      "expected_transition_action": "roll_to_next_segment",
+      "expected_blocked_by_delivery_fence": false
+    },
+    {
+      "case_id": "block_live_surface_at_delivery_fence_without_review",
+      "surface_name": "live",
+      "product_profile_id": "mgc_comex_v1",
+      "resolved_context_bundle_id": "resolved_context_bundle_mgc_rolls_v1",
+      "roll_map_id": "roll_map_mgc_v1",
+      "roll_calendar_source": "resolved_context_bundle_roll_windows",
+      "contract_series_mode": "actual_segments",
+      "continuous_series_usage": "none",
+      "selected_contract_segment_id": "MGCM6",
+      "next_contract_segment_id": "MGCQ6",
+      "active_contract_is_point_in_time": true,
+      "active_contract_is_delivery_aware": true,
+      "delivery_fence_enforced": true,
+      "delivery_window_active": true,
+      "reviewed_roll_approved": false,
+      "backtest_evaluation_mode": "segment_based",
+      "expected_status": "violation",
+      "expected_reason_code": "ROLL_POLICY_DELIVERY_FENCE_BLOCKED",
+      "expected_transition_action": "blocked_by_delivery_fence",
+      "expected_blocked_by_delivery_fence": true
+    },
+    {
+      "case_id": "reject_backtest_continuous_series_shortcut",
+      "surface_name": "backtest",
+      "product_profile_id": "oneoz_comex_v1",
+      "resolved_context_bundle_id": "resolved_context_bundle_oneoz_rolls_v1",
+      "roll_map_id": "roll_map_oneoz_v1",
+      "roll_calendar_source": "resolved_context_bundle_roll_windows",
+      "contract_series_mode": "continuous_series",
+      "continuous_series_usage": "analytics_only",
+      "selected_contract_segment_id": "1OZK6",
+      "next_contract_segment_id": "1OZN6",
+      "active_contract_is_point_in_time": true,
+      "active_contract_is_delivery_aware": true,
+      "delivery_fence_enforced": true,
+      "delivery_window_active": false,
+      "reviewed_roll_approved": true,
+      "backtest_evaluation_mode": "continuous_series",
+      "expected_status": "violation",
+      "expected_reason_code": "ROLL_POLICY_CONTINUOUS_SERIES_EXECUTION_FORBIDDEN",
+      "expected_transition_action": "blocked_by_delivery_fence",
+      "expected_blocked_by_delivery_fence": false
+    },
+    {
+      "case_id": "allow_analytics_continuous_series_visualization",
+      "surface_name": "analytics",
+      "product_profile_id": "oneoz_comex_v1",
+      "resolved_context_bundle_id": "resolved_context_bundle_oneoz_rolls_v1",
+      "roll_map_id": "roll_map_oneoz_v1",
+      "roll_calendar_source": "resolved_context_bundle_roll_windows",
+      "contract_series_mode": "continuous_series",
+      "continuous_series_usage": "visualization_only",
+      "selected_contract_segment_id": "1OZK6",
+      "next_contract_segment_id": "1OZN6",
+      "active_contract_is_point_in_time": true,
+      "active_contract_is_delivery_aware": true,
+      "delivery_fence_enforced": true,
+      "delivery_window_active": false,
+      "reviewed_roll_approved": true,
+      "backtest_evaluation_mode": "segment_based",
+      "expected_status": "pass",
+      "expected_reason_code": "ROLL_POLICY_ALLOWED",
+      "expected_transition_action": "hold_current_segment",
+      "expected_blocked_by_delivery_fence": false
+    }
+  ]
+}
