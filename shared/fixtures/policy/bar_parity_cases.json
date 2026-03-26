@@ -1,0 +1,218 @@
+{
+  "bar_parity_cases": [
+    {
+      "case_id": "databento_ibkr_parity_pass",
+      "data_profile_release_id": "data_profile_gc_1m_v1",
+      "approved_bar_construction_semantics_id": "gc_1m_bar_rules_v1",
+      "research_feed": "Databento",
+      "live_feed": "IBKR",
+      "certified_at_utc": "2026-03-26T18:00:00+00:00",
+      "freshness_expires_at_utc": "2026-03-27T18:00:00+00:00",
+      "evaluation_time_utc": "2026-03-26T19:00:00+00:00",
+      "parity_expectations": [
+        "same_session_anchor_and_close_rule",
+        "same_ohlcv_construction",
+        "same_anchor_timing",
+        "same_event_window_labeling",
+        "same_bar_availability_timing"
+      ],
+      "mismatch_histogram_artifact_ids": [
+        "parity_hist_session_v1",
+        "parity_hist_ohlcv_v1"
+      ],
+      "sampled_drilldown_artifact_ids": [
+        "parity_drilldown_bar_001",
+        "parity_drilldown_bar_002"
+      ],
+      "dimensions": [
+        {
+          "kind": "session_boundaries",
+          "boundary_alignment_ratio": 1.0,
+          "min_boundary_alignment_ratio": 0.99,
+          "boundary_mismatch_count": 0,
+          "max_boundary_mismatch_count": 0,
+          "research_artifact_reference": "databento_session_windows_2026q1",
+          "live_artifact_reference": "ibkr_session_windows_2026q1"
+        },
+        {
+          "kind": "ohlcv_construction",
+          "ohlc_diff_ticks": 0,
+          "max_allowed_ohlc_diff_ticks": 1,
+          "volume_diff_ratio": 0.0,
+          "max_allowed_volume_diff_ratio": 0.01,
+          "research_artifact_reference": "databento_bars_gc_1m_2026q1",
+          "live_artifact_reference": "ibkr_bars_gc_1m_2026q1"
+        },
+        {
+          "kind": "anchor_timing",
+          "max_anchor_drift_seconds": 0.0,
+          "max_allowed_anchor_drift_seconds": 1.0,
+          "research_artifact_reference": "databento_anchor_gc_1m_2026q1",
+          "live_artifact_reference": "ibkr_anchor_gc_1m_2026q1"
+        },
+        {
+          "kind": "event_window_labeling",
+          "mislabeled_window_count": 0,
+          "max_allowed_mislabeled_window_count": 0,
+          "research_artifact_reference": "databento_event_windows_gc_1m_2026q1",
+          "live_artifact_reference": "ibkr_event_windows_gc_1m_2026q1"
+        },
+        {
+          "kind": "bar_availability_timing",
+          "max_availability_lag_seconds": 1.0,
+          "max_allowed_availability_lag_seconds": 3.0,
+          "research_artifact_reference": "databento_availability_gc_1m_2026q1",
+          "live_artifact_reference": "ibkr_availability_gc_1m_2026q1"
+        }
+      ],
+      "expected": {
+        "status": "pass",
+        "reason_code": "BAR_PARITY_CERTIFIED",
+        "parity_passed": true,
+        "freshness_valid": true
+      }
+    },
+    {
+      "case_id": "databento_ibkr_parity_drift",
+      "data_profile_release_id": "data_profile_gc_1m_v1",
+      "approved_bar_construction_semantics_id": "gc_1m_bar_rules_v1",
+      "research_feed": "Databento",
+      "live_feed": "IBKR",
+      "certified_at_utc": "2026-03-26T18:00:00+00:00",
+      "freshness_expires_at_utc": "2026-03-27T18:00:00+00:00",
+      "evaluation_time_utc": "2026-03-26T19:00:00+00:00",
+      "parity_expectations": [
+        "same_session_anchor_and_close_rule",
+        "same_ohlcv_construction",
+        "same_anchor_timing",
+        "same_event_window_labeling",
+        "same_bar_availability_timing"
+      ],
+      "mismatch_histogram_artifact_ids": [
+        "parity_hist_session_v2",
+        "parity_hist_ohlcv_v2"
+      ],
+      "sampled_drilldown_artifact_ids": [
+        "parity_drilldown_bar_101",
+        "parity_drilldown_bar_102"
+      ],
+      "dimensions": [
+        {
+          "kind": "session_boundaries",
+          "boundary_alignment_ratio": 0.96,
+          "min_boundary_alignment_ratio": 0.99,
+          "boundary_mismatch_count": 2,
+          "max_boundary_mismatch_count": 0,
+          "research_artifact_reference": "databento_session_windows_2026q2",
+          "live_artifact_reference": "ibkr_session_windows_2026q2"
+        },
+        {
+          "kind": "ohlcv_construction",
+          "ohlc_diff_ticks": 3,
+          "max_allowed_ohlc_diff_ticks": 1,
+          "volume_diff_ratio": 0.03,
+          "max_allowed_volume_diff_ratio": 0.01,
+          "research_artifact_reference": "databento_bars_gc_1m_2026q2",
+          "live_artifact_reference": "ibkr_bars_gc_1m_2026q2"
+        },
+        {
+          "kind": "anchor_timing",
+          "max_anchor_drift_seconds": 0.5,
+          "max_allowed_anchor_drift_seconds": 1.0,
+          "research_artifact_reference": "databento_anchor_gc_1m_2026q2",
+          "live_artifact_reference": "ibkr_anchor_gc_1m_2026q2"
+        },
+        {
+          "kind": "event_window_labeling",
+          "mislabeled_window_count": 1,
+          "max_allowed_mislabeled_window_count": 0,
+          "research_artifact_reference": "databento_event_windows_gc_1m_2026q2",
+          "live_artifact_reference": "ibkr_event_windows_gc_1m_2026q2"
+        },
+        {
+          "kind": "bar_availability_timing",
+          "max_availability_lag_seconds": 1.5,
+          "max_allowed_availability_lag_seconds": 3.0,
+          "research_artifact_reference": "databento_availability_gc_1m_2026q2",
+          "live_artifact_reference": "ibkr_availability_gc_1m_2026q2"
+        }
+      ],
+      "expected": {
+        "status": "violation",
+        "reason_code": "BAR_PARITY_DIMENSION_DRIFT",
+        "parity_passed": false,
+        "freshness_valid": true
+      }
+    },
+    {
+      "case_id": "databento_ibkr_parity_stale",
+      "data_profile_release_id": "data_profile_gc_1m_v1",
+      "approved_bar_construction_semantics_id": "gc_1m_bar_rules_v1",
+      "research_feed": "Databento",
+      "live_feed": "IBKR",
+      "certified_at_utc": "2026-03-20T18:00:00+00:00",
+      "freshness_expires_at_utc": "2026-03-21T18:00:00+00:00",
+      "evaluation_time_utc": "2026-03-26T19:00:00+00:00",
+      "parity_expectations": [
+        "same_session_anchor_and_close_rule",
+        "same_ohlcv_construction",
+        "same_anchor_timing",
+        "same_event_window_labeling",
+        "same_bar_availability_timing"
+      ],
+      "mismatch_histogram_artifact_ids": [
+        "parity_hist_session_v3"
+      ],
+      "sampled_drilldown_artifact_ids": [
+        "parity_drilldown_bar_201"
+      ],
+      "dimensions": [
+        {
+          "kind": "session_boundaries",
+          "boundary_alignment_ratio": 1.0,
+          "min_boundary_alignment_ratio": 0.99,
+          "boundary_mismatch_count": 0,
+          "max_boundary_mismatch_count": 0,
+          "research_artifact_reference": "databento_session_windows_2026q3",
+          "live_artifact_reference": "ibkr_session_windows_2026q3"
+        },
+        {
+          "kind": "ohlcv_construction",
+          "ohlc_diff_ticks": 0,
+          "max_allowed_ohlc_diff_ticks": 1,
+          "volume_diff_ratio": 0.0,
+          "max_allowed_volume_diff_ratio": 0.01,
+          "research_artifact_reference": "databento_bars_gc_1m_2026q3",
+          "live_artifact_reference": "ibkr_bars_gc_1m_2026q3"
+        },
+        {
+          "kind": "anchor_timing",
+          "max_anchor_drift_seconds": 0.0,
+          "max_allowed_anchor_drift_seconds": 1.0,
+          "research_artifact_reference": "databento_anchor_gc_1m_2026q3",
+          "live_artifact_reference": "ibkr_anchor_gc_1m_2026q3"
+        },
+        {
+          "kind": "event_window_labeling",
+          "mislabeled_window_count": 0,
+          "max_allowed_mislabeled_window_count": 0,
+          "research_artifact_reference": "databento_event_windows_gc_1m_2026q3",
+          "live_artifact_reference": "ibkr_event_windows_gc_1m_2026q3"
+        },
+        {
+          "kind": "bar_availability_timing",
+          "max_availability_lag_seconds": 1.0,
+          "max_allowed_availability_lag_seconds": 3.0,
+          "research_artifact_reference": "databento_availability_gc_1m_2026q3",
+          "live_artifact_reference": "ibkr_availability_gc_1m_2026q3"
+        }
+      ],
+      "expected": {
+        "status": "stale",
+        "reason_code": "BAR_PARITY_CERTIFICATION_STALE",
+        "parity_passed": false,
+        "freshness_valid": false
+      }
+    }
+  ]
+}

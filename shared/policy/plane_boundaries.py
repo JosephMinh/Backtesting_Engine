@@ -280,6 +280,36 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="databento_ibkr_bar_parity",
+        module="shared.policy.bar_parity",
+        source_path="shared/policy/bar_parity.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="6.8",
+        purpose=(
+            "Deterministic Databento-to-IBKR bar-parity certification across session, "
+            "OHLCV, anchor, event-window, and availability semantics"
+        ),
+    ),
+    SharedContractSurface(
+        surface_id="solo_governance_workflows",
+        module="shared.policy.solo_governance",
+        source_path="shared/policy/solo_governance.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="11.3-11.4",
+        purpose=(
+            "Time-separated self-attestation, explicit waiver expiry, and incident "
+            "corrective-action workflow contracts"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="verification_contract",
         module="shared.policy.verification_contract",
         source_path="shared/policy/verification_contract.py",

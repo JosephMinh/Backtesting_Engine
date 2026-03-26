@@ -18,14 +18,17 @@ import pytest
 
 from shared.policy.viability_gate import (
     GateOutcome,
-    LaneCheckID,
-    LaneCheckResult,
-    ViabilityGateReport,
+    check_bar_sufficiency,
     check_deterministic_bar_construction,
     check_end_to_end_dummy_flow,
     check_execution_symbol_tradability,
     check_market_data_entitlement,
     check_no_lane_blockers,
+    check_passive_assumption_credibility,
+    check_session_conditioned_liquidity,
+    check_slippage_realism,
+    evaluate_fidelity_calibration,
+    evaluate_lower_frequency_live_lane,
     evaluate_viability_gate,
 )
 
@@ -83,7 +86,7 @@ class TestMarketDataEntitlement:
             ibkr_setup_confirmed=True,
         )
         parsed = json.loads(r.to_json())
-        assert parsed["evidence"]["session_coverage_verified"] is False
+        assert not parsed["evidence"]["session_coverage_verified"]
 
 
 class TestDeterministicBarConstruction:
@@ -216,7 +219,7 @@ class TestViabilityGatePassing:
     def test_report_serializes_to_json(self):
         report = evaluate_viability_gate(**ALL_PASSING)
         parsed = json.loads(report.to_json())
-        assert parsed["gate_passed"] is True
+        assert parsed["gate_passed"]
         assert parsed["outcome"] == "continue"
         assert len(parsed["checks"]) == 5
 
@@ -339,3 +342,273 @@ class TestNoSilentContinuation:
         assert report.outcome != GateOutcome.CONTINUE.value
         assert report.reason_code == "VIABILITY_GATE_FAILED"
         assert report.failed_count >= 1
+
+
+# ---------------------------------------------------------------------------
+# Fidelity calibration and lower-frequency live lane
+# ---------------------------------------------------------------------------
+
+
+class TestFidelityCalibrationDimensions:
+    def test_bar_sufficiency_tracks_frequency_coverage_and_gaps(self):
+        result = check_bar_sufficiency(
+            session_class="rth",
+            decision_interval_seconds=60,
+            bar_coverage_ratio=0.99,
+            min_bar_coverage_ratio=0.97,
+            largest_gap_seconds=30,
+            max_allowed_gap_seconds=60,
+            data_source_reference="fidelity_bars_rth_2026q1",
+        )
+
+        assert result.passed
+        assert result.reason_code == "FIDELITY_FC01_BAR_SUFFICIENCY"
+        assert result.threshold["min_decision_interval_seconds"] == 60
+
+    def test_slippage_realism_rejects_unrealistic_cost_surface(self):
+        result = check_slippage_realism(
+            session_class="overnight",
+            estimated_round_trip_slippage_bps=42.0,
+            max_allowed_round_trip_slippage_bps=25.0,
+            estimated_round_trip_slippage_usd=8.0,
+            max_allowed_round_trip_slippage_usd=6.0,
+            data_source_reference="fidelity_cost_surface_overnight_v1",
+        )
+
+        assert not result.passed
+        assert "estimated_round_trip_slippage_bps" in result.diagnostic
+
+    def test_passive_assumption_credibility_reports_both_thresholds(self):
+        result = check_passive_assumption_credibility(
+            session_class="rth",
+            passive_fill_ratio=0.84,
+            min_passive_fill_ratio=0.80,
+            adverse_selection_bps=2.0,
+            max_adverse_selection_bps=3.0,
+            data_source_reference="fidelity_passive_rth_v1",
+        )
+
+        payload = json.loads(result.to_json())
+        assert payload["passed"]
+        assert payload["threshold"]["min_passive_fill_ratio"] == 0.80
+        assert payload["threshold"]["max_adverse_selection_bps"] == 3.0
+
+    def test_session_conditioned_liquidity_rejects_blended_assumptions(self):
+        result = check_session_conditioned_liquidity(
+            session_class="overnight",
+            session_surface_documented=True,
+            separate_session_surface_used=False,
+            session_liquidity_supported=True,
+            data_source_reference="fidelity_liquidity_overnight_v1",
+        )
+
+        assert not result.passed
+        assert "separate_session_surface_used" in result.diagnostic
+
+
+class TestLowerFrequencyLiveLane:
+    def test_live_lane_accepts_bar_based_one_minute_strategy(self):
+        report = evaluate_lower_frequency_live_lane(
+            strategy_class_id="slow_bar_momentum",
+            decision_interval_seconds=60,
+            uses_bar_based_logic=True,
+            uses_one_bar_late_decisions=False,
+            depends_on_order_book_imbalance=False,
+            requires_queue_position_edge=False,
+            requires_sub_minute_market_making=False,
+            requires_premium_live_depth_data=False,
+        )
+
+        assert report.live_lane_eligible
+        assert report.reason_code == "LOWER_FREQUENCY_LIVE_LANE_ELIGIBLE"
+        assert report.failed_count == 0
+
+    @pytest.mark.parametrize(
+        ("kwargs", "expected_reason_code", "diagnostic_fragment"),
+        [
+            (
+                {
+                    "decision_interval_seconds": 30,
+                    "uses_bar_based_logic": True,
+                    "uses_one_bar_late_decisions": False,
+                    "depends_on_order_book_imbalance": False,
+                    "requires_queue_position_edge": False,
+                    "requires_sub_minute_market_making": False,
+                    "requires_premium_live_depth_data": False,
+                },
+                "LOWER_LIVE_LANE_LL01_FREQUENCY",
+                "Decision interval 30s",
+            ),
+            (
+                {
+                    "decision_interval_seconds": 60,
+                    "uses_bar_based_logic": False,
+                    "uses_one_bar_late_decisions": False,
+                    "depends_on_order_book_imbalance": False,
+                    "requires_queue_position_edge": False,
+                    "requires_sub_minute_market_making": False,
+                    "requires_premium_live_depth_data": False,
+                },
+                "LOWER_LIVE_LANE_LL02_BAR_TYPE",
+                "not bar-based or one-bar-late",
+            ),
+            (
+                {
+                    "decision_interval_seconds": 60,
+                    "uses_bar_based_logic": True,
+                    "uses_one_bar_late_decisions": False,
+                    "depends_on_order_book_imbalance": False,
+                    "requires_queue_position_edge": True,
+                    "requires_sub_minute_market_making": False,
+                    "requires_premium_live_depth_data": False,
+                },
+                "LOWER_LIVE_LANE_LL04_QUEUE_POSITION",
+                "queue-position edge",
+            ),
+            (
+                {
+                    "decision_interval_seconds": 60,
+                    "uses_bar_based_logic": True,
+                    "uses_one_bar_late_decisions": False,
+                    "depends_on_order_book_imbalance": False,
+                    "requires_queue_position_edge": False,
+                    "requires_sub_minute_market_making": True,
+                    "requires_premium_live_depth_data": False,
+                },
+                "LOWER_LIVE_LANE_LL05_SUB_MINUTE",
+                "sub-minute market-making",
+            ),
+        ],
+    )
+    def test_live_lane_exclusions_are_explicit(self, kwargs, expected_reason_code, diagnostic_fragment):
+        report = evaluate_lower_frequency_live_lane(
+            strategy_class_id="candidate",
+            **kwargs,
+        )
+
+        assert not report.live_lane_eligible
+        assert expected_reason_code in report.exclusion_reason_codes
+        assert any(
+            diagnostic_fragment in check["diagnostic"]
+            for check in report.checks
+            if not check["passed"]
+        )
+
+
+class TestFidelityCalibrationReport:
+    def test_fidelity_calibration_passes_with_structured_supporting_references(self):
+        dimensions = [
+            check_bar_sufficiency(
+                session_class="rth",
+                decision_interval_seconds=60,
+                bar_coverage_ratio=0.99,
+                min_bar_coverage_ratio=0.97,
+                largest_gap_seconds=30,
+                max_allowed_gap_seconds=60,
+                data_source_reference="fidelity_bars_rth_2026q1",
+            ),
+            check_slippage_realism(
+                session_class="rth",
+                estimated_round_trip_slippage_bps=14.0,
+                max_allowed_round_trip_slippage_bps=20.0,
+                estimated_round_trip_slippage_usd=3.5,
+                max_allowed_round_trip_slippage_usd=5.0,
+                data_source_reference="fidelity_cost_surface_rth_v1",
+            ),
+            check_passive_assumption_credibility(
+                session_class="rth",
+                passive_fill_ratio=0.82,
+                min_passive_fill_ratio=0.75,
+                adverse_selection_bps=2.0,
+                max_adverse_selection_bps=3.0,
+                data_source_reference="fidelity_passive_rth_v1",
+            ),
+            check_session_conditioned_liquidity(
+                session_class="rth",
+                session_surface_documented=True,
+                separate_session_surface_used=True,
+                session_liquidity_supported=True,
+                data_source_reference="fidelity_liquidity_rth_v1",
+            ),
+        ]
+
+        report = evaluate_fidelity_calibration(
+            strategy_class_id="slow_bar_momentum",
+            calibration_evidence_report_id="fidelity-report-001",
+            dimensions=dimensions,
+            decision_interval_seconds=60,
+            uses_bar_based_logic=True,
+            uses_one_bar_late_decisions=False,
+            depends_on_order_book_imbalance=False,
+            requires_queue_position_edge=False,
+            requires_sub_minute_market_making=False,
+            requires_premium_live_depth_data=False,
+        )
+
+        assert report.promotable_for_live_lane
+        assert report.reason_code == "FIDELITY_CALIBRATION_ADMISSIBLE"
+        assert tuple(report.supporting_data_references) == (
+            "fidelity_bars_rth_2026q1",
+            "fidelity_cost_surface_rth_v1",
+            "fidelity_passive_rth_v1",
+            "fidelity_liquidity_rth_v1",
+        )
+
+    def test_fidelity_calibration_blocks_failed_dimensions_and_live_lane_exclusions(self):
+        dimensions = [
+            check_bar_sufficiency(
+                session_class="overnight",
+                decision_interval_seconds=60,
+                bar_coverage_ratio=0.90,
+                min_bar_coverage_ratio=0.97,
+                largest_gap_seconds=120,
+                max_allowed_gap_seconds=60,
+                data_source_reference="fidelity_bars_overnight_2026q1",
+            ),
+            check_slippage_realism(
+                session_class="overnight",
+                estimated_round_trip_slippage_bps=30.0,
+                max_allowed_round_trip_slippage_bps=20.0,
+                estimated_round_trip_slippage_usd=8.0,
+                max_allowed_round_trip_slippage_usd=5.0,
+                data_source_reference="fidelity_cost_surface_overnight_v1",
+            ),
+            check_passive_assumption_credibility(
+                session_class="overnight",
+                passive_fill_ratio=0.50,
+                min_passive_fill_ratio=0.75,
+                adverse_selection_bps=5.0,
+                max_adverse_selection_bps=3.0,
+                data_source_reference="fidelity_passive_overnight_v1",
+            ),
+            check_session_conditioned_liquidity(
+                session_class="overnight",
+                session_surface_documented=True,
+                separate_session_surface_used=False,
+                session_liquidity_supported=False,
+                data_source_reference="fidelity_liquidity_overnight_v1",
+            ),
+        ]
+
+        report = evaluate_fidelity_calibration(
+            strategy_class_id="queue_reactive_scalper",
+            calibration_evidence_report_id="fidelity-report-002",
+            dimensions=dimensions,
+            decision_interval_seconds=30,
+            uses_bar_based_logic=False,
+            uses_one_bar_late_decisions=False,
+            depends_on_order_book_imbalance=True,
+            requires_queue_position_edge=True,
+            requires_sub_minute_market_making=True,
+            requires_premium_live_depth_data=True,
+        )
+        payload = json.loads(report.to_json())
+
+        assert not report.promotable_for_live_lane
+        assert report.reason_code == "FIDELITY_CALIBRATION_BLOCKED"
+        assert not payload["lower_frequency_live_lane"]["live_lane_eligible"]
+        assert "LOWER_LIVE_LANE_LL01_FREQUENCY" in payload["lower_frequency_live_lane"][
+            "exclusion_reason_codes"
+        ]
+        assert "queue_reactive_scalper" in report.rationale
+        assert payload["failed_count"] == 4

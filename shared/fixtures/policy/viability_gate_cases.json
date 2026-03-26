@@ -124,5 +124,129 @@
         "portability_study_required": true
       }
     }
+  ],
+  "fidelity_calibration_cases": [
+    {
+      "case_id": "slow_bar_momentum_pass",
+      "strategy_class_id": "slow_bar_momentum",
+      "calibration_evidence_report_id": "fidelity-report-001",
+      "decision_interval_seconds": 60,
+      "uses_bar_based_logic": true,
+      "uses_one_bar_late_decisions": false,
+      "depends_on_order_book_imbalance": false,
+      "requires_queue_position_edge": false,
+      "requires_sub_minute_market_making": false,
+      "requires_premium_live_depth_data": false,
+      "dimensions": [
+        {
+          "kind": "bar_sufficiency",
+          "session_class": "rth",
+          "decision_interval_seconds": 60,
+          "bar_coverage_ratio": 0.99,
+          "min_bar_coverage_ratio": 0.97,
+          "largest_gap_seconds": 30,
+          "max_allowed_gap_seconds": 60,
+          "data_source_reference": "fidelity_bars_rth_2026q1"
+        },
+        {
+          "kind": "slippage_realism",
+          "session_class": "rth",
+          "estimated_round_trip_slippage_bps": 14.0,
+          "max_allowed_round_trip_slippage_bps": 20.0,
+          "estimated_round_trip_slippage_usd": 3.5,
+          "max_allowed_round_trip_slippage_usd": 5.0,
+          "data_source_reference": "fidelity_cost_surface_rth_v1"
+        },
+        {
+          "kind": "passive_assumption_credibility",
+          "session_class": "rth",
+          "passive_fill_ratio": 0.82,
+          "min_passive_fill_ratio": 0.75,
+          "adverse_selection_bps": 2.0,
+          "max_adverse_selection_bps": 3.0,
+          "data_source_reference": "fidelity_passive_rth_v1"
+        },
+        {
+          "kind": "session_conditioned_liquidity",
+          "session_class": "rth",
+          "session_surface_documented": true,
+          "separate_session_surface_used": true,
+          "session_liquidity_supported": true,
+          "data_source_reference": "fidelity_liquidity_rth_v1"
+        }
+      ],
+      "expected": {
+        "promotable_for_live_lane": true,
+        "live_lane_eligible": true,
+        "reason_code": "FIDELITY_CALIBRATION_ADMISSIBLE",
+        "supporting_data_references": [
+          "fidelity_bars_rth_2026q1",
+          "fidelity_cost_surface_rth_v1",
+          "fidelity_passive_rth_v1",
+          "fidelity_liquidity_rth_v1"
+        ]
+      }
+    },
+    {
+      "case_id": "queue_reactive_scalper_excluded",
+      "strategy_class_id": "queue_reactive_scalper",
+      "calibration_evidence_report_id": "fidelity-report-002",
+      "decision_interval_seconds": 30,
+      "uses_bar_based_logic": false,
+      "uses_one_bar_late_decisions": false,
+      "depends_on_order_book_imbalance": true,
+      "requires_queue_position_edge": true,
+      "requires_sub_minute_market_making": true,
+      "requires_premium_live_depth_data": true,
+      "dimensions": [
+        {
+          "kind": "bar_sufficiency",
+          "session_class": "overnight",
+          "decision_interval_seconds": 30,
+          "bar_coverage_ratio": 0.90,
+          "min_bar_coverage_ratio": 0.97,
+          "largest_gap_seconds": 120,
+          "max_allowed_gap_seconds": 60,
+          "data_source_reference": "fidelity_bars_overnight_2026q1"
+        },
+        {
+          "kind": "slippage_realism",
+          "session_class": "overnight",
+          "estimated_round_trip_slippage_bps": 30.0,
+          "max_allowed_round_trip_slippage_bps": 20.0,
+          "estimated_round_trip_slippage_usd": 8.0,
+          "max_allowed_round_trip_slippage_usd": 5.0,
+          "data_source_reference": "fidelity_cost_surface_overnight_v1"
+        },
+        {
+          "kind": "passive_assumption_credibility",
+          "session_class": "overnight",
+          "passive_fill_ratio": 0.50,
+          "min_passive_fill_ratio": 0.75,
+          "adverse_selection_bps": 5.0,
+          "max_adverse_selection_bps": 3.0,
+          "data_source_reference": "fidelity_passive_overnight_v1"
+        },
+        {
+          "kind": "session_conditioned_liquidity",
+          "session_class": "overnight",
+          "session_surface_documented": true,
+          "separate_session_surface_used": false,
+          "session_liquidity_supported": false,
+          "data_source_reference": "fidelity_liquidity_overnight_v1"
+        }
+      ],
+      "expected": {
+        "promotable_for_live_lane": false,
+        "live_lane_eligible": false,
+        "reason_code": "FIDELITY_CALIBRATION_BLOCKED",
+        "supporting_data_references": [
+          "fidelity_bars_overnight_2026q1",
+          "fidelity_cost_surface_overnight_v1",
+          "fidelity_passive_overnight_v1",
+          "fidelity_liquidity_overnight_v1"
+        ]
+      }
+    }
   ]
 }

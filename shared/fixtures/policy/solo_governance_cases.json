@@ -1,0 +1,328 @@
+{
+  "cases": [
+    {
+      "case_id": "active_reviewed_waiver_passes",
+      "request": {
+        "case_id": "active_reviewed_waiver_passes",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 30,
+        "attestation_steps": [
+          {
+            "step_id": "attest_prepare",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T17:00:00+00:00",
+            "checklist_artifact_id": "checklist_preopen_v1",
+            "checklist_digest": "sha256:checklist_preopen_v1",
+            "signature_ref": "sig://operator_self/prep",
+            "attested_controls": [
+              "risk_review",
+              "evidence_review"
+            ],
+            "rationale": "Prepared the waiver review package."
+          },
+          {
+            "step_id": "attest_confirm",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T17:45:00+00:00",
+            "checklist_artifact_id": "checklist_confirm_v1",
+            "checklist_digest": "sha256:checklist_confirm_v1",
+            "signature_ref": "sig://operator_self/confirm",
+            "attested_controls": [
+              "cooling_off_complete",
+              "scope_confirmed"
+            ],
+            "rationale": "Confirmed the narrow waiver scope after cooling off."
+          }
+        ],
+        "waiver": {
+          "waiver_id": "waiver_live_readiness_gap",
+          "scope": "session_readiness fresh evidence regeneration",
+          "approved_by": "operator_self",
+          "justification": "Temporary waiver while fresh readiness evidence is regenerated.",
+          "issued_at_utc": "2026-03-26T17:50:00+00:00",
+          "expires_at_utc": "2026-03-27T17:50:00+00:00",
+          "approval_artifact_id": "waiver_review_bundle_v1",
+          "categories": [
+            "session_readiness"
+          ],
+          "reason_codes": [
+            "BUNDLE_READINESS_FRESHNESS_EVIDENCE_REQUIRED"
+          ]
+        },
+        "incident": null
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "SOLO_GOVERNANCE_WAIVER_ACTIVE",
+      "expected_governance_path": "waiver",
+      "expected_failed_reason_codes": []
+    },
+    {
+      "case_id": "cooling_off_violation_blocks_waiver",
+      "request": {
+        "case_id": "cooling_off_violation_blocks_waiver",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 30,
+        "attestation_steps": [
+          {
+            "step_id": "attest_prepare_fast",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T17:00:00+00:00",
+            "checklist_artifact_id": "checklist_fast_prepare_v1",
+            "checklist_digest": "sha256:checklist_fast_prepare_v1",
+            "signature_ref": "sig://operator_self/fast_prepare",
+            "attested_controls": [
+              "risk_review"
+            ],
+            "rationale": "Started the review."
+          },
+          {
+            "step_id": "attest_confirm_fast",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T17:10:00+00:00",
+            "checklist_artifact_id": "checklist_fast_confirm_v1",
+            "checklist_digest": "sha256:checklist_fast_confirm_v1",
+            "signature_ref": "sig://operator_self/fast_confirm",
+            "attested_controls": [
+              "scope_confirmed"
+            ],
+            "rationale": "Confirmed too quickly."
+          }
+        ],
+        "waiver": {
+          "waiver_id": "waiver_fast_review",
+          "scope": "temporary live exception",
+          "approved_by": "operator_self",
+          "justification": "Attempted to review without enough cooling off.",
+          "issued_at_utc": "2026-03-26T17:12:00+00:00",
+          "expires_at_utc": "2026-03-26T20:00:00+00:00",
+          "approval_artifact_id": "waiver_review_bundle_fast_v1"
+        },
+        "incident": null
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SOLO_GOVERNANCE_COOLING_OFF_UNSATISFIED",
+      "expected_governance_path": "waiver",
+      "expected_failed_reason_codes": [
+        "SOLO_GOVERNANCE_COOLING_OFF_UNSATISFIED"
+      ]
+    },
+    {
+      "case_id": "expired_waiver_cannot_continue",
+      "request": {
+        "case_id": "expired_waiver_cannot_continue",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 30,
+        "attestation_steps": [
+          {
+            "step_id": "attest_prepare_expired",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-24T17:00:00+00:00",
+            "checklist_artifact_id": "checklist_expired_prepare_v1",
+            "checklist_digest": "sha256:checklist_expired_prepare_v1",
+            "signature_ref": "sig://operator_self/expired_prepare",
+            "attested_controls": [
+              "risk_review"
+            ],
+            "rationale": "Prepared expired waiver."
+          },
+          {
+            "step_id": "attest_confirm_expired",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-24T17:40:00+00:00",
+            "checklist_artifact_id": "checklist_expired_confirm_v1",
+            "checklist_digest": "sha256:checklist_expired_confirm_v1",
+            "signature_ref": "sig://operator_self/expired_confirm",
+            "attested_controls": [
+              "scope_confirmed"
+            ],
+            "rationale": "Confirmed expired waiver."
+          }
+        ],
+        "waiver": {
+          "waiver_id": "waiver_expired_live_gap",
+          "scope": "stale live exception",
+          "approved_by": "operator_self",
+          "justification": "This waiver should no longer justify live behavior.",
+          "issued_at_utc": "2026-03-24T17:45:00+00:00",
+          "expires_at_utc": "2026-03-25T17:45:00+00:00",
+          "approval_artifact_id": "waiver_review_bundle_expired_v1"
+        },
+        "incident": null
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SOLO_GOVERNANCE_WAIVER_EXPIRED",
+      "expected_governance_path": "waiver",
+      "expected_failed_reason_codes": [
+        "SOLO_GOVERNANCE_WAIVER_EXPIRED"
+      ]
+    },
+    {
+      "case_id": "closed_incident_with_corrective_action_passes",
+      "request": {
+        "case_id": "closed_incident_with_corrective_action_passes",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_002",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 20,
+        "attestation_steps": [
+          {
+            "step_id": "incident_prepare",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T14:00:00+00:00",
+            "checklist_artifact_id": "incident_prepare_checklist_v1",
+            "checklist_digest": "sha256:incident_prepare_checklist_v1",
+            "signature_ref": "sig://operator_self/incident_prepare",
+            "attested_controls": [
+              "incident_scope_review"
+            ],
+            "rationale": "Prepared the incident review."
+          },
+          {
+            "step_id": "incident_confirm",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T14:35:00+00:00",
+            "checklist_artifact_id": "incident_confirm_checklist_v1",
+            "checklist_digest": "sha256:incident_confirm_checklist_v1",
+            "signature_ref": "sig://operator_self/incident_confirm",
+            "attested_controls": [
+              "corrective_action_confirmed"
+            ],
+            "rationale": "Confirmed the corrective-action closure."
+          }
+        ],
+        "waiver": null,
+        "incident": {
+          "incident_id": "incident_restore_review_001",
+          "incident_type": "restore_drill_follow_up",
+          "severity": "high",
+          "opened_at_utc": "2026-03-26T13:30:00+00:00",
+          "linked_policy_id": "policy_bundle_sha256_002",
+          "incident_summary": "Restore drill required explicit operator review before the next live session.",
+          "corrective_action_owner": "operator_self",
+          "corrective_action_due_at_utc": "2026-03-26T15:00:00+00:00",
+          "corrective_action_summary": "Re-ran reconciliation and updated the restore checklist.",
+          "review_artifact_id": "incident_review_bundle_v1",
+          "closed_at_utc": "2026-03-26T14:50:00+00:00",
+          "closure_summary": "Corrective action verified and incident closed before the next session."
+        }
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "SOLO_GOVERNANCE_INCIDENT_CLOSED",
+      "expected_governance_path": "incident",
+      "expected_failed_reason_codes": []
+    },
+    {
+      "case_id": "live_exception_without_record_is_rejected",
+      "request": {
+        "case_id": "live_exception_without_record_is_rejected",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_003",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 15,
+        "attestation_steps": [
+          {
+            "step_id": "untracked_prepare",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T12:00:00+00:00",
+            "checklist_artifact_id": "untracked_prepare_checklist_v1",
+            "checklist_digest": "sha256:untracked_prepare_checklist_v1",
+            "signature_ref": "sig://operator_self/untracked_prepare",
+            "attested_controls": [
+              "risk_review"
+            ],
+            "rationale": "Prepared review without creating a record."
+          },
+          {
+            "step_id": "untracked_confirm",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T12:20:00+00:00",
+            "checklist_artifact_id": "untracked_confirm_checklist_v1",
+            "checklist_digest": "sha256:untracked_confirm_checklist_v1",
+            "signature_ref": "sig://operator_self/untracked_confirm",
+            "attested_controls": [
+              "scope_confirmed"
+            ],
+            "rationale": "Still failed to create a waiver or incident."
+          }
+        ],
+        "waiver": null,
+        "incident": null
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SOLO_GOVERNANCE_LIVE_EXCEPTION_UNTRACKED",
+      "expected_governance_path": "none",
+      "expected_failed_reason_codes": [
+        "SOLO_GOVERNANCE_LIVE_EXCEPTION_UNTRACKED"
+      ]
+    },
+    {
+      "case_id": "incident_without_closure_is_rejected",
+      "request": {
+        "case_id": "incident_without_closure_is_rejected",
+        "operator_id": "operator_self",
+        "policy_bundle_hash": "policy_bundle_sha256_004",
+        "live_impacting_exception": true,
+        "evaluation_time_utc": "2026-03-26T18:00:00+00:00",
+        "minimum_cooling_off_minutes": 15,
+        "attestation_steps": [
+          {
+            "step_id": "incident_open_prepare",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T10:00:00+00:00",
+            "checklist_artifact_id": "incident_open_prepare_checklist_v1",
+            "checklist_digest": "sha256:incident_open_prepare_checklist_v1",
+            "signature_ref": "sig://operator_self/incident_open_prepare",
+            "attested_controls": [
+              "incident_scope_review"
+            ],
+            "rationale": "Prepared the incident review."
+          },
+          {
+            "step_id": "incident_open_confirm",
+            "attested_by": "operator_self",
+            "signed_at_utc": "2026-03-26T10:30:00+00:00",
+            "checklist_artifact_id": "incident_open_confirm_checklist_v1",
+            "checklist_digest": "sha256:incident_open_confirm_checklist_v1",
+            "signature_ref": "sig://operator_self/incident_open_confirm",
+            "attested_controls": [
+              "corrective_action_owner_assigned"
+            ],
+            "rationale": "Confirmed the incident is still open."
+          }
+        ],
+        "waiver": null,
+        "incident": {
+          "incident_id": "incident_open_001",
+          "incident_type": "clock_skew_review",
+          "severity": "medium",
+          "opened_at_utc": "2026-03-26T09:30:00+00:00",
+          "linked_policy_id": "policy_bundle_sha256_004",
+          "incident_summary": "Clock skew exceeded tolerance and required operator review.",
+          "corrective_action_owner": "operator_self",
+          "corrective_action_due_at_utc": "2026-03-26T11:00:00+00:00",
+          "corrective_action_summary": "Investigate time sync and confirm clock-health recovery.",
+          "review_artifact_id": "incident_open_review_bundle_v1",
+          "closed_at_utc": null,
+          "closure_summary": null
+        }
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SOLO_GOVERNANCE_INCIDENT_REQUIRES_CLOSURE",
+      "expected_governance_path": "incident",
+      "expected_failed_reason_codes": [
+        "SOLO_GOVERNANCE_INCIDENT_REQUIRES_CLOSURE"
+      ]
+    }
+  ]
+}

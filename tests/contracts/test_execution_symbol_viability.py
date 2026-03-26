@@ -5,11 +5,16 @@ from pathlib import Path
 
 from shared.policy.viability_gate import (
     GateOutcome,
+    check_bar_sufficiency,
     check_fee_and_slippage_feasibility,
     check_holding_period_compatibility,
+    check_passive_assumption_credibility,
     check_quote_print_presence_by_session_class,
+    check_session_conditioned_liquidity,
+    check_slippage_realism,
     check_spread_and_bar_completeness,
     check_tradable_session_coverage,
+    evaluate_fidelity_calibration,
     evaluate_execution_symbol_first_viability_screen,
 )
 
@@ -28,6 +33,11 @@ def load_cases() -> list[dict[str, object]]:
         return json.load(fixture_file)["execution_symbol_viability_cases"]
 
 
+def load_fidelity_cases() -> list[dict[str, object]]:
+    with FIXTURE_PATH.open("r", encoding="utf-8") as fixture_file:
+        return json.load(fixture_file)["fidelity_calibration_cases"]
+
+
 def build_dimension(payload: dict[str, object]):
     kind = payload["kind"]
     kwargs = {key: value for key, value in payload.items() if key != "kind"}
@@ -42,6 +52,20 @@ def build_dimension(payload: dict[str, object]):
     if kind == "holding_period_compatibility":
         return check_holding_period_compatibility(**kwargs)
     raise AssertionError(f"Unknown viability dimension kind: {kind}")
+
+
+def build_fidelity_dimension(payload: dict[str, object]):
+    kind = payload["kind"]
+    kwargs = {key: value for key, value in payload.items() if key != "kind"}
+    if kind == "bar_sufficiency":
+        return check_bar_sufficiency(**kwargs)
+    if kind == "slippage_realism":
+        return check_slippage_realism(**kwargs)
+    if kind == "passive_assumption_credibility":
+        return check_passive_assumption_credibility(**kwargs)
+    if kind == "session_conditioned_liquidity":
+        return check_session_conditioned_liquidity(**kwargs)
+    raise AssertionError(f"Unknown fidelity dimension kind: {kind}")
 
 
 class ExecutionSymbolDimensionTests(unittest.TestCase):
@@ -206,6 +230,84 @@ class ExecutionSymbolViabilityReportTests(unittest.TestCase):
                     "session_class",
                 }.issubset(dimension.keys())
             )
+
+
+class FidelityCalibrationReportTests(unittest.TestCase):
+    def test_fixture_cases_match_expected_live_lane_gate(self) -> None:
+        for payload in load_fidelity_cases():
+            with self.subTest(case_id=payload["case_id"]):
+                dimensions = [
+                    build_fidelity_dimension(item) for item in payload["dimensions"]
+                ]
+                report = evaluate_fidelity_calibration(
+                    strategy_class_id=payload["strategy_class_id"],
+                    calibration_evidence_report_id=payload["calibration_evidence_report_id"],
+                    dimensions=dimensions,
+                    decision_interval_seconds=payload["decision_interval_seconds"],
+                    uses_bar_based_logic=payload["uses_bar_based_logic"],
+                    uses_one_bar_late_decisions=payload["uses_one_bar_late_decisions"],
+                    depends_on_order_book_imbalance=payload["depends_on_order_book_imbalance"],
+                    requires_queue_position_edge=payload["requires_queue_position_edge"],
+                    requires_sub_minute_market_making=payload[
+                        "requires_sub_minute_market_making"
+                    ],
+                    requires_premium_live_depth_data=payload[
+                        "requires_premium_live_depth_data"
+                    ],
+                )
+                expected = payload["expected"]
+                self.assertEqual(
+                    expected["promotable_for_live_lane"],
+                    report.promotable_for_live_lane,
+                )
+                self.assertEqual(expected["reason_code"], report.reason_code)
+                self.assertEqual(
+                    expected["live_lane_eligible"],
+                    report.live_lane_eligible,
+                )
+
+    def test_report_preserves_supporting_data_references(self) -> None:
+        case = load_fidelity_cases()[0]
+        dimensions = [build_fidelity_dimension(item) for item in case["dimensions"]]
+        report = evaluate_fidelity_calibration(
+            strategy_class_id=case["strategy_class_id"],
+            calibration_evidence_report_id=case["calibration_evidence_report_id"],
+            dimensions=dimensions,
+            decision_interval_seconds=case["decision_interval_seconds"],
+            uses_bar_based_logic=case["uses_bar_based_logic"],
+            uses_one_bar_late_decisions=case["uses_one_bar_late_decisions"],
+            depends_on_order_book_imbalance=case["depends_on_order_book_imbalance"],
+            requires_queue_position_edge=case["requires_queue_position_edge"],
+            requires_sub_minute_market_making=case["requires_sub_minute_market_making"],
+            requires_premium_live_depth_data=case["requires_premium_live_depth_data"],
+        )
+
+        self.assertEqual(case["expected"]["supporting_data_references"], list(report.supporting_data_references))
+
+    def test_excluded_case_keeps_specific_live_lane_reason_codes(self) -> None:
+        case = load_fidelity_cases()[1]
+        dimensions = [build_fidelity_dimension(item) for item in case["dimensions"]]
+        report = evaluate_fidelity_calibration(
+            strategy_class_id=case["strategy_class_id"],
+            calibration_evidence_report_id=case["calibration_evidence_report_id"],
+            dimensions=dimensions,
+            decision_interval_seconds=case["decision_interval_seconds"],
+            uses_bar_based_logic=case["uses_bar_based_logic"],
+            uses_one_bar_late_decisions=case["uses_one_bar_late_decisions"],
+            depends_on_order_book_imbalance=case["depends_on_order_book_imbalance"],
+            requires_queue_position_edge=case["requires_queue_position_edge"],
+            requires_sub_minute_market_making=case["requires_sub_minute_market_making"],
+            requires_premium_live_depth_data=case["requires_premium_live_depth_data"],
+        )
+
+        self.assertIn(
+            "LOWER_LIVE_LANE_LL01_FREQUENCY",
+            report.lower_frequency_live_lane["exclusion_reason_codes"],
+        )
+        self.assertIn(
+            "LOWER_LIVE_LANE_LL04_QUEUE_POSITION",
+            report.lower_frequency_live_lane["exclusion_reason_codes"],
+        )
 
 
 if __name__ == "__main__":
