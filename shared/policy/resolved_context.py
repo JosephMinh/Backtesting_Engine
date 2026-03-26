@@ -1,4 +1,4 @@
-"""Resolved-context bundle and execution-profile release contracts."""
+"""Resolved-context bundle, execution-profile release, and simulation contracts."""
 
 from __future__ import annotations
 
@@ -37,6 +37,48 @@ class ContextBindingSurface(str, Enum):
     CANDIDATE_BUNDLE = "candidate_bundle"
     PORTABILITY_ASSESSMENT = "portability_assessment"
     REPLAY_FIXTURE = "replay_fixture"
+
+
+@unique
+class HistoricalExecutionKernel(str, Enum):
+    NAUTILUS_HIGH_LEVEL = "nautilus_high_level"
+    UNAPPROVED_ENGINE = "unapproved_engine"
+
+
+@unique
+class NautilusKernelComponent(str, Enum):
+    BACKTEST_NODE = "BacktestNode"
+    BACKTEST_RUN_CONFIG = "BacktestRunConfig"
+    PARQUET_DATA_CATALOG = "ParquetDataCatalog"
+
+
+@unique
+class ExecutionProfileClass(str, Enum):
+    SCREENING = "screening"
+    VALIDATION = "validation"
+    STRESS = "stress"
+
+
+@unique
+class ExecutionConditioningDimension(str, Enum):
+    SESSION_CLASS = "session_class"
+    REALIZED_VOLATILITY_BUCKET = "realized_volatility_bucket"
+    SPREAD_BUCKET = "spread_bucket"
+    INTENDED_ORDER_SIZE_FRACTION_BUCKET = "intended_order_size_fraction_bucket"
+
+
+REQUIRED_PROMOTION_GRADE_CONDITIONING_DIMENSIONS = (
+    ExecutionConditioningDimension.SESSION_CLASS.value,
+    ExecutionConditioningDimension.REALIZED_VOLATILITY_BUCKET.value,
+    ExecutionConditioningDimension.SPREAD_BUCKET.value,
+    ExecutionConditioningDimension.INTENDED_ORDER_SIZE_FRACTION_BUCKET.value,
+)
+
+REQUIRED_NAUTILUS_KERNEL_COMPONENTS = (
+    NautilusKernelComponent.BACKTEST_NODE.value,
+    NautilusKernelComponent.BACKTEST_RUN_CONFIG.value,
+    NautilusKernelComponent.PARQUET_DATA_CATALOG.value,
+)
 
 
 @dataclass(frozen=True)
@@ -107,6 +149,12 @@ class ResolvedContextBundle:
 @dataclass(frozen=True)
 class ExecutionProfileRelease:
     release_id: str
+    profile_class: ExecutionProfileClass
+    promotion_grade: bool
+    historical_execution_kernel: HistoricalExecutionKernel
+    kernel_components: tuple[str, ...]
+    shared_signal_kernel_binding: str
+    conditioning_dimensions: tuple[str, ...]
     data_profile_release_id: str
     order_type_assumptions: tuple[str, ...]
     slippage_surface_ids: tuple[str, ...]
@@ -123,6 +171,8 @@ class ExecutionProfileRelease:
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
+        payload["profile_class"] = self.profile_class.value
+        payload["historical_execution_kernel"] = self.historical_execution_kernel.value
         payload["lifecycle_state"] = self.lifecycle_state.value
         return payload
 
@@ -133,6 +183,16 @@ class ExecutionProfileRelease:
     def from_dict(cls, payload: dict[str, Any]) -> "ExecutionProfileRelease":
         return cls(
             release_id=str(payload["release_id"]),
+            profile_class=ExecutionProfileClass(payload["profile_class"]),
+            promotion_grade=bool(payload["promotion_grade"]),
+            historical_execution_kernel=HistoricalExecutionKernel(
+                payload["historical_execution_kernel"]
+            ),
+            kernel_components=tuple(str(item) for item in payload["kernel_components"]),
+            shared_signal_kernel_binding=str(payload["shared_signal_kernel_binding"]),
+            conditioning_dimensions=tuple(
+                str(item) for item in payload["conditioning_dimensions"]
+            ),
             data_profile_release_id=str(payload["data_profile_release_id"]),
             order_type_assumptions=tuple(str(item) for item in payload["order_type_assumptions"]),
             slippage_surface_ids=tuple(str(item) for item in payload["slippage_surface_ids"]),
@@ -155,6 +215,52 @@ class ExecutionProfileRelease:
     @classmethod
     def from_json(cls, payload: str) -> "ExecutionProfileRelease":
         return cls.from_dict(_decode_context_json(payload, "execution_profile_release"))
+
+
+@dataclass(frozen=True)
+class HistoricalSimulationHarness:
+    case_id: str
+    historical_execution_kernel: HistoricalExecutionKernel
+    execution_profile_release_id: str
+    profile_class: ExecutionProfileClass
+    release_reference_ids: tuple[str, ...]
+    random_seeds: tuple[int, ...]
+    retained_run_log_ids: tuple[str, ...]
+    shared_signal_kernel_binding: str
+    uses_high_level_backtest_api: bool
+    uses_custom_historical_engine: bool = False
+    schema_version: int = SUPPORTED_CONTEXT_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["historical_execution_kernel"] = self.historical_execution_kernel.value
+        payload["profile_class"] = self.profile_class.value
+        return payload
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "HistoricalSimulationHarness":
+        return cls(
+            case_id=str(payload["case_id"]),
+            historical_execution_kernel=HistoricalExecutionKernel(
+                payload["historical_execution_kernel"]
+            ),
+            execution_profile_release_id=str(payload["execution_profile_release_id"]),
+            profile_class=ExecutionProfileClass(payload["profile_class"]),
+            release_reference_ids=tuple(str(item) for item in payload["release_reference_ids"]),
+            random_seeds=tuple(int(item) for item in payload["random_seeds"]),
+            retained_run_log_ids=tuple(str(item) for item in payload["retained_run_log_ids"]),
+            shared_signal_kernel_binding=str(payload["shared_signal_kernel_binding"]),
+            uses_high_level_backtest_api=bool(payload["uses_high_level_backtest_api"]),
+            uses_custom_historical_engine=bool(payload.get("uses_custom_historical_engine", False)),
+            schema_version=int(payload.get("schema_version", SUPPORTED_CONTEXT_SCHEMA_VERSION)),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "HistoricalSimulationHarness":
+        return cls.from_dict(_decode_context_json(payload, "historical_simulation_harness"))
 
 
 @dataclass(frozen=True)
@@ -231,6 +337,29 @@ class ExecutionProfileValidationReport:
     data_profile_release_id: str | None
     artifact_root_hash: str | None
     missing_fields: tuple[str, ...]
+    explanation: str
+    remediation: str
+    timestamp: str = field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+
+@dataclass(frozen=True)
+class HistoricalSimulationHarnessReport:
+    case_id: str
+    execution_profile_release_id: str | None
+    status: str
+    reason_code: str
+    profile_class: str | None
+    retained_release_references: tuple[str, ...]
+    retained_seed_count: int
+    retained_run_log_ids: tuple[str, ...]
     explanation: str
     remediation: str
     timestamp: str = field(
@@ -341,6 +470,9 @@ def _missing_execution_profile_fields(release: ExecutionProfileRelease) -> tuple
     missing: list[str] = []
     required_scalars = {
         "release_id": release.release_id,
+        "profile_class": release.profile_class.value,
+        "historical_execution_kernel": release.historical_execution_kernel.value,
+        "shared_signal_kernel_binding": release.shared_signal_kernel_binding,
         "data_profile_release_id": release.data_profile_release_id,
         "quote_absence_policy": release.quote_absence_policy,
         "spread_spike_policy": release.spread_spike_policy,
@@ -351,11 +483,38 @@ def _missing_execution_profile_fields(release: ExecutionProfileRelease) -> tuple
         if not field_value:
             missing.append(field_name)
     required_sequences = {
+        "kernel_components": release.kernel_components,
+        "conditioning_dimensions": release.conditioning_dimensions,
         "order_type_assumptions": release.order_type_assumptions,
         "slippage_surface_ids": release.slippage_surface_ids,
         "fill_rules": release.fill_rules,
         "latency_assumptions": release.latency_assumptions,
         "calibration_evidence_ids": release.calibration_evidence_ids,
+    }
+    for field_name, field_value in required_sequences.items():
+        if not field_value:
+            missing.append(field_name)
+    return tuple(missing)
+
+
+def _missing_historical_simulation_harness_fields(
+    harness: HistoricalSimulationHarness,
+) -> tuple[str, ...]:
+    missing: list[str] = []
+    required_scalars = {
+        "case_id": harness.case_id,
+        "historical_execution_kernel": harness.historical_execution_kernel.value,
+        "execution_profile_release_id": harness.execution_profile_release_id,
+        "profile_class": harness.profile_class.value,
+        "shared_signal_kernel_binding": harness.shared_signal_kernel_binding,
+    }
+    for field_name, field_value in required_scalars.items():
+        if not field_value:
+            missing.append(field_name)
+    required_sequences = {
+        "release_reference_ids": harness.release_reference_ids,
+        "random_seeds": harness.random_seeds,
+        "retained_run_log_ids": harness.retained_run_log_ids,
     }
     for field_name, field_value in required_sequences.items():
         if not field_value:
@@ -523,6 +682,116 @@ def validate_execution_profile_release(
             ),
         )
 
+    if release.historical_execution_kernel != HistoricalExecutionKernel.NAUTILUS_HIGH_LEVEL:
+        return ExecutionProfileValidationReport(
+            case_id=case_id,
+            release_id=release.release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="EXECUTION_PROFILE_RELEASE_KERNEL_NOT_APPROVED",
+            lifecycle_state=release.lifecycle_state.value,
+            data_profile_release_id=release.data_profile_release_id,
+            artifact_root_hash=release.artifact_root_hash,
+            missing_fields=(),
+            explanation=(
+                "Historical execution in v1 must use NautilusTrader high-level backtesting rather "
+                "than a second historical engine."
+            ),
+            remediation=(
+                "Bind the release to the Nautilus high-level kernel and remove any alternate "
+                "historical engine declaration."
+            ),
+        )
+
+    missing_kernel_components = tuple(
+        component
+        for component in REQUIRED_NAUTILUS_KERNEL_COMPONENTS
+        if component not in release.kernel_components
+    )
+    if missing_kernel_components:
+        return ExecutionProfileValidationReport(
+            case_id=case_id,
+            release_id=release.release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="EXECUTION_PROFILE_RELEASE_KERNEL_COMPONENTS_INCOMPLETE",
+            lifecycle_state=release.lifecycle_state.value,
+            data_profile_release_id=release.data_profile_release_id,
+            artifact_root_hash=release.artifact_root_hash,
+            missing_fields=missing_kernel_components,
+            explanation=(
+                "The release does not preserve the full Nautilus high-level kernel contract. "
+                f"Missing required components: {missing_kernel_components}."
+            ),
+            remediation=(
+                "Record BacktestNode, BacktestRunConfig, and ParquetDataCatalog as the canonical "
+                "historical execution components."
+            ),
+        )
+
+    if (
+        release.profile_class == ExecutionProfileClass.SCREENING
+        and release.promotion_grade
+    ):
+        return ExecutionProfileValidationReport(
+            case_id=case_id,
+            release_id=release.release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="EXECUTION_PROFILE_RELEASE_SCREENING_NOT_PROMOTION_GRADE",
+            lifecycle_state=release.lifecycle_state.value,
+            data_profile_release_id=release.data_profile_release_id,
+            artifact_root_hash=release.artifact_root_hash,
+            missing_fields=(),
+            explanation=(
+                "Screening profiles may be honest but they are not the default promotion-grade "
+                "execution profile class."
+            ),
+            remediation="Mark screening profiles as non-promotion-grade and promote through validation.",
+        )
+
+    if (
+        release.profile_class in {ExecutionProfileClass.VALIDATION, ExecutionProfileClass.STRESS}
+        and not release.promotion_grade
+    ):
+        return ExecutionProfileValidationReport(
+            case_id=case_id,
+            release_id=release.release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="EXECUTION_PROFILE_RELEASE_PROMOTION_GRADE_REQUIRED",
+            lifecycle_state=release.lifecycle_state.value,
+            data_profile_release_id=release.data_profile_release_id,
+            artifact_root_hash=release.artifact_root_hash,
+            missing_fields=(),
+            explanation=(
+                "Validation and stress profiles are the promotion-grade assumption sets required "
+                "for candidate advancement and robustness review."
+            ),
+            remediation="Mark validation and stress execution profiles as promotion-grade releases.",
+        )
+
+    if release.promotion_grade:
+        missing_dimensions = tuple(
+            dimension
+            for dimension in REQUIRED_PROMOTION_GRADE_CONDITIONING_DIMENSIONS
+            if dimension not in release.conditioning_dimensions
+        )
+        if missing_dimensions:
+            return ExecutionProfileValidationReport(
+                case_id=case_id,
+                release_id=release.release_id,
+                status=ContextContractStatus.VIOLATION.value,
+                reason_code="EXECUTION_PROFILE_RELEASE_PROMOTION_DIMENSIONS_INCOMPLETE",
+                lifecycle_state=release.lifecycle_state.value,
+                data_profile_release_id=release.data_profile_release_id,
+                artifact_root_hash=release.artifact_root_hash,
+                missing_fields=missing_dimensions,
+                explanation=(
+                    "Promotion-grade execution profiles must be conditioned by session class, "
+                    "realized-volatility bucket, spread bucket, and intended-order-size fraction."
+                ),
+                remediation=(
+                    "Publish conditioning surfaces for every required promotion-grade dimension."
+                ),
+            )
+
     if not _mentions_digest(release.release_id, release.artifact_root_hash):
         return ExecutionProfileValidationReport(
             case_id=case_id,
@@ -550,8 +819,124 @@ def validate_execution_profile_release(
         artifact_root_hash=release.artifact_root_hash,
         missing_fields=(),
         explanation=(
-            "The execution-profile release captures governed execution assumptions, calibration "
-            "evidence, and the applicable data-profile release behind a digest-bound identifier."
+            "The execution-profile release captures a governed Nautilus high-level kernel choice, "
+            "profile class, conditioning dimensions, calibration evidence, and applicable "
+            "data-profile release behind a digest-bound identifier."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_historical_simulation_harness(
+    harness: HistoricalSimulationHarness,
+) -> HistoricalSimulationHarnessReport:
+    if harness.schema_version != SUPPORTED_CONTEXT_SCHEMA_VERSION:
+        return HistoricalSimulationHarnessReport(
+            case_id=harness.case_id,
+            execution_profile_release_id=harness.execution_profile_release_id or None,
+            status=ContextContractStatus.INVALID.value,
+            reason_code="SIMULATION_HARNESS_SCHEMA_VERSION_UNSUPPORTED",
+            profile_class=harness.profile_class.value,
+            retained_release_references=harness.release_reference_ids,
+            retained_seed_count=len(harness.random_seeds),
+            retained_run_log_ids=harness.retained_run_log_ids,
+            explanation=(
+                "The historical-simulation harness uses an unsupported schema version for the "
+                "canonical simulation contract."
+            ),
+            remediation="Regenerate the harness record using the supported canonical schema version.",
+        )
+
+    missing_fields = _missing_historical_simulation_harness_fields(harness)
+    if missing_fields:
+        return HistoricalSimulationHarnessReport(
+            case_id=harness.case_id,
+            execution_profile_release_id=harness.execution_profile_release_id or None,
+            status=ContextContractStatus.INVALID.value,
+            reason_code="SIMULATION_HARNESS_MISSING_REQUIRED_FIELDS",
+            profile_class=harness.profile_class.value,
+            retained_release_references=harness.release_reference_ids,
+            retained_seed_count=len(harness.random_seeds),
+            retained_run_log_ids=harness.retained_run_log_ids,
+            explanation=(
+                "The historical-simulation harness is missing required retained evidence fields: "
+                f"{missing_fields}."
+            ),
+            remediation=(
+                "Retain the execution-profile id, release references, seeds, run logs, and shared "
+                "signal-kernel binding for every deterministic harness."
+            ),
+        )
+
+    if harness.historical_execution_kernel != HistoricalExecutionKernel.NAUTILUS_HIGH_LEVEL:
+        return HistoricalSimulationHarnessReport(
+            case_id=harness.case_id,
+            execution_profile_release_id=harness.execution_profile_release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="SIMULATION_HARNESS_KERNEL_NOT_APPROVED",
+            profile_class=harness.profile_class.value,
+            retained_release_references=harness.release_reference_ids,
+            retained_seed_count=len(harness.random_seeds),
+            retained_run_log_ids=harness.retained_run_log_ids,
+            explanation=(
+                "The harness is not exercising the canonical NautilusTrader high-level historical "
+                "execution kernel."
+            ),
+            remediation="Run deterministic harnesses through the Nautilus high-level backtesting API.",
+        )
+
+    if not harness.uses_high_level_backtest_api or harness.uses_custom_historical_engine:
+        return HistoricalSimulationHarnessReport(
+            case_id=harness.case_id,
+            execution_profile_release_id=harness.execution_profile_release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="SIMULATION_HARNESS_CUSTOM_ENGINE_FORBIDDEN",
+            profile_class=harness.profile_class.value,
+            retained_release_references=harness.release_reference_ids,
+            retained_seed_count=len(harness.random_seeds),
+            retained_run_log_ids=harness.retained_run_log_ids,
+            explanation=(
+                "The harness routes execution through a custom historical path instead of the "
+                "approved Nautilus high-level API."
+            ),
+            remediation=(
+                "Remove the custom engine path and retain evidence from the shared Nautilus "
+                "historical kernel only."
+            ),
+        )
+
+    if len(harness.retained_run_log_ids) < len(harness.random_seeds):
+        return HistoricalSimulationHarnessReport(
+            case_id=harness.case_id,
+            execution_profile_release_id=harness.execution_profile_release_id,
+            status=ContextContractStatus.VIOLATION.value,
+            reason_code="SIMULATION_HARNESS_RUN_LOGS_INCOMPLETE",
+            profile_class=harness.profile_class.value,
+            retained_release_references=harness.release_reference_ids,
+            retained_seed_count=len(harness.random_seeds),
+            retained_run_log_ids=harness.retained_run_log_ids,
+            explanation=(
+                "The harness retains fewer detailed run logs than deterministic seeds, so replay "
+                "coverage cannot explain every seeded execution."
+            ),
+            remediation=(
+                "Retain at least one detailed run log for every deterministic seed executed."
+            ),
+        )
+
+    return HistoricalSimulationHarnessReport(
+        case_id=harness.case_id,
+        execution_profile_release_id=harness.execution_profile_release_id,
+        status=ContextContractStatus.PASS.value,
+        reason_code="SIMULATION_HARNESS_NAUTILUS_RETAINED",
+        profile_class=harness.profile_class.value,
+        retained_release_references=harness.release_reference_ids,
+        retained_seed_count=len(harness.random_seeds),
+        retained_run_log_ids=harness.retained_run_log_ids,
+        explanation=(
+            "The harness retains the execution-profile id, release references, deterministic "
+            "seeds, detailed run logs, and shared signal-kernel binding while exercising the "
+            "canonical Nautilus high-level simulation path."
         ),
         remediation="No remediation required.",
     )

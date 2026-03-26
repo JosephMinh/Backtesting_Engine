@@ -285,6 +285,39 @@ class VerificationContractTest(unittest.TestCase):
         self.assertIn(ArtifactRequirement.DECISION_TRACES, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
 
+    def test_bead_41_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.4.1" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("simulation_and_execution_profiles", matching[0].surface_id)
+        self.assertEqual(("phase_3",), matching[0].phase_gates)
+
+    def test_bead_41_profile_requires_certified_and_session_fixture_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "simulation_and_execution_profiles"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.PARITY_CERTIFICATION,
+            ),
+            profile.golden_path,
+        )
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.CORRELATION_IDS, profile.retained_artifacts)
+
 
 if __name__ == "__main__":
     unittest.main()
