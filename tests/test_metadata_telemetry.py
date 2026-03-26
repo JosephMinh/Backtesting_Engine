@@ -160,6 +160,8 @@ class MetadataTelemetryContractTest(unittest.TestCase):
     def test_bead_records_cover_both_authoritative_and_telemetry_surfaces(self) -> None:
         record_ids = {record.record_id for record in RECORD_DEFINITIONS}
         self.assertIn("research_run", record_ids)
+        self.assertIn("release_certification", record_ids)
+        self.assertIn("release_correction_event", record_ids)
         self.assertIn("session_readiness_packet", record_ids)
         self.assertIn("run_metrics", record_ids)
         self.assertIn("diagnostics", record_ids)
