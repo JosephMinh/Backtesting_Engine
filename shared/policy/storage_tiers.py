@@ -71,6 +71,7 @@ class PromotableExperimentBinding:
     dataset_release_id: str
     analytic_release_id: str | None
     data_profile_release_id: str
+    execution_profile_release_id: str
     observation_cutoff_utc: str
     resolved_context_bundle_id: str
     policy_bundle_hash: str
@@ -192,6 +193,14 @@ STORAGE_ARTIFACT_CLASSES: tuple[StorageArtifactClass, ...] = (
         point_in_time_relevant=True,
     ),
     StorageArtifactClass(
+        artifact_type="execution_profile_release",
+        storage_tier=StorageTier.TIER_D,
+        plan_section="4.3-5.4",
+        description="Versioned execution-assumption release tied to one data-profile release.",
+        durability_role="derived_analytics",
+        point_in_time_relevant=True,
+    ),
+    StorageArtifactClass(
         artifact_type="feature_block_manifest",
         storage_tier=StorageTier.TIER_D,
         plan_section="5.1",
@@ -274,6 +283,8 @@ def validate_storage_catalog() -> list[str]:
         errors.append("dataset_release must be classified explicitly")
     if "data_profile_release" not in artifact_classes_by_type():
         errors.append("data_profile_release must be classified explicitly")
+    if "execution_profile_release" not in artifact_classes_by_type():
+        errors.append("execution_profile_release must be classified explicitly")
 
     return errors
 
@@ -334,6 +345,7 @@ def validate_promotable_experiment_binding(
         "dataset_release_id": "required",
         "analytic_release_id": "optional",
         "data_profile_release_id": "required",
+        "execution_profile_release_id": "required",
         "observation_cutoff_utc": "required",
         "resolved_context_bundle_id": "required",
         "policy_bundle_hash": "required",
@@ -343,6 +355,7 @@ def validate_promotable_experiment_binding(
         "dataset_release_id": binding.dataset_release_id or None,
         "analytic_release_id": binding.analytic_release_id,
         "data_profile_release_id": binding.data_profile_release_id or None,
+        "execution_profile_release_id": binding.execution_profile_release_id or None,
         "observation_cutoff_utc": binding.observation_cutoff_utc or None,
         "resolved_context_bundle_id": binding.resolved_context_bundle_id or None,
         "policy_bundle_hash": binding.policy_bundle_hash or None,
@@ -433,8 +446,9 @@ def validate_promotable_experiment_binding(
         mutable_reference_reads=binding.mutable_reference_reads,
         explanation=(
             "The promotable experiment binds exactly one dataset release, zero-or-one analytic "
-            "release, one data-profile release, one observation cutoff, one resolved-context "
-            "bundle, one policy bundle hash, and one compatibility matrix version."
+            "release, one data-profile release, one execution-profile release, one observation "
+            "cutoff, one resolved-context bundle, one policy bundle hash, and one compatibility "
+            "matrix version."
         ),
         remediation="No remediation required.",
     )

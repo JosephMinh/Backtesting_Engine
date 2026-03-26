@@ -142,6 +142,18 @@ ARTIFACT_DEFINITIONS: tuple[ArtifactDefinition, ...] = (
         used_by=("replay", "promotion", "readiness"),
     ),
     ArtifactDefinition(
+        artifact_id="execution_profile_release",
+        title="Execution-profile release",
+        artifact_class=ArtifactClass.INTEGRITY_BOUND,
+        plan_section="3.2",
+        description="Versioned execution-assumption release pinned by artifact hash.",
+        expected_control=(
+            "Execution-profile releases remain integrity-bound until dependency invalidation or "
+            "release revocation is found."
+        ),
+        used_by=("replay", "promotion", "readiness"),
+    ),
+    ArtifactDefinition(
         artifact_id="candidate_bundle",
         title="Candidate bundle",
         artifact_class=ArtifactClass.INTEGRITY_BOUND,
@@ -541,6 +553,8 @@ def validate_artifact_class_contract() -> list[str]:
         errors.append("artifact identifiers must be unique")
     if "resolved_context_bundle" not in integrity_bound_artifact_ids():
         errors.append("resolved_context_bundle must remain integrity-bound")
+    if "execution_profile_release" not in integrity_bound_artifact_ids():
+        errors.append("execution_profile_release must remain integrity-bound")
     if "session_readiness_packet" not in freshness_bound_evidence_ids():
         errors.append("session_readiness_packet must remain freshness-bound")
     for definition in ARTIFACT_DEFINITIONS:

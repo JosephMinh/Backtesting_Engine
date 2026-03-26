@@ -50,6 +50,7 @@ class StorageTierContractTest(unittest.TestCase):
         self.assertEqual(StorageTier.TIER_C, artifact_index["dataset_release"].storage_tier)
         self.assertEqual(StorageTier.TIER_C, artifact_index["data_profile_release"].storage_tier)
         self.assertEqual(StorageTier.TIER_D, artifact_index["analytic_release"].storage_tier)
+        self.assertEqual(StorageTier.TIER_D, artifact_index["execution_profile_release"].storage_tier)
         self.assertEqual(StorageTier.TIER_E, artifact_index["parity_report"].storage_tier)
 
     def test_tier_assignment_fixture_cases_emit_expected_reports(self) -> None:
@@ -101,6 +102,7 @@ class StorageTierContractTest(unittest.TestCase):
                         dataset_release_id=payload["dataset_release_id"],
                         analytic_release_id=payload["analytic_release_id"],
                         data_profile_release_id=payload["data_profile_release_id"],
+                        execution_profile_release_id=payload["execution_profile_release_id"],
                         observation_cutoff_utc=payload["observation_cutoff_utc"],
                         resolved_context_bundle_id=payload["resolved_context_bundle_id"],
                         policy_bundle_hash=payload["policy_bundle_hash"],
@@ -120,6 +122,9 @@ class StorageTierContractTest(unittest.TestCase):
                 dataset_release_id="dataset_release_gold_2026q1_v1",
                 analytic_release_id="analytic_release_gold_masks_v1",
                 data_profile_release_id="ibkr_1oz_comex_bars_1m_v1",
+                execution_profile_release_id=(
+                    "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001"
+                ),
                 observation_cutoff_utc="2026-03-01T00:00:00+00:00",
                 resolved_context_bundle_id="resolved_context_bundle_xnys_comex_2026q1_v1",
                 policy_bundle_hash="policy_bundle_sha256_001",
@@ -134,6 +139,7 @@ class StorageTierContractTest(unittest.TestCase):
                 "dataset_release_id",
                 "analytic_release_id",
                 "data_profile_release_id",
+                "execution_profile_release_id",
                 "observation_cutoff_utc",
                 "resolved_context_bundle_id",
                 "policy_bundle_hash",

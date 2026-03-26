@@ -22,15 +22,21 @@ class TestArtifactClassificationRegistry(unittest.TestCase):
         self.assertEqual([], VALIDATION_ERRORS)
 
     def test_integrity_and_freshness_registries_are_explicit(self):
-        self.assertEqual(len(integrity_bound_artifact_ids()), 11)
+        self.assertEqual(len(integrity_bound_artifact_ids()), 12)
         self.assertEqual(len(freshness_bound_evidence_ids()), 11)
         self.assertIn("resolved_context_bundle", integrity_bound_artifact_ids())
+        self.assertIn("execution_profile_release", integrity_bound_artifact_ids())
         self.assertIn("session_readiness_packet", freshness_bound_evidence_ids())
 
     def test_resolved_context_bundle_stays_integrity_bound(self):
         definition = get_artifact_definition("resolved_context_bundle")
         self.assertEqual(definition.artifact_class, ArtifactClass.INTEGRITY_BOUND)
         self.assertIn("do not expire", definition.expected_control.lower())
+
+    def test_execution_profile_release_stays_integrity_bound(self):
+        definition = get_artifact_definition("execution_profile_release")
+        self.assertEqual(definition.artifact_class, ArtifactClass.INTEGRITY_BOUND)
+        self.assertIn("integrity-bound", definition.expected_control.lower())
 
 
 class TestArtifactAdmissibility(unittest.TestCase):
