@@ -1,0 +1,367 @@
+{
+  "candidate_cases": [
+    {
+      "case_id": "allow_frozen_candidate_bundle",
+      "payload": {
+        "bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "content_hash": "candidate_bundle_sha256_001",
+        "strategy_family_id": "gold_breakout",
+        "strategy_subfamily_id": "baseline",
+        "signal_kernel_digest": "kernel_sha256_001",
+        "kernel_abi_version": "abi_v1",
+        "state_serialization_version": "state_v1",
+        "adapter_compatibility_hashes": ["adapter_hash_1", "adapter_hash_2"],
+        "parameterization_digest": "params_sha256_001",
+        "product_profile_id": "oneoz_comex_v1",
+        "research_symbol": "MGC",
+        "execution_symbol": "1OZ",
+        "dataset_release_id": "dataset_release_gold_2026q1_v1",
+        "analytic_release_id": "analytic_release_gold_2026q1_v1",
+        "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "resolved_context_bundle_id": "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+        "execution_profile_release_id": "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+        "dependency_dag_hash": "dep_dag_sha256_001",
+        "feature_contract_hashes": ["sha256:feature001", "sha256:feature002"],
+        "operating_envelope_profile_id": "operating_envelope_gold_intraday_v1",
+        "session_conditioned_risk_envelope_id": "session_risk_gold_rth_v1",
+        "strategy_hard_risk_bounds_digest": "risk_bounds_sha256_001",
+        "eligible_account_class_constraints": ["solo_small_account", "ibkr_metals"],
+        "minimum_capital_usd": 5000,
+        "minimum_margin_fraction": 0.25,
+        "required_broker_capability_profile_id": "broker_capability_ibkr_v1",
+        "portability_policy_declaration": "mgc_research_to_oneoz_execution_v1",
+        "required_evidence_ids": ["replay_cert_v1", "tradability_study_v1"],
+        "compatibility_matrix_version": "compat_v1",
+        "signature_ids": ["ops_signoff_a", "risk_signoff_b"]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "CANDIDATE_BUNDLE_FROZEN"
+    },
+    {
+      "case_id": "reject_candidate_bundle_with_concrete_account_binding",
+      "payload": {
+        "bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_002",
+        "content_hash": "candidate_bundle_sha256_002",
+        "strategy_family_id": "gold_breakout",
+        "strategy_subfamily_id": "baseline",
+        "signal_kernel_digest": "kernel_sha256_002",
+        "kernel_abi_version": "abi_v1",
+        "state_serialization_version": "state_v1",
+        "adapter_compatibility_hashes": ["adapter_hash_1"],
+        "parameterization_digest": "params_sha256_002",
+        "product_profile_id": "oneoz_comex_v1",
+        "research_symbol": "MGC",
+        "execution_symbol": "1OZ",
+        "dataset_release_id": "dataset_release_gold_2026q1_v1",
+        "analytic_release_id": "analytic_release_gold_2026q1_v1",
+        "data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "resolved_context_bundle_id": "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+        "execution_profile_release_id": "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+        "dependency_dag_hash": "dep_dag_sha256_002",
+        "feature_contract_hashes": ["sha256:feature001"],
+        "operating_envelope_profile_id": "operating_envelope_gold_intraday_v1",
+        "session_conditioned_risk_envelope_id": null,
+        "strategy_hard_risk_bounds_digest": "risk_bounds_sha256_002",
+        "eligible_account_class_constraints": ["solo_small_account"],
+        "minimum_capital_usd": 5000,
+        "minimum_margin_fraction": 0.25,
+        "required_broker_capability_profile_id": "broker_capability_ibkr_v1",
+        "portability_policy_declaration": "mgc_research_to_oneoz_execution_v1",
+        "required_evidence_ids": ["replay_cert_v1"],
+        "compatibility_matrix_version": "compat_v1",
+        "signature_ids": ["ops_signoff_a"],
+        "concrete_account_binding_id": "ibkr_live_account_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "CANDIDATE_BUNDLE_CONCRETE_ACCOUNT_BINDING_FORBIDDEN"
+    }
+  ],
+  "readiness_cases": [
+    {
+      "case_id": "allow_live_eligible_readiness_record",
+      "payload": {
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": ["paper_pass_evidence_v1", "shadow_pass_evidence_v1"],
+        "lifecycle_state": "LIVE_ELIGIBLE",
+        "approval_history_ids": ["portability_signoff_v1", "replay_signoff_v1", "live_eligibility_signoff_v1"]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BUNDLE_READINESS_BOUND"
+    },
+    {
+      "case_id": "reject_paper_eligible_readiness_without_freshness_evidence",
+      "payload": {
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v2",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_paper_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_002",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": [],
+        "lifecycle_state": "PAPER_ELIGIBLE",
+        "approval_history_ids": ["paper_eligibility_signoff_v1"]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BUNDLE_READINESS_FRESHNESS_EVIDENCE_REQUIRED"
+    }
+  ],
+  "readiness_transition_cases": [
+    {
+      "case_id": "allow_frozen_to_portability_pending",
+      "payload": {
+        "bundle_readiness_record_id": "bundle_readiness_transition_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_paper_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": [],
+        "lifecycle_state": "FROZEN",
+        "approval_history_ids": []
+      },
+      "to_state": "PORTABILITY_PENDING",
+      "expected_status": "pass",
+      "expected_reason_code": "BUNDLE_READINESS_TRANSITION_ALLOWED"
+    },
+    {
+      "case_id": "reject_live_eligible_back_to_paper_passed",
+      "payload": {
+        "bundle_readiness_record_id": "bundle_readiness_transition_v2",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": ["paper_pass_evidence_v1", "shadow_pass_evidence_v1"],
+        "lifecycle_state": "LIVE_ELIGIBLE",
+        "approval_history_ids": ["live_eligibility_signoff_v1"]
+      },
+      "to_state": "PAPER_PASSED",
+      "expected_status": "violation",
+      "expected_reason_code": "BUNDLE_READINESS_INVALID_TRANSITION"
+    }
+  ],
+  "deployment_cases": [
+    {
+      "case_id": "allow_live_canary_deployment_instance",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 7,
+        "operator_action_ids": ["activate_live_v1"],
+        "start_event_id": "deployment_start_live_v1",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": ["recovery_event_live_v1"],
+        "lifecycle_state": "LIVE_CANARY"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_VALID"
+    },
+    {
+      "case_id": "reject_shadow_state_inside_paper_lane",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_paper_v1",
+        "lane": "paper",
+        "target_account_binding_id": "ibkr_paper_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_paper_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_paper_20260326"],
+        "runtime_sequence_number": 1,
+        "operator_action_ids": [],
+        "start_event_id": "deployment_start_paper_v1",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "SHADOW_RUNNING"
+      },
+      "expected_status": "incompatible",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_STATE_LANE_MISMATCH"
+    }
+  ],
+  "deployment_transition_cases": [
+    {
+      "case_id": "allow_live_canary_to_live_active",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_live_transition_v1",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 7,
+        "operator_action_ids": ["activate_live_v1"],
+        "start_event_id": "deployment_start_live_v1",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "LIVE_CANARY"
+      },
+      "to_state": "LIVE_ACTIVE",
+      "expected_status": "pass",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_TRANSITION_ALLOWED"
+    },
+    {
+      "case_id": "reject_closed_deployment_reactivation",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_closed_v1",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 9,
+        "operator_action_ids": ["withdraw_live_v1"],
+        "start_event_id": "deployment_start_live_v1",
+        "stop_event_id": "deployment_stop_live_v1",
+        "withdrawal_event_id": "deployment_withdraw_live_v1",
+        "recovery_event_ids": [],
+        "lifecycle_state": "CLOSED"
+      },
+      "to_state": "LIVE_ACTIVE",
+      "expected_status": "violation",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_INVALID_TRANSITION"
+    }
+  ],
+  "promotion_cases": [
+    {
+      "case_id": "allow_shadow_live_promotion_packet",
+      "payload": {
+        "promotion_packet_id": "promotion_packet_gold_shadow_v1",
+        "lane": "shadow_live",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "account_risk_profile_hash": "account_risk_hash_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "replay_certification_id": "replay_cert_gold_v1",
+        "portability_certification_id": "portability_cert_gold_v1",
+        "native_validation_id": "native_validation_1oz_v1",
+        "execution_symbol_tradability_study_id": "tradability_study_1oz_v1",
+        "paper_pass_evidence_id": "paper_pass_evidence_v1",
+        "shadow_pass_evidence_id": null,
+        "fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "market_data_entitlement_check_id": "entitlement_check_2026q1_v1",
+        "active_waiver_ids": [],
+        "incident_reference_ids": [],
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "compatibility_matrix_version": "compat_v1",
+        "signoff_ids": ["ops_signoff_a", "risk_signoff_b"],
+        "evidence_expiry_timestamps_utc": ["2026-03-30T00:00:00+00:00"],
+        "signed_packet_hash": "promotion_packet_sha256_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PROMOTION_PACKET_SIGNED_AND_BOUND"
+    },
+    {
+      "case_id": "reject_live_promotion_without_shadow_pass",
+      "payload": {
+        "promotion_packet_id": "promotion_packet_gold_live_v1",
+        "lane": "live",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "account_risk_profile_hash": "account_risk_hash_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "replay_certification_id": "replay_cert_gold_v1",
+        "portability_certification_id": "portability_cert_gold_v1",
+        "native_validation_id": "native_validation_1oz_v1",
+        "execution_symbol_tradability_study_id": "tradability_study_1oz_v1",
+        "paper_pass_evidence_id": "paper_pass_evidence_v1",
+        "shadow_pass_evidence_id": null,
+        "fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "market_data_entitlement_check_id": "entitlement_check_2026q1_v1",
+        "active_waiver_ids": [],
+        "incident_reference_ids": [],
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "compatibility_matrix_version": "compat_v1",
+        "signoff_ids": ["ops_signoff_a", "risk_signoff_b"],
+        "evidence_expiry_timestamps_utc": ["2026-03-30T00:00:00+00:00"],
+        "signed_packet_hash": "promotion_packet_sha256_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTION_PACKET_LIVE_EVIDENCE_REQUIRED"
+    }
+  ],
+  "session_cases": [
+    {
+      "case_id": "allow_green_session_readiness_packet",
+      "payload": {
+        "session_readiness_packet_id": "session_packet_gold_live_20260326",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-26_COMEX_GLOBEX",
+        "valid_from_utc": "2026-03-26T22:00:00+00:00",
+        "valid_to_utc": "2026-03-27T21:00:00+00:00",
+        "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "fee_check_id": "fee_check_live_20260326",
+        "margin_check_id": "margin_check_live_20260326",
+        "entitlement_check_id": "entitlement_check_live_20260326",
+        "contract_conformance_check_id": "contract_conformance_live_20260326",
+        "backup_freshness_check_id": "backup_check_live_20260326",
+        "restore_drill_check_id": "restore_drill_check_live_20260326",
+        "clock_health_check_id": "clock_health_live_20260326",
+        "secret_health_check_id": "secret_health_live_20260326",
+        "unresolved_discrepancy_status": "clear",
+        "operating_envelope_check_id": "operating_envelope_live_20260326",
+        "session_eligibility_check_id": "session_eligibility_live_20260326",
+        "session_status": "green",
+        "blocked_check_ids": [],
+        "decision_trace_hash": "session_trace_sha256_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "SESSION_PACKET_VALID"
+    },
+    {
+      "case_id": "reject_green_session_with_blocking_discrepancy",
+      "payload": {
+        "session_readiness_packet_id": "session_packet_gold_live_20260327",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-27_COMEX_GLOBEX",
+        "valid_from_utc": "2026-03-27T22:00:00+00:00",
+        "valid_to_utc": "2026-03-28T21:00:00+00:00",
+        "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "fee_check_id": "fee_check_live_20260327",
+        "margin_check_id": "margin_check_live_20260327",
+        "entitlement_check_id": "entitlement_check_live_20260327",
+        "contract_conformance_check_id": "contract_conformance_live_20260327",
+        "backup_freshness_check_id": "backup_check_live_20260327",
+        "restore_drill_check_id": "restore_drill_check_live_20260327",
+        "clock_health_check_id": "clock_health_live_20260327",
+        "secret_health_check_id": "secret_health_live_20260327",
+        "unresolved_discrepancy_status": "blocking",
+        "operating_envelope_check_id": "operating_envelope_live_20260327",
+        "session_eligibility_check_id": "session_eligibility_live_20260327",
+        "session_status": "green",
+        "blocked_check_ids": ["reconciliation_discrepancy"],
+        "decision_trace_hash": "session_trace_sha256_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_PACKET_GREEN_REQUIRES_CLEAR_DISCREPANCIES"
+    }
+  ]
+}

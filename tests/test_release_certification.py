@@ -57,7 +57,7 @@ def make_correction_event(
                 reason_bundle="Upstream correction materially changed certified input rows.",
             ),
             DependentPolicyUpdate(
-                surface_kind=DependentSurfaceKind.CANDIDATE_READINESS_RECORD,
+                surface_kind=DependentSurfaceKind.BUNDLE_READINESS_RECORD,
                 surface_id="readiness_gc_candidate_v3",
                 action=DependentUpdateAction.SUPERSEDE,
                 reason_bundle="Dependent candidate readiness must point at the superseding dataset release.",

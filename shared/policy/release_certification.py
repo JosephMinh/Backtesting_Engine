@@ -29,7 +29,7 @@ class CorrectionImpactClass(str, Enum):
 @unique
 class DependentSurfaceKind(str, Enum):
     ANALYTIC_RELEASE = "analytic_release"
-    CANDIDATE_READINESS_RECORD = "candidate_readiness_record"
+    BUNDLE_READINESS_RECORD = "bundle_readiness_record"
     DATA_PROFILE_RELEASE = "data_profile_release"
     PORTABILITY_STUDY = "portability_study"
 

@@ -254,6 +254,24 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="candidate_and_activation_packets",
+        title="Candidate bundles, readiness records, and activation packets",
+        related_beads=("backtesting_engine-ltc.3.6",),
+        phase_gates=("phase_6", "phase_7"),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.BROKER_SESSION_RECORDING,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(
+            VerificationClass.GOLDEN_PATH,
+            VerificationClass.REPLAY_CERTIFICATION,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="candidate_freeze_and_certification",
         title="Candidate freeze, replay, and certification",
         related_beads=(

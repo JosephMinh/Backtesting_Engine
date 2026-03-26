@@ -212,6 +212,51 @@ class VerificationContractTest(unittest.TestCase):
         self.assertIn(ArtifactRequirement.OPERATOR_REASON_BUNDLES, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS, profile.retained_artifacts)
 
+    def test_bead_36_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.3.6" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("candidate_and_activation_packets", matching[0].surface_id)
+        self.assertEqual(("phase_6", "phase_7"), matching[0].phase_gates)
+
+    def test_bead_36_profile_declares_packet_specific_workflow_and_fixture_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "candidate_and_activation_packets"
+        )
+        self.assertEqual(
+            (
+                VerificationClass.UNIT,
+                VerificationClass.CONTRACT,
+                VerificationClass.PROPERTY,
+            ),
+            profile.local_checks,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.REPLAY_CERTIFICATION,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.BROKER_SESSION_RECORDING,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertIn(ArtifactRequirement.DECISION_TRACES, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+
     def test_bead_310_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile
