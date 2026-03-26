@@ -1,0 +1,347 @@
+{
+  "cases": [
+    {
+      "case_id": "phase0_happy_path",
+      "request": {
+        "case_id": "phase0_happy_path",
+        "environment_lock_id": "uv.lock:sha256:foundation-v1",
+        "deterministic_clock_utc": "2026-03-26T00:00:00+00:00",
+        "artifact_manifest_id": "artifact_manifest_foundation_001",
+        "correlation_id": "corr-foundation-001",
+        "operator_reason_bundle": [
+          "phase0_bootstrap_reproducible",
+          "startup_checks_green"
+        ],
+        "schema_surfaces": [
+          {
+            "surface_id": "release_schemas",
+            "loaded": true,
+            "schema_version": "1"
+          },
+          {
+            "surface_id": "metadata_telemetry",
+            "loaded": true,
+            "schema_version": "1"
+          },
+          {
+            "surface_id": "lifecycle_specs",
+            "loaded": true,
+            "schema_version": "1"
+          }
+        ],
+        "startup_compatibility": {
+          "compatible": true,
+          "binary_version": "opsd-0.1.0",
+          "database_schema_version": "schema-1",
+          "snapshot_journal_format": "journal-1",
+          "policy_bundle_hash": "policy_bundle_sha256_001",
+          "compatibility_matrix_version": "compat-1",
+          "mismatch_details": []
+        },
+        "clock_probe": {
+          "status": "healthy",
+          "evidence_id": "clock_probe_001",
+          "detail": "Clock skew within threshold."
+        },
+        "secret_probe": {
+          "status": "healthy",
+          "evidence_id": "secret_probe_001",
+          "detail": "Secret baseline is healthy."
+        },
+        "journal_digest_probe": {
+          "status": "healthy",
+          "evidence_id": "journal_probe_001",
+          "detail": "Journal digest verified."
+        },
+        "property_harness": {
+          "passed": true,
+          "seed": 17,
+          "case_count": 64,
+          "failure_example_id": null,
+          "report_artifact_id": "property_report_001"
+        },
+        "round_trip_smoke": {
+          "boot_succeeded": true,
+          "round_trip_completed": true,
+          "smoke_log_artifact_id": "smoke_log_001",
+          "smoke_trace_id": "smoke_trace_001",
+          "expected_vs_actual_diff_id": "smoke_diff_001"
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": "FOUNDATION_PHASE0_READY",
+        "failure_classes": []
+      }
+    },
+    {
+      "case_id": "schema_load_failure",
+      "request": {
+        "case_id": "schema_load_failure",
+        "environment_lock_id": "uv.lock:sha256:foundation-v1",
+        "deterministic_clock_utc": "2026-03-26T00:00:00+00:00",
+        "artifact_manifest_id": "artifact_manifest_foundation_002",
+        "correlation_id": "corr-foundation-002",
+        "operator_reason_bundle": [
+          "schema_bootstrap_blocked"
+        ],
+        "schema_surfaces": [
+          {
+            "surface_id": "release_schemas",
+            "loaded": true,
+            "schema_version": "1"
+          },
+          {
+            "surface_id": "policy_engine",
+            "loaded": false,
+            "schema_version": "1",
+            "error_detail": "missing policy rule scaffold"
+          }
+        ],
+        "startup_compatibility": {
+          "compatible": true,
+          "binary_version": "opsd-0.1.0",
+          "database_schema_version": "schema-1",
+          "snapshot_journal_format": "journal-1",
+          "policy_bundle_hash": "policy_bundle_sha256_001",
+          "compatibility_matrix_version": "compat-1",
+          "mismatch_details": []
+        },
+        "clock_probe": {
+          "status": "healthy",
+          "evidence_id": "clock_probe_002",
+          "detail": "Clock skew within threshold."
+        },
+        "secret_probe": {
+          "status": "healthy",
+          "evidence_id": "secret_probe_002",
+          "detail": "Secret baseline is healthy."
+        },
+        "journal_digest_probe": {
+          "status": "healthy",
+          "evidence_id": "journal_probe_002",
+          "detail": "Journal digest verified."
+        },
+        "property_harness": {
+          "passed": true,
+          "seed": 17,
+          "case_count": 64,
+          "failure_example_id": null,
+          "report_artifact_id": "property_report_002"
+        },
+        "round_trip_smoke": {
+          "boot_succeeded": true,
+          "round_trip_completed": true,
+          "smoke_log_artifact_id": "smoke_log_002",
+          "smoke_trace_id": "smoke_trace_002",
+          "expected_vs_actual_diff_id": "smoke_diff_002"
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "FOUNDATION_SCHEMA_SCAFFOLD_FAILED",
+        "failure_classes": [
+          "schema_error"
+        ]
+      }
+    },
+    {
+      "case_id": "compatibility_mismatch",
+      "request": {
+        "case_id": "compatibility_mismatch",
+        "environment_lock_id": "uv.lock:sha256:foundation-v1",
+        "deterministic_clock_utc": "2026-03-26T00:00:00+00:00",
+        "artifact_manifest_id": "artifact_manifest_foundation_003",
+        "correlation_id": "corr-foundation-003",
+        "operator_reason_bundle": [
+          "startup_compatibility_failed"
+        ],
+        "schema_surfaces": [
+          {
+            "surface_id": "release_schemas",
+            "loaded": true,
+            "schema_version": "1"
+          }
+        ],
+        "startup_compatibility": {
+          "compatible": false,
+          "binary_version": "opsd-0.1.0",
+          "database_schema_version": "schema-2",
+          "snapshot_journal_format": "journal-2",
+          "policy_bundle_hash": "policy_bundle_sha256_002",
+          "compatibility_matrix_version": "compat-2",
+          "mismatch_details": [
+            "database schema version drift",
+            "snapshot journal format drift"
+          ]
+        },
+        "clock_probe": {
+          "status": "healthy",
+          "evidence_id": "clock_probe_003",
+          "detail": "Clock skew within threshold."
+        },
+        "secret_probe": {
+          "status": "healthy",
+          "evidence_id": "secret_probe_003",
+          "detail": "Secret baseline is healthy."
+        },
+        "journal_digest_probe": {
+          "status": "healthy",
+          "evidence_id": "journal_probe_003",
+          "detail": "Journal digest verified."
+        },
+        "property_harness": {
+          "passed": true,
+          "seed": 17,
+          "case_count": 64,
+          "failure_example_id": null,
+          "report_artifact_id": "property_report_003"
+        },
+        "round_trip_smoke": {
+          "boot_succeeded": true,
+          "round_trip_completed": true,
+          "smoke_log_artifact_id": "smoke_log_003",
+          "smoke_trace_id": "smoke_trace_003",
+          "expected_vs_actual_diff_id": "smoke_diff_003"
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "FOUNDATION_STARTUP_COMPATIBILITY_BLOCKED",
+        "failure_classes": [
+          "compatibility_error"
+        ]
+      }
+    },
+    {
+      "case_id": "property_and_digest_failure",
+      "request": {
+        "case_id": "property_and_digest_failure",
+        "environment_lock_id": "uv.lock:sha256:foundation-v1",
+        "deterministic_clock_utc": "2026-03-26T00:00:00+00:00",
+        "artifact_manifest_id": "artifact_manifest_foundation_004",
+        "correlation_id": "corr-foundation-004",
+        "operator_reason_bundle": [
+          "invariant_harness_failed"
+        ],
+        "schema_surfaces": [
+          {
+            "surface_id": "release_schemas",
+            "loaded": true,
+            "schema_version": "1"
+          }
+        ],
+        "startup_compatibility": {
+          "compatible": true,
+          "binary_version": "opsd-0.1.0",
+          "database_schema_version": "schema-1",
+          "snapshot_journal_format": "journal-1",
+          "policy_bundle_hash": "policy_bundle_sha256_001",
+          "compatibility_matrix_version": "compat-1",
+          "mismatch_details": []
+        },
+        "clock_probe": {
+          "status": "healthy",
+          "evidence_id": "clock_probe_004",
+          "detail": "Clock skew within threshold."
+        },
+        "secret_probe": {
+          "status": "healthy",
+          "evidence_id": "secret_probe_004",
+          "detail": "Secret baseline is healthy."
+        },
+        "journal_digest_probe": {
+          "status": "failed",
+          "evidence_id": "journal_probe_004",
+          "detail": "Journal digest chain mismatch detected."
+        },
+        "property_harness": {
+          "passed": false,
+          "seed": 29,
+          "case_count": 64,
+          "failure_example_id": "property_failure_example_001",
+          "report_artifact_id": "property_report_004"
+        },
+        "round_trip_smoke": {
+          "boot_succeeded": true,
+          "round_trip_completed": true,
+          "smoke_log_artifact_id": "smoke_log_004",
+          "smoke_trace_id": "smoke_trace_004",
+          "expected_vs_actual_diff_id": "smoke_diff_004"
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "FOUNDATION_JOURNAL_DIGEST_FAILED",
+        "failure_classes": [
+          "invariant_failure"
+        ]
+      }
+    },
+    {
+      "case_id": "round_trip_boot_failure",
+      "request": {
+        "case_id": "round_trip_boot_failure",
+        "environment_lock_id": "uv.lock:sha256:foundation-v1",
+        "deterministic_clock_utc": "2026-03-26T00:00:00+00:00",
+        "artifact_manifest_id": "artifact_manifest_foundation_005",
+        "correlation_id": "corr-foundation-005",
+        "operator_reason_bundle": [
+          "boot_smoke_failed"
+        ],
+        "schema_surfaces": [
+          {
+            "surface_id": "release_schemas",
+            "loaded": true,
+            "schema_version": "1"
+          }
+        ],
+        "startup_compatibility": {
+          "compatible": true,
+          "binary_version": "opsd-0.1.0",
+          "database_schema_version": "schema-1",
+          "snapshot_journal_format": "journal-1",
+          "policy_bundle_hash": "policy_bundle_sha256_001",
+          "compatibility_matrix_version": "compat-1",
+          "mismatch_details": []
+        },
+        "clock_probe": {
+          "status": "healthy",
+          "evidence_id": "clock_probe_005",
+          "detail": "Clock skew within threshold."
+        },
+        "secret_probe": {
+          "status": "healthy",
+          "evidence_id": "secret_probe_005",
+          "detail": "Secret baseline is healthy."
+        },
+        "journal_digest_probe": {
+          "status": "healthy",
+          "evidence_id": "journal_probe_005",
+          "detail": "Journal digest verified."
+        },
+        "property_harness": {
+          "passed": true,
+          "seed": 17,
+          "case_count": 64,
+          "failure_example_id": null,
+          "report_artifact_id": "property_report_005"
+        },
+        "round_trip_smoke": {
+          "boot_succeeded": false,
+          "round_trip_completed": false,
+          "smoke_log_artifact_id": "smoke_log_005",
+          "smoke_trace_id": "smoke_trace_005",
+          "expected_vs_actual_diff_id": "smoke_diff_005"
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "FOUNDATION_ROUND_TRIP_SMOKE_FAILED",
+        "failure_classes": [
+          "setup_error"
+        ]
+      }
+    }
+  ]
+}

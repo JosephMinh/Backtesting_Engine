@@ -280,6 +280,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="foundation_phase0_harness",
+        module="shared.policy.foundation_harness",
+        source_path="shared/policy/foundation_harness.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="11.2",
+        purpose=(
+            "Reproducible phase-0 foundation harness with setup, schema, compatibility, "
+            "probe, property, and round-trip smoke evidence"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="databento_ibkr_bar_parity",
         module="shared.policy.bar_parity",
         source_path="shared/policy/bar_parity.py",

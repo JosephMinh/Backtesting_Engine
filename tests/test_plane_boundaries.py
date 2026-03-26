@@ -128,6 +128,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("product_and_account_profiles", surface_ids)
         self.assertIn("storage_tiers_and_point_in_time_binding", surface_ids)
         self.assertIn("validation_and_release_lifecycle", surface_ids)
+        self.assertIn("foundation_phase0_harness", surface_ids)
         self.assertIn("databento_ibkr_bar_parity", surface_ids)
         self.assertIn("solo_governance_workflows", surface_ids)
 
