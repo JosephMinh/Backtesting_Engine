@@ -310,6 +310,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="fast_screening_governance",
+        module="shared.policy.fast_screening",
+        source_path="shared/policy/fast_screening.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="6.9",
+        purpose=(
+            "Optional fast-screening eligibility, Nautilus equivalence retention, and "
+            "non-promotable survivor-routing controls"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="solo_governance_workflows",
         module="shared.policy.solo_governance",
         source_path="shared/policy/solo_governance.py",

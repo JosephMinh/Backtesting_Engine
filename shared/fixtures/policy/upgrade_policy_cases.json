@@ -1,0 +1,328 @@
+{
+  "startup_cases": [
+    {
+      "case_id": "binary-compatible-upgrade",
+      "subject_id": "opsd-startup-v2",
+      "machine_id": "deployment_instance_lifecycle",
+      "migration": {
+        "migration_id": "mig_binary_v2",
+        "description": "Upgrade runtime binary without protocol drift.",
+        "affected_domains": [],
+        "startup_surfaces": [
+          "binary_version"
+        ],
+        "replay_required": false,
+        "recertification_required": false,
+        "new_promotion_packet_required": false,
+        "forward_only": false,
+        "recoverability_evidence_id": null,
+        "rollback_or_restore_path": "docs/runbooks/restore_drill_baseline.md",
+        "repo_paths": [
+          "shared/policy/upgrade_policy.py",
+          "tests/test_upgrade_policy.py"
+        ],
+        "incident_override": false
+      },
+      "baseline": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "candidate": {
+        "binary_version": "opsd-1.1.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "active_session": false,
+      "expected_status": "pass",
+      "expected_reason_code": "STARTUP_COMPATIBILITY_CONFIRMED",
+      "expected_changed_startup_surfaces": [
+        "binary_version"
+      ],
+      "expected_blocking_startup_surfaces": []
+    },
+    {
+      "case_id": "strategy-upgrade-needs-recertification",
+      "subject_id": "opsd-startup-v3",
+      "machine_id": "deployment_instance_lifecycle",
+      "migration": {
+        "migration_id": "mig_strategy_v3",
+        "description": "Upgrade strategy protocol and matrix after governed replay.",
+        "affected_domains": [
+          "strategy_protocol",
+          "compatibility_matrix_version"
+        ],
+        "startup_surfaces": [
+          "binary_version",
+          "artifact_compatibility_matrix"
+        ],
+        "replay_required": true,
+        "recertification_required": true,
+        "new_promotion_packet_required": true,
+        "forward_only": false,
+        "recoverability_evidence_id": "restore_drill_20260326",
+        "rollback_or_restore_path": "docs/runbooks/restore_drill_baseline.md",
+        "repo_paths": [
+          "shared/policy/upgrade_policy.py",
+          "tests/test_upgrade_policy.py",
+          "docs/verification_contract.md"
+        ],
+        "incident_override": false
+      },
+      "baseline": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "candidate": {
+        "binary_version": "opsd-1.2.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v2",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v2",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v2"
+        }
+      },
+      "active_session": false,
+      "expected_status": "incompatible",
+      "expected_reason_code": "STARTUP_COMPATIBILITY_REQUIRES_RECERTIFICATION",
+      "expected_changed_startup_surfaces": [
+        "binary_version",
+        "artifact_compatibility_matrix"
+      ],
+      "expected_blocking_startup_surfaces": [
+        "binary_version",
+        "artifact_compatibility_matrix"
+      ]
+    },
+    {
+      "case_id": "forward-only-without-recoverability-evidence",
+      "subject_id": "opsd-startup-v4",
+      "machine_id": "deployment_instance_lifecycle",
+      "migration": {
+        "migration_id": "mig_forward_only_v4",
+        "description": "Forward-only ops migration without restore proof.",
+        "affected_domains": [
+          "ops_protocol",
+          "compatibility_matrix_version"
+        ],
+        "startup_surfaces": [
+          "database_schema_version",
+          "snapshot_journal_format",
+          "artifact_compatibility_matrix"
+        ],
+        "replay_required": true,
+        "recertification_required": true,
+        "new_promotion_packet_required": true,
+        "forward_only": true,
+        "recoverability_evidence_id": null,
+        "rollback_or_restore_path": "docs/runbooks/restore_drill_baseline.md",
+        "repo_paths": [
+          "shared/policy/upgrade_policy.py",
+          "tests/test_upgrade_policy.py"
+        ],
+        "incident_override": false
+      },
+      "baseline": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "candidate": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-2",
+        "snapshot_journal_format": "journal-2",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v2",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v2",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v2"
+        }
+      },
+      "active_session": false,
+      "expected_status": "violation",
+      "expected_reason_code": "FORWARD_ONLY_MISSING_RECOVERABILITY_EVIDENCE",
+      "expected_changed_startup_surfaces": [
+        "database_schema_version",
+        "snapshot_journal_format",
+        "artifact_compatibility_matrix"
+      ],
+      "expected_blocking_startup_surfaces": [
+        "database_schema_version",
+        "snapshot_journal_format",
+        "artifact_compatibility_matrix"
+      ]
+    },
+    {
+      "case_id": "active-session-upgrade-blocked",
+      "subject_id": "opsd-startup-v5",
+      "machine_id": "deployment_instance_lifecycle",
+      "migration": {
+        "migration_id": "mig_policy_v5",
+        "description": "Policy bundle update attempted during active session.",
+        "affected_domains": [
+          "policy_bundle_hash",
+          "compatibility_matrix_version"
+        ],
+        "startup_surfaces": [
+          "policy_bundle_hash",
+          "artifact_compatibility_matrix"
+        ],
+        "replay_required": false,
+        "recertification_required": true,
+        "new_promotion_packet_required": true,
+        "forward_only": false,
+        "recoverability_evidence_id": "restore_drill_20260326",
+        "rollback_or_restore_path": "docs/runbooks/restore_drill_baseline.md",
+        "repo_paths": [
+          "shared/policy/upgrade_policy.py",
+          "tests/test_upgrade_policy.py"
+        ],
+        "incident_override": false
+      },
+      "baseline": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "candidate": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:222",
+        "artifact_compatibility_matrix": "matrix/v2",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:222",
+          "compatibility_matrix_version": "matrix/v2"
+        }
+      },
+      "active_session": true,
+      "expected_status": "violation",
+      "expected_reason_code": "ACTIVE_SESSION_UPGRADE_BLOCKED",
+      "expected_changed_startup_surfaces": [
+        "policy_bundle_hash",
+        "artifact_compatibility_matrix"
+      ],
+      "expected_blocking_startup_surfaces": [
+        "policy_bundle_hash",
+        "artifact_compatibility_matrix"
+      ]
+    },
+    {
+      "case_id": "repo-structure-misaligned",
+      "subject_id": "opsd-startup-v6",
+      "machine_id": "deployment_instance_lifecycle",
+      "migration": {
+        "migration_id": "mig_bad_path_v6",
+        "description": "Migration touches a path outside the declared plane roots.",
+        "affected_domains": [],
+        "startup_surfaces": [
+          "binary_version"
+        ],
+        "replay_required": false,
+        "recertification_required": false,
+        "new_promotion_packet_required": false,
+        "forward_only": false,
+        "recoverability_evidence_id": null,
+        "rollback_or_restore_path": "docs/runbooks/restore_drill_baseline.md",
+        "repo_paths": [
+          "misc/runtime_patch.py"
+        ],
+        "incident_override": false
+      },
+      "baseline": {
+        "binary_version": "opsd-1.0.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "candidate": {
+        "binary_version": "opsd-1.1.0",
+        "database_schema_version": "schema-1",
+        "snapshot_journal_format": "journal-1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "artifact_compatibility_matrix": "matrix/v1",
+        "compatibility_vector": {
+          "data_protocol": "data/v1",
+          "strategy_protocol": "strategy/v1",
+          "ops_protocol": "ops/v1",
+          "policy_bundle_hash": "policy/sha256:111",
+          "compatibility_matrix_version": "matrix/v1"
+        }
+      },
+      "active_session": false,
+      "expected_status": "violation",
+      "expected_reason_code": "REPO_STRUCTURE_BOUNDARY_VIOLATION",
+      "expected_changed_startup_surfaces": [
+        "binary_version"
+      ],
+      "expected_blocking_startup_surfaces": [
+        "binary_version"
+      ]
+    }
+  ]
+}

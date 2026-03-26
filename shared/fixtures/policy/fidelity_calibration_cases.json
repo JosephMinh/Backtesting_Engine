@@ -1,0 +1,265 @@
+{
+  "cases": [
+    {
+      "case_id": "slow_trend_session_conditioned_pass",
+      "request": {
+        "case_id": "slow_trend_session_conditioned_pass",
+        "candidate_id": "candidate_slow_trend_v1",
+        "strategy_class_id": "slow_bar_close_trend",
+        "decision_interval_seconds": 300,
+        "decision_basis": "bar_close",
+        "requires_passive_fill_assumption": false,
+        "depends_on_order_book_imbalance": false,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": false,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 300,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 8.0,
+            "max_allowed_slippage_bps": 12.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/slow_trend_regular_v1.json"
+            ]
+          },
+          {
+            "session_class": "overnight",
+            "bar_interval_seconds": 300,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 14.0,
+            "max_allowed_slippage_bps": 18.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/slow_trend_overnight_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_live_lane_eligible": true,
+      "expected_reason_code": "FIDELITY_CALIBRATION_PASSED",
+      "expected_failed_reason_codes": []
+    },
+    {
+      "case_id": "passive_pullback_requires_credible_passive_fills",
+      "request": {
+        "case_id": "passive_pullback_requires_credible_passive_fills",
+        "candidate_id": "candidate_passive_pullback_v1",
+        "strategy_class_id": "one_bar_late_passive_pullback",
+        "decision_interval_seconds": 120,
+        "decision_basis": "one_bar_late",
+        "requires_passive_fill_assumption": true,
+        "depends_on_order_book_imbalance": false,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": false,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 120,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 6.5,
+            "max_allowed_slippage_bps": 9.0,
+            "passive_assumption_credible": true,
+            "supporting_data_refs": [
+              "studies/fidelity/passive_pullback_regular_v1.json"
+            ]
+          },
+          {
+            "session_class": "overnight",
+            "bar_interval_seconds": 120,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 10.0,
+            "max_allowed_slippage_bps": 12.0,
+            "passive_assumption_credible": true,
+            "supporting_data_refs": [
+              "studies/fidelity/passive_pullback_overnight_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_live_lane_eligible": true,
+      "expected_reason_code": "FIDELITY_CALIBRATION_PASSED",
+      "expected_failed_reason_codes": []
+    },
+    {
+      "case_id": "sub_minute_strategy_rejected",
+      "request": {
+        "case_id": "sub_minute_strategy_rejected",
+        "candidate_id": "candidate_sub_minute_v1",
+        "strategy_class_id": "sub_minute_reactive_scalping",
+        "decision_interval_seconds": 15,
+        "decision_basis": "bar_close",
+        "requires_passive_fill_assumption": false,
+        "depends_on_order_book_imbalance": false,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": true,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 15,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 7.0,
+            "max_allowed_slippage_bps": 8.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/sub_minute_regular_v1.json"
+            ]
+          },
+          {
+            "session_class": "overnight",
+            "bar_interval_seconds": 15,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 11.0,
+            "max_allowed_slippage_bps": 12.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/sub_minute_overnight_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_live_lane_eligible": false,
+      "expected_reason_code": "FIDELITY_CALIBRATION_BLOCKED",
+      "expected_failed_reason_codes": [
+        "FIDELITY_LIVE_LANE_MULTIPLE"
+      ]
+    },
+    {
+      "case_id": "order_book_dependency_rejected",
+      "request": {
+        "case_id": "order_book_dependency_rejected",
+        "candidate_id": "candidate_order_book_v1",
+        "strategy_class_id": "order_book_imbalance_reversion",
+        "decision_interval_seconds": 60,
+        "decision_basis": "bar_close",
+        "requires_passive_fill_assumption": false,
+        "depends_on_order_book_imbalance": true,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": false,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 60,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 7.5,
+            "max_allowed_slippage_bps": 9.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/order_book_regular_v1.json"
+            ]
+          },
+          {
+            "session_class": "overnight",
+            "bar_interval_seconds": 60,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 12.5,
+            "max_allowed_slippage_bps": 14.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/order_book_overnight_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_live_lane_eligible": false,
+      "expected_reason_code": "FIDELITY_CALIBRATION_BLOCKED",
+      "expected_failed_reason_codes": [
+        "FIDELITY_LIVE_LANE_ORDER_BOOK"
+      ]
+    },
+    {
+      "case_id": "missing_session_surface_is_invalid",
+      "request": {
+        "case_id": "missing_session_surface_is_invalid",
+        "candidate_id": "candidate_missing_surface_v1",
+        "strategy_class_id": "slow_bar_close_breakout",
+        "decision_interval_seconds": 180,
+        "decision_basis": "bar_close",
+        "requires_passive_fill_assumption": false,
+        "depends_on_order_book_imbalance": false,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": false,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 180,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 8.0,
+            "max_allowed_slippage_bps": 10.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/missing_surface_regular_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "invalid",
+      "expected_live_lane_eligible": false,
+      "expected_reason_code": "FIDELITY_INVALID_REQUEST",
+      "expected_failed_reason_codes": [
+        "FIDELITY_INVALID_REQUEST"
+      ]
+    },
+    {
+      "case_id": "passive_assumption_gap_blocks_candidate",
+      "request": {
+        "case_id": "passive_assumption_gap_blocks_candidate",
+        "candidate_id": "candidate_passive_gap_v1",
+        "strategy_class_id": "one_bar_late_passive_pullback_gap",
+        "decision_interval_seconds": 120,
+        "decision_basis": "one_bar_late",
+        "requires_passive_fill_assumption": true,
+        "depends_on_order_book_imbalance": false,
+        "requires_queue_position_edge": false,
+        "exhibits_sub_minute_market_making": false,
+        "requires_premium_depth_data": false,
+        "material_session_liquidity_difference": true,
+        "session_calibrations": [
+          {
+            "session_class": "regular",
+            "bar_interval_seconds": 120,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 6.0,
+            "max_allowed_slippage_bps": 8.0,
+            "passive_assumption_credible": true,
+            "supporting_data_refs": [
+              "studies/fidelity/passive_gap_regular_v1.json"
+            ]
+          },
+          {
+            "session_class": "overnight",
+            "bar_interval_seconds": 120,
+            "bar_sufficiency_passed": true,
+            "realistic_slippage_bps": 11.0,
+            "max_allowed_slippage_bps": 12.0,
+            "passive_assumption_credible": false,
+            "supporting_data_refs": [
+              "studies/fidelity/passive_gap_overnight_v1.json"
+            ]
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_live_lane_eligible": false,
+      "expected_reason_code": "FIDELITY_CALIBRATION_BLOCKED",
+      "expected_failed_reason_codes": [
+        "FIDELITY_FC03_PASSIVE_ASSUMPTIONS"
+      ]
+    }
+  ]
+}

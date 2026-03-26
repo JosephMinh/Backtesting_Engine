@@ -1,0 +1,212 @@
+{
+  "transition_cases": [
+    {
+      "case_id": "dataset-release-approved-to-active",
+      "machine_id": "dataset_release_lifecycle",
+      "from_state": "APPROVED",
+      "to_state": "ACTIVE",
+      "expected_status": "pass",
+      "expected_reason_code": "LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_affected_domains": [
+        "data_protocol",
+        "policy_bundle_hash",
+        "compatibility_matrix_version"
+      ],
+      "expected_required_evidence_fields": [
+        "release_id",
+        "protocol_versions",
+        "policy_bundle_hash",
+        "certification_report_hash"
+      ],
+      "expected_transition_log_stages": [
+        "lookup",
+        "validate_transition",
+        "compatibility_domains",
+        "evidence_contract"
+      ]
+    },
+    {
+      "case_id": "bundle-readiness-live-eligible-to-recert-required",
+      "machine_id": "bundle_readiness_lifecycle",
+      "from_state": "LIVE_ELIGIBLE",
+      "to_state": "RECERT_REQUIRED",
+      "expected_status": "pass",
+      "expected_reason_code": "LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_affected_domains": [
+        "data_protocol",
+        "strategy_protocol",
+        "ops_protocol",
+        "policy_bundle_hash",
+        "compatibility_matrix_version"
+      ],
+      "expected_required_evidence_fields": [
+        "bundle_id",
+        "resolved_context_bundle_id",
+        "execution_profile_release_id",
+        "data_profile_release_id",
+        "policy_bundle_hash"
+      ],
+      "expected_transition_log_stages": [
+        "lookup",
+        "validate_transition",
+        "compatibility_domains",
+        "evidence_contract"
+      ]
+    },
+    {
+      "case_id": "family-decision-expired-to-active",
+      "machine_id": "family_decision_lifecycle",
+      "from_state": "expired",
+      "to_state": "active",
+      "expected_status": "violation",
+      "expected_reason_code": "LIFECYCLE_TRANSITION_BLOCKED",
+      "expected_affected_domains": [
+        "strategy_protocol",
+        "policy_bundle_hash"
+      ],
+      "expected_required_evidence_fields": [],
+      "expected_transition_log_stages": [
+        "lookup",
+        "validate_transition"
+      ]
+    }
+  ],
+  "compatibility_cases": [
+    {
+      "case_id": "deployment-no-drift",
+      "subject_id": "deployment_instance_gold_v1",
+      "machine_id": "deployment_instance_lifecycle",
+      "baseline": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v1"
+      },
+      "candidate": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v1"
+      },
+      "declared_affected_domains": [],
+      "active_session": false,
+      "expected_status": "pass",
+      "expected_reason_code": "COMPATIBILITY_CONFIRMED",
+      "expected_changed_domains": [],
+      "expected_blocking_domains": [],
+      "expected_recertification_domains": []
+    },
+    {
+      "case_id": "deployment-declared-strategy-upgrade",
+      "subject_id": "deployment_instance_gold_v2",
+      "machine_id": "deployment_instance_lifecycle",
+      "baseline": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v1"
+      },
+      "candidate": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v2",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v2"
+      },
+      "declared_affected_domains": [
+        "strategy_protocol",
+        "compatibility_matrix_version"
+      ],
+      "active_session": false,
+      "expected_status": "incompatible",
+      "expected_reason_code": "COMPATIBILITY_DRIFT_REQUIRES_RECERTIFICATION",
+      "expected_changed_domains": [
+        "strategy_protocol",
+        "compatibility_matrix_version"
+      ],
+      "expected_blocking_domains": [
+        "strategy_protocol",
+        "compatibility_matrix_version"
+      ],
+      "expected_recertification_domains": [
+        "strategy_protocol"
+      ]
+    },
+    {
+      "case_id": "deployment-undeclared-ops-drift",
+      "subject_id": "deployment_instance_gold_v3",
+      "machine_id": "deployment_instance_lifecycle",
+      "baseline": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v1"
+      },
+      "candidate": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v2",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v2"
+      },
+      "declared_affected_domains": [
+        "compatibility_matrix_version"
+      ],
+      "active_session": false,
+      "expected_status": "violation",
+      "expected_reason_code": "UNDECLARED_COMPATIBILITY_DRIFT",
+      "expected_changed_domains": [
+        "ops_protocol",
+        "compatibility_matrix_version"
+      ],
+      "expected_blocking_domains": [
+        "ops_protocol",
+        "compatibility_matrix_version"
+      ],
+      "expected_recertification_domains": [
+        "ops_protocol"
+      ]
+    },
+    {
+      "case_id": "deployment-active-session-policy-drift",
+      "subject_id": "deployment_instance_gold_v4",
+      "machine_id": "deployment_instance_lifecycle",
+      "baseline": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:111",
+        "compatibility_matrix_version": "matrix/v1"
+      },
+      "candidate": {
+        "data_protocol": "data/v1",
+        "strategy_protocol": "strategy/v1",
+        "ops_protocol": "ops/v1",
+        "policy_bundle_hash": "policy/sha256:222",
+        "compatibility_matrix_version": "matrix/v2"
+      },
+      "declared_affected_domains": [
+        "policy_bundle_hash",
+        "compatibility_matrix_version"
+      ],
+      "active_session": true,
+      "expected_status": "violation",
+      "expected_reason_code": "ACTIVE_SESSION_COMPATIBILITY_CHANGE_BLOCKED",
+      "expected_changed_domains": [
+        "policy_bundle_hash",
+        "compatibility_matrix_version"
+      ],
+      "expected_blocking_domains": [
+        "policy_bundle_hash",
+        "compatibility_matrix_version"
+      ],
+      "expected_recertification_domains": [
+        "policy_bundle_hash"
+      ]
+    }
+  ]
+}

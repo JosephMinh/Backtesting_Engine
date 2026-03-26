@@ -1,0 +1,157 @@
+{
+  "coverage_case": {
+    "expected_status": "pass",
+    "expected_reason_code": "OBSERVABILITY_COVERAGE_COMPLETE",
+    "expected_dashboard_ids": [
+      "live_operations",
+      "readiness_and_policy",
+      "recovery_and_security",
+      "release_pipeline",
+      "research_governance"
+    ],
+    "expected_panel_count": 18,
+    "expected_alert_count": 8
+  },
+  "dashboard_expectations": [
+    {
+      "dashboard_id": "release_pipeline",
+      "expected_panel_ids": [
+        "release_status_overview",
+        "deployment_status_overview"
+      ],
+      "expected_categories": [
+        "release_counts_and_statuses",
+        "deployment_status_counts"
+      ]
+    },
+    {
+      "dashboard_id": "research_governance",
+      "expected_panel_ids": [
+        "research_funnel_overview",
+        "discovery_budget_burn",
+        "portability_replay_quality",
+        "account_fit_summary"
+      ],
+      "expected_categories": [
+        "research_funnel_counts",
+        "discovery_budget_consumption",
+        "portability_tradability_and_replay_pass_rates",
+        "account_fit_pass_rates"
+      ]
+    },
+    {
+      "dashboard_id": "readiness_and_policy",
+      "expected_panel_ids": [
+        "bar_parity_drift_summary",
+        "session_readiness_window",
+        "policy_engine_health",
+        "waiver_expiry_countdown"
+      ],
+      "expected_categories": [
+        "bar_parity_drift",
+        "session_readiness_status_and_expiry",
+        "policy_engine_latency_and_failures",
+        "active_waivers_and_expiry_countdown"
+      ]
+    },
+    {
+      "dashboard_id": "live_operations",
+      "expected_panel_ids": [
+        "live_quality_events",
+        "strategy_health_drift",
+        "broker_connectivity",
+        "broker_state_mismatch",
+        "guardian_health"
+      ],
+      "expected_categories": [
+        "live_quality_events",
+        "strategy_health_drift",
+        "broker_latency_and_disconnects",
+        "intraday_broker_state_mismatch_counts",
+        "guardian_health_and_last_emergency_drill"
+      ]
+    },
+    {
+      "dashboard_id": "recovery_and_security",
+      "expected_panel_ids": [
+        "recovery_evidence_health",
+        "clock_sync_health",
+        "secret_and_break_glass"
+      ],
+      "expected_categories": [
+        "backup_freshness_journal_digest_and_restore_drill",
+        "clock_synchronization_health",
+        "secret_rotation_age_and_break_glass"
+      ]
+    }
+  ],
+  "alert_expectations": [
+    {
+      "alert_id": "open_live_position_degraded_health",
+      "expected_response_target_minutes": 1,
+      "expected_explain_surface": "policy_engine",
+      "expected_related_panel_ids": [
+        "live_quality_events",
+        "strategy_health_drift"
+      ]
+    },
+    {
+      "alert_id": "failed_or_stale_session_readiness_packet",
+      "expected_response_target_minutes": 2,
+      "expected_explain_surface": "deployment_packets",
+      "expected_related_panel_ids": [
+        "session_readiness_window"
+      ]
+    },
+    {
+      "alert_id": "intraday_broker_state_mismatch",
+      "expected_response_target_minutes": 2,
+      "expected_explain_surface": "accounting_ledger",
+      "expected_related_panel_ids": [
+        "broker_state_mismatch"
+      ]
+    },
+    {
+      "alert_id": "backup_freshness_breach",
+      "expected_response_target_minutes": 10,
+      "expected_explain_surface": "durability",
+      "expected_related_panel_ids": [
+        "recovery_evidence_health"
+      ]
+    },
+    {
+      "alert_id": "restore_drill_expiry",
+      "expected_response_target_minutes": 60,
+      "expected_explain_surface": "durability",
+      "expected_related_panel_ids": [
+        "recovery_evidence_health",
+        "guardian_health"
+      ]
+    },
+    {
+      "alert_id": "clock_desynchronization",
+      "expected_response_target_minutes": 1,
+      "expected_explain_surface": "clock_discipline",
+      "expected_related_panel_ids": [
+        "clock_sync_health"
+      ]
+    },
+    {
+      "alert_id": "break_glass_access",
+      "expected_response_target_minutes": 5,
+      "expected_explain_surface": "trust_zones",
+      "expected_related_panel_ids": [
+        "secret_and_break_glass"
+      ]
+    },
+    {
+      "alert_id": "emergency_flatten_unavailable",
+      "expected_response_target_minutes": 1,
+      "expected_explain_surface": "guardian_path",
+      "expected_related_panel_ids": [
+        "guardian_health",
+        "broker_connectivity"
+      ]
+    }
+  ]
+}

@@ -130,6 +130,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("validation_and_release_lifecycle", surface_ids)
         self.assertIn("foundation_phase0_harness", surface_ids)
         self.assertIn("databento_ibkr_bar_parity", surface_ids)
+        self.assertIn("fast_screening_governance", surface_ids)
         self.assertIn("solo_governance_workflows", surface_ids)
 
     def test_shared_contract_surfaces_compile(self):

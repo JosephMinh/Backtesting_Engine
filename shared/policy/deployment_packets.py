@@ -10,6 +10,15 @@ from typing import Any
 
 from shared.policy.artifact_classes import ArtifactClass, get_artifact_definition
 from shared.policy.clock_discipline import canonicalize_persisted_timestamp
+from shared.policy.lifecycle_specs import (
+    APPROVAL_REQUIRED_TAG,
+    BUNDLE_READINESS_MACHINE_ID,
+    DEPLOYMENT_INSTANCE_MACHINE_ID,
+    FRESHNESS_REQUIRED_TAG,
+    RUNTIME_ACTIVE_TAG,
+    build_enum_transition_map,
+    states_with_tag,
+)
 from shared.policy.metadata_telemetry import RECORD_DEFINITIONS, StorageClass
 
 SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION = 1
@@ -502,155 +511,30 @@ class PacketTransitionReport:
         return json.dumps(self.to_dict(), default=str)
 
 
-READINESS_ALLOWED_TRANSITIONS: dict[ReadinessState, frozenset[ReadinessState]] = {
-    ReadinessState.FROZEN: frozenset(
-        {
-            ReadinessState.PORTABILITY_PENDING,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.PORTABILITY_PENDING: frozenset(
-        {
-            ReadinessState.PORTABILITY_PASSED,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.PORTABILITY_PASSED: frozenset(
-        {
-            ReadinessState.REPLAY_PENDING,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.REPLAY_PENDING: frozenset(
-        {
-            ReadinessState.REPLAY_PASSED,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.REPLAY_PASSED: frozenset(
-        {
-            ReadinessState.PAPER_ELIGIBLE,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.PAPER_ELIGIBLE: frozenset(
-        {
-            ReadinessState.PAPER_PASSED,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.PAPER_PASSED: frozenset(
-        {
-            ReadinessState.SHADOW_ELIGIBLE,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.SHADOW_ELIGIBLE: frozenset(
-        {
-            ReadinessState.SHADOW_PASSED,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.SHADOW_PASSED: frozenset(
-        {
-            ReadinessState.LIVE_ELIGIBLE,
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.LIVE_ELIGIBLE: frozenset(
-        {
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.RECERT_REQUIRED: frozenset(
-        {
-            ReadinessState.PORTABILITY_PENDING,
-            ReadinessState.REPLAY_PENDING,
-            ReadinessState.SUSPECT,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.SUSPECT: frozenset(
-        {
-            ReadinessState.RECERT_REQUIRED,
-            ReadinessState.REVOKED,
-        }
-    ),
-    ReadinessState.REVOKED: frozenset(),
-}
-
-DEPLOYMENT_ALLOWED_TRANSITIONS: dict[DeploymentState, frozenset[DeploymentState]] = {
-    DeploymentState.PAPER_PENDING: frozenset(
-        {DeploymentState.PAPER_RUNNING, DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.PAPER_RUNNING: frozenset(
-        {DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.SHADOW_PENDING: frozenset(
-        {DeploymentState.SHADOW_RUNNING, DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.SHADOW_RUNNING: frozenset(
-        {DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.LIVE_CANARY: frozenset(
-        {DeploymentState.LIVE_ACTIVE, DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.LIVE_ACTIVE: frozenset(
-        {DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
-    ),
-    DeploymentState.WITHDRAWN: frozenset({DeploymentState.CLOSED}),
-    DeploymentState.CLOSED: frozenset(),
-}
-
-READINESS_STATES_REQUIRING_APPROVAL = frozenset(
-    {
-        ReadinessState.PORTABILITY_PASSED,
-        ReadinessState.REPLAY_PASSED,
-        ReadinessState.PAPER_ELIGIBLE,
-        ReadinessState.PAPER_PASSED,
-        ReadinessState.SHADOW_ELIGIBLE,
-        ReadinessState.SHADOW_PASSED,
-        ReadinessState.LIVE_ELIGIBLE,
-    }
+READINESS_ALLOWED_TRANSITIONS: dict[ReadinessState, frozenset[ReadinessState]] = (
+    build_enum_transition_map(BUNDLE_READINESS_MACHINE_ID, ReadinessState)
 )
 
-READINESS_STATES_REQUIRING_FRESHNESS = frozenset(
-    {
-        ReadinessState.PAPER_ELIGIBLE,
-        ReadinessState.PAPER_PASSED,
-        ReadinessState.SHADOW_ELIGIBLE,
-        ReadinessState.SHADOW_PASSED,
-        ReadinessState.LIVE_ELIGIBLE,
-    }
+DEPLOYMENT_ALLOWED_TRANSITIONS: dict[DeploymentState, frozenset[DeploymentState]] = (
+    build_enum_transition_map(DEPLOYMENT_INSTANCE_MACHINE_ID, DeploymentState)
 )
 
-RUNNING_DEPLOYMENT_STATES = frozenset(
-    {
-        DeploymentState.PAPER_RUNNING,
-        DeploymentState.SHADOW_RUNNING,
-        DeploymentState.LIVE_CANARY,
-        DeploymentState.LIVE_ACTIVE,
-    }
+READINESS_STATES_REQUIRING_APPROVAL = states_with_tag(
+    BUNDLE_READINESS_MACHINE_ID,
+    APPROVAL_REQUIRED_TAG,
+    ReadinessState,
+)
+
+READINESS_STATES_REQUIRING_FRESHNESS = states_with_tag(
+    BUNDLE_READINESS_MACHINE_ID,
+    FRESHNESS_REQUIRED_TAG,
+    ReadinessState,
+)
+
+RUNNING_DEPLOYMENT_STATES = states_with_tag(
+    DEPLOYMENT_INSTANCE_MACHINE_ID,
+    RUNTIME_ACTIVE_TAG,
+    DeploymentState,
 )
 
 

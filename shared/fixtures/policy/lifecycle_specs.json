@@ -1,0 +1,177 @@
+{
+  "state_machine_cases": [
+    {
+      "case_id": "dataset_release_approval_to_active",
+      "machine_id": "release_dataset_lifecycle",
+      "from_state": "APPROVED",
+      "to_state": "ACTIVE",
+      "expected_status": "pass",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_ALLOWED",
+      "expected_allowed_next_states": [
+        "ACTIVE",
+        "QUARANTINED",
+        "REVOKED"
+      ]
+    },
+    {
+      "case_id": "dataset_release_staging_to_active_rejected",
+      "machine_id": "release_dataset_lifecycle",
+      "from_state": "STAGING",
+      "to_state": "ACTIVE",
+      "expected_status": "invalid",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_NOT_ALLOWED",
+      "expected_allowed_next_states": [
+        "CERTIFIED",
+        "QUARANTINED",
+        "REVOKED"
+      ]
+    },
+    {
+      "case_id": "derived_release_draft_to_certified",
+      "machine_id": "release_derived_lifecycle",
+      "from_state": "DRAFT",
+      "to_state": "CERTIFIED",
+      "expected_status": "pass",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_ALLOWED",
+      "expected_allowed_next_states": [
+        "CERTIFIED",
+        "REVOKED"
+      ]
+    },
+    {
+      "case_id": "bundle_readiness_shadow_to_live",
+      "machine_id": "bundle_readiness_lifecycle",
+      "from_state": "SHADOW_PASSED",
+      "to_state": "LIVE_ELIGIBLE",
+      "expected_status": "pass",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_ALLOWED",
+      "expected_allowed_next_states": [
+        "LIVE_ELIGIBLE",
+        "RECERT_REQUIRED",
+        "SUSPECT",
+        "REVOKED"
+      ]
+    },
+    {
+      "case_id": "bundle_readiness_live_to_paper_rejected",
+      "machine_id": "bundle_readiness_lifecycle",
+      "from_state": "LIVE_ELIGIBLE",
+      "to_state": "PAPER_PASSED",
+      "expected_status": "invalid",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_NOT_ALLOWED",
+      "expected_allowed_next_states": [
+        "RECERT_REQUIRED",
+        "SUSPECT",
+        "REVOKED"
+      ]
+    },
+    {
+      "case_id": "deployment_canary_to_live_active",
+      "machine_id": "deployment_instance_lifecycle",
+      "from_state": "LIVE_CANARY",
+      "to_state": "LIVE_ACTIVE",
+      "expected_status": "pass",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_ALLOWED",
+      "expected_allowed_next_states": [
+        "LIVE_ACTIVE",
+        "WITHDRAWN",
+        "CLOSED"
+      ]
+    },
+    {
+      "case_id": "research_run_quarantined_to_recorded_rejected",
+      "machine_id": "research_run_lifecycle",
+      "from_state": "quarantined",
+      "to_state": "recorded",
+      "expected_status": "invalid",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_NOT_ALLOWED",
+      "expected_allowed_next_states": [
+        "revoked"
+      ]
+    },
+    {
+      "case_id": "family_decision_active_to_expired",
+      "machine_id": "family_decision_lifecycle",
+      "from_state": "active",
+      "to_state": "expired",
+      "expected_status": "pass",
+      "expected_reason_code": "STATE_MACHINE_TRANSITION_ALLOWED",
+      "expected_allowed_next_states": [
+        "superseded",
+        "expired"
+      ]
+    }
+  ],
+  "compatibility_cases": [
+    {
+      "case_id": "promotion_domains_complete",
+      "subject_ref": "promotion_packet_gold_live_v1",
+      "provided_domains": {
+        "data_protocol": "data_profile_release:ibkr_1oz_comex_bars_1m_v1",
+        "strategy_protocol": "kernel_abi:v3/state:v2",
+        "ops_protocol": "opsd:v1/risk:v1",
+        "policy_bundle_hash": "policy_sha256_v1",
+        "compatibility_matrix_version": "compat_v1"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "COMPATIBILITY_DOMAINS_BOUND",
+      "expected_missing_domains": [],
+      "expected_unknown_domains": [],
+      "expected_blank_domains": []
+    },
+    {
+      "case_id": "startup_missing_ops_protocol",
+      "subject_ref": "startup_check_runtime_v1",
+      "provided_domains": {
+        "data_protocol": "dataset_release:gold_bars_v1",
+        "strategy_protocol": "kernel_abi:v3/state:v2",
+        "policy_bundle_hash": "policy_sha256_v1",
+        "compatibility_matrix_version": "compat_v1"
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "COMPATIBILITY_DOMAIN_MISSING",
+      "expected_missing_domains": [
+        "ops_protocol"
+      ],
+      "expected_unknown_domains": [],
+      "expected_blank_domains": []
+    },
+    {
+      "case_id": "migration_rejects_unknown_domain",
+      "subject_ref": "migration_probe_v1",
+      "provided_domains": {
+        "data_protocol": "dataset_release:gold_bars_v1",
+        "strategy_protocol": "kernel_abi:v3/state:v2",
+        "ops_protocol": "opsd:v1/risk:v1",
+        "policy_bundle_hash": "policy_sha256_v1",
+        "compatibility_matrix_version": "compat_v1",
+        "sql_protocol": "schema:v4"
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "COMPATIBILITY_DOMAIN_UNKNOWN",
+      "expected_missing_domains": [],
+      "expected_unknown_domains": [
+        "sql_protocol"
+      ],
+      "expected_blank_domains": []
+    },
+    {
+      "case_id": "policy_hash_must_not_be_blank",
+      "subject_ref": "promotion_packet_missing_policy_hash_v1",
+      "provided_domains": {
+        "data_protocol": "data_profile_release:ibkr_1oz_comex_bars_1m_v1",
+        "strategy_protocol": "kernel_abi:v3/state:v2",
+        "ops_protocol": "opsd:v1/risk:v1",
+        "policy_bundle_hash": "",
+        "compatibility_matrix_version": "compat_v1"
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "COMPATIBILITY_DOMAIN_VALUE_MISSING",
+      "expected_missing_domains": [],
+      "expected_unknown_domains": [],
+      "expected_blank_domains": [
+        "policy_bundle_hash"
+      ]
+    }
+  ]
+}

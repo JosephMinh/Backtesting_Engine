@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from infra import restore_drill as RESTORE_DRILL
+from shared.policy.verification_contract import TracePlane, validate_log_fixture
 
 ROOT = Path(__file__).resolve().parent.parent
 BASELINE_PATH = ROOT / "infra" / "backup_restore_baseline.json"
@@ -37,6 +38,14 @@ class RestoreDrillTests(unittest.TestCase):
         self.assertTrue(result["recovery_point_verified"])
         self.assertEqual(2, result["metrics"]["expected_file_count"])
         self.assertEqual(2, result["metrics"]["actual_file_count"])
+        self.assertEqual("recovery", result["plane"])
+        self.assertEqual("RESTORE_DRILL_OK", result["reason_code"])
+        self.assertEqual(
+            "promotion_packet_gold_live_v1",
+            result["referenced_ids"]["promotion_packet_id"],
+        )
+        self.assertEqual(self.manifest["manifest_id"], result["artifact_manifest"]["manifest_id"])
+        self.assertEqual([], validate_log_fixture(TracePlane.RECOVERY, result))
 
     def test_hash_mismatch_is_reported(self) -> None:
         def mutate(restored_root: Path) -> None:

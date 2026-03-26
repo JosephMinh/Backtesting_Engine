@@ -1,0 +1,81 @@
+{
+  "suite_cases": [
+    {
+      "case_id": "activation_path_retains_release_lineage",
+      "scenario_kind": "activation",
+      "recorded_at_utc": "2026-03-26T18:30:00Z",
+      "correlation_id": "corr_release_pipeline_activation_001",
+      "expected": {
+        "dataset_publication_status": "pass",
+        "dataset_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "analytic_publication_status": "pass",
+        "analytic_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "data_profile_publication_status": "pass",
+        "data_profile_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "execution_profile_status": "pass",
+        "execution_profile_reason_code": "EXECUTION_PROFILE_RELEASE_VERSIONED",
+        "validation_status": "pass",
+        "validation_reason_code": "RELEASE_VALIDATION_CLEAN",
+        "transition_status": "pass",
+        "transition_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+        "context_bundle_status": "pass",
+        "context_bundle_reason_code": "CONTEXT_BUNDLE_FROZEN_AND_PINNED",
+        "context_binding_status": "pass",
+        "context_binding_reason_code": "CONTEXT_BINDING_DIGEST_PINNED",
+        "certification_status": "pass",
+        "certification_reason_code": "RELEASE_CERTIFICATION_USABLE",
+        "compatibility_status": "pass",
+        "compatibility_reason_code": "COMPATIBILITY_CONFIRMED",
+        "release_log_reason_code": "RELEASE_VALIDATION_CLEAN",
+        "certification_log_reason_code": "RELEASE_CERTIFICATION_USABLE"
+      }
+    },
+    {
+      "case_id": "correction_path_quarantines_and_requires_recertification",
+      "scenario_kind": "correction",
+      "recorded_at_utc": "2026-03-26T18:45:00Z",
+      "correlation_id": "corr_release_pipeline_correction_001",
+      "expected": {
+        "dataset_publication_status": "pass",
+        "dataset_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "analytic_publication_status": "pass",
+        "analytic_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "data_profile_publication_status": "pass",
+        "data_profile_publication_reason_code": "RELEASE_SCHEMA_PUBLISHABLE",
+        "execution_profile_status": "pass",
+        "execution_profile_reason_code": "EXECUTION_PROFILE_RELEASE_VERSIONED",
+        "validation_status": "violation",
+        "validation_reason_code": "RELEASE_VALIDATION_QUARANTINE_REQUIRED",
+        "expected_mask_classes": [
+          "structural_schema_failure",
+          "session_misalignment",
+          "duplicate_or_out_of_order"
+        ],
+        "transition_status": "pass",
+        "transition_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+        "context_bundle_status": "pass",
+        "context_bundle_reason_code": "CONTEXT_BUNDLE_FROZEN_AND_PINNED",
+        "context_binding_status": "pass",
+        "context_binding_reason_code": "CONTEXT_BINDING_DIGEST_PINNED",
+        "certification_status": "pass",
+        "certification_reason_code": "RELEASE_CERTIFICATION_USABLE",
+        "correction_status": "pass",
+        "correction_reason_code": "RELEASE_CORRECTION_POLICY_CLASSIFIED",
+        "correction_actions": [
+          "quarantine",
+          "supersede"
+        ],
+        "context_invalidation_status": "pass",
+        "context_invalidation_reason_code": "CONTEXT_BUNDLE_INVALIDATION_CAUSE_ALLOWED",
+        "compatibility_status": "incompatible",
+        "compatibility_reason_code": "COMPATIBILITY_DRIFT_REQUIRES_RECERTIFICATION",
+        "compatibility_changed_domains": [
+          "data_protocol",
+          "compatibility_matrix_version"
+        ],
+        "release_log_reason_code": "RELEASE_VALIDATION_QUARANTINE_REQUIRED",
+        "certification_log_reason_code": "RELEASE_CORRECTION_POLICY_CLASSIFIED"
+      }
+    }
+  ]
+}

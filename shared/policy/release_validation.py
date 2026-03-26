@@ -9,6 +9,11 @@ from enum import Enum
 from typing import Any
 
 from shared.policy.clock_discipline import canonicalize_persisted_timestamp
+from shared.policy.lifecycle_specs import (
+    RELEASE_DATASET_MACHINE_ID,
+    RELEASE_DERIVED_MACHINE_ID,
+    build_enum_transition_map,
+)
 
 
 class ValidationStatus(str, Enum):
@@ -287,103 +292,13 @@ DEGRADED_FINDINGS = frozenset(
 )
 
 
-DATASET_ALLOWED_TRANSITIONS: dict[DatasetLifecycleState, frozenset[DatasetLifecycleState]] = {
-    DatasetLifecycleState.DRAFT: frozenset(
-        {
-            DatasetLifecycleState.STAGING,
-            DatasetLifecycleState.CERTIFIED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.STAGING: frozenset(
-        {
-            DatasetLifecycleState.CERTIFIED,
-            DatasetLifecycleState.QUARANTINED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.CERTIFIED: frozenset(
-        {
-            DatasetLifecycleState.APPROVED,
-            DatasetLifecycleState.QUARANTINED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.APPROVED: frozenset(
-        {
-            DatasetLifecycleState.ACTIVE,
-            DatasetLifecycleState.QUARANTINED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.ACTIVE: frozenset(
-        {
-            DatasetLifecycleState.SUPERSEDED,
-            DatasetLifecycleState.QUARANTINED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.SUPERSEDED: frozenset(
-        {
-            DatasetLifecycleState.QUARANTINED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.QUARANTINED: frozenset(
-        {
-            DatasetLifecycleState.APPROVED,
-            DatasetLifecycleState.ACTIVE,
-            DatasetLifecycleState.SUPERSEDED,
-            DatasetLifecycleState.REVOKED,
-        }
-    ),
-    DatasetLifecycleState.REVOKED: frozenset(),
-}
+DATASET_ALLOWED_TRANSITIONS: dict[DatasetLifecycleState, frozenset[DatasetLifecycleState]] = (
+    build_enum_transition_map(RELEASE_DATASET_MACHINE_ID, DatasetLifecycleState)
+)
 
-DERIVED_ALLOWED_TRANSITIONS: dict[DerivedLifecycleState, frozenset[DerivedLifecycleState]] = {
-    DerivedLifecycleState.DRAFT: frozenset(
-        {
-            DerivedLifecycleState.CERTIFIED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.CERTIFIED: frozenset(
-        {
-            DerivedLifecycleState.APPROVED,
-            DerivedLifecycleState.QUARANTINED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.APPROVED: frozenset(
-        {
-            DerivedLifecycleState.ACTIVE,
-            DerivedLifecycleState.QUARANTINED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.ACTIVE: frozenset(
-        {
-            DerivedLifecycleState.SUPERSEDED,
-            DerivedLifecycleState.QUARANTINED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.SUPERSEDED: frozenset(
-        {
-            DerivedLifecycleState.QUARANTINED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.QUARANTINED: frozenset(
-        {
-            DerivedLifecycleState.APPROVED,
-            DerivedLifecycleState.ACTIVE,
-            DerivedLifecycleState.SUPERSEDED,
-            DerivedLifecycleState.REVOKED,
-        }
-    ),
-    DerivedLifecycleState.REVOKED: frozenset(),
-}
+DERIVED_ALLOWED_TRANSITIONS: dict[DerivedLifecycleState, frozenset[DerivedLifecycleState]] = (
+    build_enum_transition_map(RELEASE_DERIVED_MACHINE_ID, DerivedLifecycleState)
+)
 
 
 def _finding_counts(request: ReleaseValidationRequest) -> dict[ValidationFindingClass, int]:

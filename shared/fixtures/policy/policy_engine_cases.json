@@ -1,0 +1,334 @@
+{
+  "lifecycle_cases": [
+    {
+      "case_id": "allow_dataset_draft_to_staging",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "request": {
+        "case_id": "dataset_draft_to_staging",
+        "release_id": "dataset_release_gold_2026q1_v1",
+        "release_kind": "dataset",
+        "from_state": "DRAFT",
+        "to_state": "STAGING",
+        "dependent_artifact_ids": [],
+        "reproducibility_stamp_present": true
+      },
+      "waivers": [],
+      "expected_decision": "allow",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED",
+      "expected_rule_reason_codes": [
+        "RELEASE_LIFECYCLE_TRANSITION_ALLOWED"
+      ],
+      "expected_waiver_references": []
+    },
+    {
+      "case_id": "waive_superseded_without_reproducibility",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "request": {
+        "case_id": "superseded_without_reproducibility_is_rejected",
+        "release_id": "dataset_release_gold_2026q1_v1",
+        "release_kind": "dataset",
+        "from_state": "ACTIVE",
+        "to_state": "SUPERSEDED",
+        "dependent_artifact_ids": [
+          "analytic_release_gold_masks_v1"
+        ],
+        "reproducibility_stamp_present": false
+      },
+      "waivers": [
+        {
+          "waiver_id": "waiver_lifecycle_superseded",
+          "categories": [
+            "lifecycle_transition"
+          ],
+          "reason_codes": [
+            "RELEASE_LIFECYCLE_SUPERSEDED_REQUIRES_REPRODUCIBILITY"
+          ],
+          "approved_by": "ops-reviewer",
+          "justification": "Temporary reviewed waiver for supersession recovery handling.",
+          "expires_at_utc": "2026-04-01T00:00:00+00:00"
+        }
+      ],
+      "expected_decision": "allow_with_waiver",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED_WITH_WAIVER",
+      "expected_rule_reason_codes": [
+        "RELEASE_LIFECYCLE_SUPERSEDED_REQUIRES_REPRODUCIBILITY"
+      ],
+      "expected_waiver_references": [
+        "waiver_lifecycle_superseded"
+      ]
+    }
+  ],
+  "freshness_cases": [
+    {
+      "case_id": "allow_live_activation_gate_with_fresh_session_packet",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "gate_name": "live_activation_gate",
+      "integrity_artifacts": [
+        {
+          "artifact_id": "candidate_bundle",
+          "dependency_state": "valid"
+        },
+        {
+          "artifact_id": "resolved_context_bundle",
+          "dependency_state": "valid"
+        }
+      ],
+      "freshness_evidence": [
+        {
+          "artifact_id": "session_readiness_packet",
+          "dependency_state": "valid",
+          "freshness_state": "fresh"
+        }
+      ],
+      "waivers": [],
+      "expected_decision": "allow",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED",
+      "expected_rule_reason_codes": [],
+      "expected_waiver_references": []
+    },
+    {
+      "case_id": "expired_waiver_does_not_override_stale_session_packet",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "gate_name": "live_activation_gate",
+      "integrity_artifacts": [
+        {
+          "artifact_id": "candidate_bundle",
+          "dependency_state": "valid"
+        }
+      ],
+      "freshness_evidence": [
+        {
+          "artifact_id": "session_readiness_packet",
+          "dependency_state": "valid",
+          "freshness_state": "expired"
+        }
+      ],
+      "waivers": [
+        {
+          "waiver_id": "waiver_expired_session",
+          "categories": [
+            "freshness_check"
+          ],
+          "reason_codes": [
+            "ARTIFACT_FRESHNESS_EXPIRED"
+          ],
+          "approved_by": "ops-reviewer",
+          "justification": "Expired waiver should not override stale readiness evidence.",
+          "expires_at_utc": "2026-03-25T00:00:00+00:00"
+        }
+      ],
+      "expected_decision": "block",
+      "expected_decision_reason_code": "POLICY_DECISION_BLOCKED",
+      "expected_rule_reason_codes": [
+        "ARTIFACT_FRESHNESS_EXPIRED"
+      ],
+      "expected_waiver_references": []
+    }
+  ],
+  "session_cases": [
+    {
+      "case_id": "allow_live_readiness_green",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "readiness": {
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": [
+          "paper_pass_evidence_v1",
+          "shadow_pass_evidence_v1"
+        ],
+        "lifecycle_state": "LIVE_ELIGIBLE",
+        "approval_history_ids": [
+          "portability_signoff_v1",
+          "replay_signoff_v1",
+          "live_eligibility_signoff_v1"
+        ]
+      },
+      "session": {
+        "session_readiness_packet_id": "session_packet_gold_live_20260326",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-26_COMEX_GLOBEX",
+        "valid_from_utc": "2026-03-26T22:00:00+00:00",
+        "valid_to_utc": "2026-03-27T21:00:00+00:00",
+        "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "fee_check_id": "fee_check_live_20260326",
+        "margin_check_id": "margin_check_live_20260326",
+        "entitlement_check_id": "entitlement_check_live_20260326",
+        "contract_conformance_check_id": "contract_conformance_live_20260326",
+        "backup_freshness_check_id": "backup_check_live_20260326",
+        "restore_drill_check_id": "restore_drill_check_live_20260326",
+        "clock_health_check_id": "clock_health_live_20260326",
+        "secret_health_check_id": "secret_health_live_20260326",
+        "unresolved_discrepancy_status": "clear",
+        "operating_envelope_check_id": "operating_envelope_live_20260326",
+        "session_eligibility_check_id": "session_eligibility_live_20260326",
+        "session_status": "green",
+        "blocked_check_ids": [],
+        "decision_trace_hash": "session_trace_sha256_001"
+      },
+      "waivers": [],
+      "expected_decision": "allow",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED",
+      "expected_rule_reason_codes": [
+        "BUNDLE_READINESS_BOUND",
+        "SESSION_PACKET_VALID"
+      ],
+      "expected_waiver_references": []
+    },
+    {
+      "case_id": "waive_missing_readiness_freshness_evidence",
+      "policy_bundle_hash": "policy_bundle_sha256_002",
+      "readiness": {
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v2",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_paper_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_002",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": [],
+        "lifecycle_state": "PAPER_ELIGIBLE",
+        "approval_history_ids": [
+          "paper_eligibility_signoff_v1"
+        ]
+      },
+      "session": {
+        "session_readiness_packet_id": "session_packet_gold_live_20260326",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-26_COMEX_GLOBEX",
+        "valid_from_utc": "2026-03-26T22:00:00+00:00",
+        "valid_to_utc": "2026-03-27T21:00:00+00:00",
+        "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "fee_check_id": "fee_check_live_20260326",
+        "margin_check_id": "margin_check_live_20260326",
+        "entitlement_check_id": "entitlement_check_live_20260326",
+        "contract_conformance_check_id": "contract_conformance_live_20260326",
+        "backup_freshness_check_id": "backup_check_live_20260326",
+        "restore_drill_check_id": "restore_drill_check_live_20260326",
+        "clock_health_check_id": "clock_health_live_20260326",
+        "secret_health_check_id": "secret_health_live_20260326",
+        "unresolved_discrepancy_status": "clear",
+        "operating_envelope_check_id": "operating_envelope_live_20260326",
+        "session_eligibility_check_id": "session_eligibility_live_20260326",
+        "session_status": "green",
+        "blocked_check_ids": [],
+        "decision_trace_hash": "session_trace_sha256_001"
+      },
+      "waivers": [
+        {
+          "waiver_id": "waiver_readiness_freshness",
+          "categories": [
+            "session_readiness"
+          ],
+          "reason_codes": [
+            "BUNDLE_READINESS_FRESHNESS_EVIDENCE_REQUIRED"
+          ],
+          "approved_by": "ops-reviewer",
+          "justification": "Temporary reviewed readiness waiver while freshness evidence is regenerated.",
+          "expires_at_utc": "2026-04-01T00:00:00+00:00"
+        }
+      ],
+      "expected_decision": "allow_with_waiver",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED_WITH_WAIVER",
+      "expected_rule_reason_codes": [
+        "BUNDLE_READINESS_FRESHNESS_EVIDENCE_REQUIRED",
+        "SESSION_PACKET_VALID"
+      ],
+      "expected_waiver_references": [
+        "waiver_readiness_freshness"
+      ]
+    }
+  ],
+  "promotion_cases": [
+    {
+      "case_id": "allow_shadow_promotion_with_valid_evidence_chain",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "promotion": {
+        "promotion_packet_id": "promotion_packet_gold_shadow_v1",
+        "lane": "shadow_live",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "account_risk_profile_hash": "account_risk_hash_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "replay_certification_id": "replay_cert_gold_v1",
+        "portability_certification_id": "portability_cert_gold_v1",
+        "native_validation_id": "native_validation_1oz_v1",
+        "execution_symbol_tradability_study_id": "tradability_study_1oz_v1",
+        "paper_pass_evidence_id": "paper_pass_evidence_v1",
+        "shadow_pass_evidence_id": null,
+        "fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "market_data_entitlement_check_id": "entitlement_check_2026q1_v1",
+        "active_waiver_ids": [],
+        "incident_reference_ids": [],
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "compatibility_matrix_version": "compat_v1",
+        "signoff_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "evidence_expiry_timestamps_utc": [
+          "2026-03-30T00:00:00+00:00"
+        ],
+        "signed_packet_hash": "promotion_packet_sha256_001"
+      },
+      "waivers": [],
+      "expected_decision": "allow",
+      "expected_decision_reason_code": "POLICY_DECISION_ALLOWED",
+      "expected_rule_reason_codes": [
+        "PROMOTION_PACKET_SIGNED_AND_BOUND",
+        "FAMILY_DECISION_EVIDENCE_CHAIN_VALID"
+      ],
+      "expected_waiver_references": []
+    },
+    {
+      "case_id": "block_live_promotion_without_shadow_pass",
+      "policy_bundle_hash": "policy_bundle_sha256_001",
+      "promotion": {
+        "promotion_packet_id": "promotion_packet_gold_live_v1",
+        "lane": "live",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "account_risk_profile_hash": "account_risk_hash_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "replay_certification_id": "replay_cert_gold_v1",
+        "portability_certification_id": "portability_cert_gold_v1",
+        "native_validation_id": "native_validation_1oz_v1",
+        "execution_symbol_tradability_study_id": "tradability_study_1oz_v1",
+        "paper_pass_evidence_id": "paper_pass_evidence_v1",
+        "shadow_pass_evidence_id": null,
+        "fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "market_data_entitlement_check_id": "entitlement_check_2026q1_v1",
+        "active_waiver_ids": [],
+        "incident_reference_ids": [],
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "compatibility_matrix_version": "compat_v1",
+        "signoff_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "evidence_expiry_timestamps_utc": [
+          "2026-03-30T00:00:00+00:00"
+        ],
+        "signed_packet_hash": "promotion_packet_sha256_002"
+      },
+      "waivers": [],
+      "expected_decision": "block",
+      "expected_decision_reason_code": "POLICY_DECISION_BLOCKED",
+      "expected_rule_reason_codes": [
+        "PROMOTION_PACKET_LIVE_EVIDENCE_REQUIRED",
+        "FAMILY_DECISION_EVIDENCE_CHAIN_VALID"
+      ],
+      "expected_waiver_references": []
+    }
+  ]
+}

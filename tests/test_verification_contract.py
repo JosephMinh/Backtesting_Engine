@@ -3,13 +3,21 @@ import unittest
 from shared.policy.verification_contract import (
     ArtifactRequirement,
     CORE_EXPLAINABILITY,
+    EXPECTED_CROSS_PLANE_IDENTIFIER_COVERAGE,
     FixtureSource,
     GATE_DECISION_ARTIFACTS,
+    GOLDEN_LOG_FIXTURES,
     PHASE_GATES,
+    REQUIRED_REDACTION_FIELDS,
+    REQUIRED_CROSS_PLANE_IDENTIFIERS,
+    STRUCTURED_LOGGING_CONTRACT,
     VERIFICATION_PROFILES,
     VALIDATION_ERRORS,
+    TracePlane,
     VerificationClass,
+    cross_plane_identifier_coverage,
     profiles_by_phase,
+    validate_log_fixture,
 )
 
 
@@ -317,6 +325,300 @@ class VerificationContractTest(unittest.TestCase):
         )
         self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.CORRELATION_IDS, profile.retained_artifacts)
+
+    def test_bead_42_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.4.2" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("simulation_and_execution_profiles", matching[0].surface_id)
+        self.assertEqual(("phase_3",), matching[0].phase_gates)
+
+    def test_bead_46_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.4.6" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("fast_screening_governance", matching[0].surface_id)
+        self.assertEqual(("phase_3",), matching[0].phase_gates)
+
+    def test_bead_46_profile_declares_fast_screening_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "fast_screening_governance"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.PARITY_CERTIFICATION,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.ARTIFACT_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
+    def test_bead_82_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.8.2" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "lifecycle_state_machines_and_compatibility_domains",
+            matching[0].surface_id,
+        )
+        self.assertEqual(
+            ("phase_0", "phase_2", "phase_6", "phase_7", "phase_8"),
+            matching[0].phase_gates,
+        )
+
+    def test_bead_82_profile_declares_lifecycle_and_compatibility_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "lifecycle_state_machines_and_compatibility_domains"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual((VerificationClass.GOLDEN_PATH,), profile.golden_path)
+        self.assertEqual(
+            (
+                VerificationClass.FAILURE_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.failure_path,
+        )
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.CORRELATION_IDS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+
+    def test_bead_116_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.11.6" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("structured_logging_and_artifact_capture", matching[0].surface_id)
+        self.assertEqual(
+            ("phase_1", "phase_3", "phase_4", "phase_6", "phase_7", "phase_8"),
+            matching[0].phase_gates,
+        )
+
+    def test_bead_116_profile_declares_cross_plane_logging_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "structured_logging_and_artifact_capture"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.BROKER_SESSION_RECORDING,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.REPLAY_CERTIFICATION,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.CORRELATION_IDS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.ARTIFACT_MANIFESTS, profile.retained_artifacts)
+
+    def test_logging_contract_covers_all_required_cross_plane_identifiers(self) -> None:
+        covered = {
+            identifier
+            for contract in STRUCTURED_LOGGING_CONTRACT.plane_contracts
+            for identifier in contract.required_identifiers
+        }
+        self.assertEqual(set(REQUIRED_CROSS_PLANE_IDENTIFIERS), covered)
+
+    def test_logging_contract_declares_all_planes(self) -> None:
+        self.assertEqual(
+            {
+                TracePlane.RESEARCH,
+                TracePlane.RELEASE,
+                TracePlane.POLICY,
+                TracePlane.CERTIFICATION,
+                TracePlane.RUNTIME,
+                TracePlane.RECOVERY,
+            },
+            {contract.plane for contract in STRUCTURED_LOGGING_CONTRACT.plane_contracts},
+        )
+
+    def test_logging_contract_manifest_requires_hashes_and_redaction_fields(self) -> None:
+        manifest = STRUCTURED_LOGGING_CONTRACT.artifact_manifest
+        self.assertIn("redaction_policy", manifest.required_fields)
+        self.assertIn("contains_secrets", manifest.required_fields)
+        self.assertIn("sha256", manifest.required_artifact_fields)
+        self.assertIn("relative_path", manifest.required_artifact_fields)
+
+    def test_golden_log_fixtures_validate_against_the_contract(self) -> None:
+        for plane, payload in GOLDEN_LOG_FIXTURES.items():
+            with self.subTest(plane=plane.value):
+                self.assertEqual([], validate_log_fixture(plane, payload))
+
+    def test_cross_plane_story_preserves_expected_identifier_coverage(self) -> None:
+        self.assertEqual(
+            EXPECTED_CROSS_PLANE_IDENTIFIER_COVERAGE,
+            cross_plane_identifier_coverage(),
+        )
+
+    def test_cross_plane_story_covers_secret_boundary_fields(self) -> None:
+        observed_redactions = {
+            field_name
+            for payload in GOLDEN_LOG_FIXTURES.values()
+            for collection_name in ("redacted_fields", "omitted_fields")
+            for field_name in payload[collection_name]
+        }
+        self.assertTrue(set(REQUIRED_REDACTION_FIELDS).issubset(observed_redactions))
+
+    def test_runtime_and_recovery_fixtures_share_reconstruction_ids(self) -> None:
+        runtime_references = GOLDEN_LOG_FIXTURES[TracePlane.RUNTIME]["referenced_ids"]
+        recovery_references = GOLDEN_LOG_FIXTURES[TracePlane.RECOVERY]["referenced_ids"]
+        for identifier in (
+            "promotion_packet_id",
+            "session_readiness_packet_id",
+            "deployment_instance_id",
+            "order_intent_id",
+        ):
+            with self.subTest(identifier=identifier):
+                self.assertEqual(
+                    runtime_references[identifier],
+                    recovery_references[identifier],
+                )
+
+    def test_bead_84_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.8.4" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "operator_observability_and_response_targets",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_7", "phase_8"), matching[0].phase_gates)
+
+    def test_bead_84_profile_declares_observability_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "operator_observability_and_response_targets"
+        )
+        self.assertEqual(
+            (
+                VerificationClass.UNIT,
+                VerificationClass.CONTRACT,
+                VerificationClass.PROPERTY,
+            ),
+            profile.local_checks,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertEqual(
+            (
+                FixtureSource.BROKER_SESSION_RECORDING,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertIn(ArtifactRequirement.OPERATOR_REASON_BUNDLES, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.ARTIFACT_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS, profile.retained_artifacts)
+
+    def test_bead_81_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.8.1" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("live_readiness_and_resilience", matching[0].surface_id)
+        self.assertEqual(("phase_8",), matching[0].phase_gates)
+
+    def test_bead_81_profile_declares_live_readiness_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "live_readiness_and_resilience"
+        )
+        self.assertEqual(
+            (
+                VerificationClass.UNIT,
+                VerificationClass.CONTRACT,
+                VerificationClass.PROPERTY,
+            ),
+            profile.local_checks,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.FAILURE_PATH,
+                VerificationClass.REPLAY_CERTIFICATION,
+            ),
+            profile.failure_path,
+        )
+        self.assertEqual(
+            (
+                FixtureSource.BROKER_SESSION_RECORDING,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertIn(ArtifactRequirement.DECISION_TRACES, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.OPERATOR_REASON_BUNDLES, profile.retained_artifacts)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,10 @@ def _parse_timestamp(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 
 
+def _isoformat_utc(value: datetime) -> str:
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -82,6 +86,32 @@ def _compare_manifest_to_restored(manifest: dict[str, Any], restored_root: Path)
     }
 
 
+def _recovery_reason_summary(status: str, reason_codes: list[str]) -> str:
+    if status == "pass":
+        return "Restore drill completed within RPO/RTO targets and verified retained evidence."
+    return "Restore drill detected recovery gaps: " + ", ".join(reason_codes)
+
+
+def _artifact_manifest(manifest: dict[str, Any], recorded_at: datetime) -> dict[str, Any]:
+    return {
+        "manifest_id": manifest["manifest_id"],
+        "generated_at_utc": _isoformat_utc(recorded_at),
+        "retention_class": "recovery_evidence",
+        "contains_secrets": False,
+        "redaction_policy": "restore_summary_only",
+        "artifacts": [
+            {
+                "artifact_id": entry["relative_path"].replace("/", "__"),
+                "artifact_role": "restored_evidence",
+                "relative_path": entry["relative_path"],
+                "sha256": entry["sha256"],
+                "content_type": "application/octet-stream",
+            }
+            for entry in manifest["files"]
+        ],
+    }
+
+
 def evaluate_restore_drill(
     baseline: dict[str, Any],
     manifest: dict[str, Any],
@@ -121,9 +151,28 @@ def evaluate_restore_drill(
         reason_codes.append("RESTORE_DRILL_OK")
 
     status = "pass" if reason_codes == ["RESTORE_DRILL_OK"] else "fail"
+    recorded_at = restore_completed_at
+    referenced_ids = {
+        "promotion_packet_id": manifest["promotion_packet_id"],
+        "session_readiness_packet_id": manifest["session_readiness_packet_id"],
+        "deployment_instance_id": manifest["deployment_instance_id"],
+        "order_intent_id": manifest["order_intent_id"],
+    }
 
     return {
+        "schema_version": 1,
+        "event_type": "recovery.restore_drill_completed",
+        "plane": "recovery",
+        "event_id": f"restore_drill_{manifest['manifest_id']}",
+        "recorded_at_utc": _isoformat_utc(recorded_at),
         "correlation_id": str(uuid.uuid4()),
+        "decision_trace_id": f"restore_drill_trace_{manifest['manifest_id']}",
+        "reason_code": reason_codes[0],
+        "reason_summary": _recovery_reason_summary(status, reason_codes),
+        "referenced_ids": referenced_ids,
+        "redacted_fields": [],
+        "omitted_fields": [],
+        "artifact_manifest": _artifact_manifest(manifest, recorded_at),
         "baseline_id": baseline["baseline_id"],
         "manifest_id": manifest["manifest_id"],
         "status": status,

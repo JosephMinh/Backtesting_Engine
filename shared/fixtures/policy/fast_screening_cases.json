@@ -1,0 +1,274 @@
+{
+  "cases": [
+    {
+      "case_id": "simple_bar_strategy_equivalence_certified",
+      "request": {
+        "case_id": "simple_bar_strategy_equivalence_certified",
+        "candidate_id": "candidate-fast-001",
+        "strategy_class_id": "daily_open_reversion",
+        "fast_path_engine": "vectorized_bar_screen",
+        "decision_basis": "bar_close",
+        "bar_interval_seconds": 300,
+        "order_semantics": [
+          "market",
+          "basic_bracket"
+        ],
+        "order_management_mode": "basic_bracket",
+        "requires_passive_queue_dependence": false,
+        "depends_on_portability_sensitive_microstructure": false,
+        "equivalence_evidence": {
+          "study_id": "fs-eq-2026q1-001",
+          "compared_engine": "nautilus_high_level",
+          "passed": true,
+          "checked_dimensions": [
+            "signal_parity",
+            "trade_count",
+            "fill_rate",
+            "pnl_path"
+          ],
+          "coverage_seed_count": 3,
+          "retained_run_log_ids": [
+            "run-log-001",
+            "run-log-002",
+            "run-log-003"
+          ],
+          "retained_artifact_ids": [
+            "manifest-001",
+            "reason-bundle-001"
+          ],
+          "expected_vs_actual_diff_ids": [
+            "diff-001"
+          ],
+          "max_signal_mismatch_rate": 0.0,
+          "allowed_signal_mismatch_rate": 0.02,
+          "max_fill_rate_delta": 0.01,
+          "allowed_fill_rate_delta": 0.05,
+          "max_pnl_drift_bps": 0.8,
+          "allowed_pnl_drift_bps": 3.0
+        },
+        "governance": {
+          "may_inform_continuation": true,
+          "may_inform_abandonment": true,
+          "promotion_blocked": true,
+          "requires_full_nautilus_screening": true,
+          "requires_full_validation": true,
+          "requires_full_stress": true,
+          "requires_null_comparison": true,
+          "other_allowed_actions": []
+        }
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAST_SCREENING_APPROVED",
+      "expected_fast_path_eligible": true,
+      "expected_equivalence_certified": true,
+      "expected_promotion_blocked": true,
+      "expected_admissible_research_actions": [
+        "continuation",
+        "abandonment"
+      ],
+      "expected_failed_check_ids": [],
+      "expected_failed_reason_codes": []
+    },
+    {
+      "case_id": "queue_dependent_candidate_is_ineligible",
+      "request": {
+        "case_id": "queue_dependent_candidate_is_ineligible",
+        "candidate_id": "candidate-fast-002",
+        "strategy_class_id": "queue_capture_intraday",
+        "fast_path_engine": "vectorized_bar_screen",
+        "decision_basis": "bar_close",
+        "bar_interval_seconds": 300,
+        "order_semantics": [
+          "market"
+        ],
+        "order_management_mode": "single_shot",
+        "requires_passive_queue_dependence": true,
+        "depends_on_portability_sensitive_microstructure": false,
+        "equivalence_evidence": {
+          "study_id": "fs-eq-2026q1-002",
+          "compared_engine": "nautilus_high_level",
+          "passed": true,
+          "checked_dimensions": [
+            "signal_parity",
+            "trade_count",
+            "fill_rate",
+            "pnl_path"
+          ],
+          "coverage_seed_count": 2,
+          "retained_run_log_ids": [
+            "run-log-004",
+            "run-log-005"
+          ],
+          "retained_artifact_ids": [
+            "manifest-002"
+          ],
+          "expected_vs_actual_diff_ids": [
+            "diff-002"
+          ],
+          "max_signal_mismatch_rate": 0.0,
+          "allowed_signal_mismatch_rate": 0.02,
+          "max_fill_rate_delta": 0.01,
+          "allowed_fill_rate_delta": 0.05,
+          "max_pnl_drift_bps": 0.6,
+          "allowed_pnl_drift_bps": 3.0
+        },
+        "governance": {
+          "may_inform_continuation": true,
+          "may_inform_abandonment": false,
+          "promotion_blocked": true,
+          "requires_full_nautilus_screening": true,
+          "requires_full_validation": true,
+          "requires_full_stress": true,
+          "requires_null_comparison": true,
+          "other_allowed_actions": []
+        }
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "FAST_SCREENING_BLOCKED",
+      "expected_fast_path_eligible": false,
+      "expected_equivalence_certified": true,
+      "expected_promotion_blocked": true,
+      "expected_admissible_research_actions": [],
+      "expected_failed_check_ids": [
+        "FS01"
+      ],
+      "expected_failed_reason_codes": [
+        "FAST_SCREENING_ELIGIBILITY_PASSIVE_QUEUE"
+      ]
+    },
+    {
+      "case_id": "equivalence_gap_blocks_research_influence",
+      "request": {
+        "case_id": "equivalence_gap_blocks_research_influence",
+        "candidate_id": "candidate-fast-003",
+        "strategy_class_id": "gap_open_reversion",
+        "fast_path_engine": "vectorized_bar_screen",
+        "decision_basis": "one_bar_late",
+        "bar_interval_seconds": 900,
+        "order_semantics": [
+          "market",
+          "stop"
+        ],
+        "order_management_mode": "single_shot",
+        "requires_passive_queue_dependence": false,
+        "depends_on_portability_sensitive_microstructure": false,
+        "equivalence_evidence": {
+          "study_id": "fs-eq-2026q1-003",
+          "compared_engine": "nautilus_high_level",
+          "passed": false,
+          "checked_dimensions": [
+            "signal_parity",
+            "trade_count",
+            "fill_rate"
+          ],
+          "coverage_seed_count": 2,
+          "retained_run_log_ids": [
+            "run-log-006"
+          ],
+          "retained_artifact_ids": [],
+          "expected_vs_actual_diff_ids": [],
+          "max_signal_mismatch_rate": 0.08,
+          "allowed_signal_mismatch_rate": 0.02,
+          "max_fill_rate_delta": 0.07,
+          "allowed_fill_rate_delta": 0.05,
+          "max_pnl_drift_bps": 4.2,
+          "allowed_pnl_drift_bps": 3.0
+        },
+        "governance": {
+          "may_inform_continuation": true,
+          "may_inform_abandonment": true,
+          "promotion_blocked": true,
+          "requires_full_nautilus_screening": true,
+          "requires_full_validation": true,
+          "requires_full_stress": true,
+          "requires_null_comparison": true,
+          "other_allowed_actions": []
+        }
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "FAST_SCREENING_BLOCKED",
+      "expected_fast_path_eligible": true,
+      "expected_equivalence_certified": false,
+      "expected_promotion_blocked": true,
+      "expected_admissible_research_actions": [],
+      "expected_failed_check_ids": [
+        "FS02"
+      ],
+      "expected_failed_reason_codes": [
+        "FAST_SCREENING_EQUIVALENCE_MULTIPLE"
+      ]
+    },
+    {
+      "case_id": "promotion_attempt_is_rejected",
+      "request": {
+        "case_id": "promotion_attempt_is_rejected",
+        "candidate_id": "candidate-fast-004",
+        "strategy_class_id": "session_mean_reversion",
+        "fast_path_engine": "vectorized_bar_screen",
+        "decision_basis": "bar_close",
+        "bar_interval_seconds": 300,
+        "order_semantics": [
+          "market",
+          "limit"
+        ],
+        "order_management_mode": "single_shot",
+        "requires_passive_queue_dependence": false,
+        "depends_on_portability_sensitive_microstructure": false,
+        "equivalence_evidence": {
+          "study_id": "fs-eq-2026q1-004",
+          "compared_engine": "nautilus_high_level",
+          "passed": true,
+          "checked_dimensions": [
+            "signal_parity",
+            "trade_count",
+            "fill_rate",
+            "pnl_path"
+          ],
+          "coverage_seed_count": 2,
+          "retained_run_log_ids": [
+            "run-log-007",
+            "run-log-008"
+          ],
+          "retained_artifact_ids": [
+            "manifest-004"
+          ],
+          "expected_vs_actual_diff_ids": [
+            "diff-004"
+          ],
+          "max_signal_mismatch_rate": 0.01,
+          "allowed_signal_mismatch_rate": 0.02,
+          "max_fill_rate_delta": 0.02,
+          "allowed_fill_rate_delta": 0.05,
+          "max_pnl_drift_bps": 1.0,
+          "allowed_pnl_drift_bps": 3.0
+        },
+        "governance": {
+          "may_inform_continuation": true,
+          "may_inform_abandonment": true,
+          "promotion_blocked": false,
+          "requires_full_nautilus_screening": true,
+          "requires_full_validation": false,
+          "requires_full_stress": true,
+          "requires_null_comparison": true,
+          "other_allowed_actions": [
+            "promotion"
+          ]
+        }
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "FAST_SCREENING_BLOCKED",
+      "expected_fast_path_eligible": true,
+      "expected_equivalence_certified": true,
+      "expected_promotion_blocked": false,
+      "expected_admissible_research_actions": [],
+      "expected_failed_check_ids": [
+        "FS03",
+        "FS04"
+      ],
+      "expected_failed_reason_codes": [
+        "FAST_SCREENING_CONTROL_MULTIPLE",
+        "FAST_SCREENING_FOLLOW_ON_VALIDATION_REQUIRED"
+      ]
+    }
+  ]
+}

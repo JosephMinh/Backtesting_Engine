@@ -8,6 +8,11 @@ from dataclasses import dataclass, field, replace
 from enum import Enum, unique
 
 from shared.policy.artifact_classes import ArtifactClass, get_artifact_definition
+from shared.policy.lifecycle_specs import (
+    FAMILY_DECISION_MACHINE_ID,
+    RESEARCH_RUN_MACHINE_ID,
+    build_tuple_transition_map,
+)
 from shared.policy.metadata_telemetry import RECORD_DEFINITIONS, StorageClass
 
 
@@ -329,27 +334,13 @@ class ResearchStateStore:
         return json.dumps(self.to_dict(), default=str)
 
 
-_ALLOWED_RUN_TRANSITIONS: dict[ResearchRunLifecycle, tuple[ResearchRunLifecycle, ...]] = {
-    ResearchRunLifecycle.RECORDED: (
-        ResearchRunLifecycle.SUPERSEDED,
-        ResearchRunLifecycle.QUARANTINED,
-        ResearchRunLifecycle.REVOKED,
-    ),
-    ResearchRunLifecycle.SUPERSEDED: (),
-    ResearchRunLifecycle.QUARANTINED: (ResearchRunLifecycle.REVOKED,),
-    ResearchRunLifecycle.REVOKED: (),
-}
+_ALLOWED_RUN_TRANSITIONS: dict[ResearchRunLifecycle, tuple[ResearchRunLifecycle, ...]] = (
+    build_tuple_transition_map(RESEARCH_RUN_MACHINE_ID, ResearchRunLifecycle)
+)
 
 _ALLOWED_DECISION_TRANSITIONS: dict[
     FamilyDecisionLifecycle, tuple[FamilyDecisionLifecycle, ...]
-] = {
-    FamilyDecisionLifecycle.ACTIVE: (
-        FamilyDecisionLifecycle.SUPERSEDED,
-        FamilyDecisionLifecycle.EXPIRED,
-    ),
-    FamilyDecisionLifecycle.SUPERSEDED: (),
-    FamilyDecisionLifecycle.EXPIRED: (),
-}
+] = build_tuple_transition_map(FAMILY_DECISION_MACHINE_ID, FamilyDecisionLifecycle)
 
 
 def _record_audit(
