@@ -265,6 +265,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         purpose="Canonical storage-tier placement and promotable experiment binding rules",
     ),
     SharedContractSurface(
+        surface_id="validation_and_release_lifecycle",
+        module="shared.policy.release_validation",
+        source_path="shared/policy/release_validation.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="5.3-5.4",
+        purpose=(
+            "Validation failure classification, sidecar-mask discipline, and release "
+            "lifecycle state semantics"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="verification_contract",
         module="shared.policy.verification_contract",
         source_path="shared/policy/verification_contract.py",

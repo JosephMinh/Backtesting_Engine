@@ -184,6 +184,34 @@ class VerificationContractTest(unittest.TestCase):
         self.assertEqual("data_reference_and_release_pipeline", matching[0].surface_id)
         self.assertEqual(("phase_1", "phase_2"), matching[0].phase_gates)
 
+    def test_bead_39_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.3.9" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("data_reference_and_release_pipeline", matching[0].surface_id)
+        self.assertEqual(("phase_1", "phase_2"), matching[0].phase_gates)
+
+    def test_bead_39_profile_preserves_failure_and_release_pipeline_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "data_reference_and_release_pipeline"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertIn(VerificationClass.FAILURE_PATH, profile.failure_path)
+        self.assertIn(ArtifactRequirement.OPERATOR_REASON_BUNDLES, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS, profile.retained_artifacts)
+
 
 if __name__ == "__main__":
     unittest.main()

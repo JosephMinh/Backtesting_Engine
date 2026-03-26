@@ -6,7 +6,7 @@ This document describes the intended architecture from [`Plan_1.md`](/home/ubunt
 
 As of the current repository state:
 
-- there is an early Python/shared package tree for charter, scope, guardrails, product/account profiles, time-discipline, topology, and verification contracts
+- there is an early Python/shared package tree for charter, scope, guardrails, product/account profiles, time-discipline, validation/release lifecycles, topology, and verification contracts
 - there is no Rust workspace
 - there are no SQL migrations or runtime services checked in
 - the repository is still primarily a planning and contract workspace
@@ -27,6 +27,9 @@ The implemented artifacts are currently:
 - [`shared/policy/storage_tiers.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/policy/storage_tiers.py)
 - [`shared/fixtures/policy/storage_tiers.json`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/fixtures/policy/storage_tiers.json)
 - [`tests/test_storage_tiers.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/tests/test_storage_tiers.py)
+- [`shared/policy/release_validation.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/policy/release_validation.py)
+- [`shared/fixtures/policy/release_validation_cases.json`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/fixtures/policy/release_validation_cases.json)
+- [`tests/test_release_validation.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/tests/test_release_validation.py)
 - [`shared/policy/metadata_telemetry.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/policy/metadata_telemetry.py)
 - [`tests/test_metadata_telemetry.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/tests/test_metadata_telemetry.py)
 - [`shared/policy/plane_boundaries.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/policy/plane_boundaries.py)
@@ -128,6 +131,18 @@ It currently encodes:
 - and promotable experiment binding validation that requires exactly one dataset release, zero-or-one analytic release, one data-profile release, one observation cutoff, one resolved-context bundle, one policy bundle hash, and one compatibility matrix version, while explicitly rejecting mutable reference reads and post-freeze binding mutation.
 
 Deterministic placement and binding fixtures currently live in [`shared/fixtures/policy/storage_tiers.json`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/fixtures/policy/storage_tiers.json), and the corresponding contract tests live in [`tests/test_storage_tiers.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/tests/test_storage_tiers.py).
+
+## Validation, Sidecar Masks, and Release Lifecycle
+
+The current machine-readable contract for release validation findings and lifecycle-state transitions lives in [`shared/policy/release_validation.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/policy/release_validation.py).
+
+It currently encodes:
+
+- the canonical classification set for structural schema failures, session misalignment, gaps, price anomalies, duplicate or out-of-order events, suspicious zero or locked values, and event-window sensitivity;
+- sidecar-mask discipline that preserves source truth and failing-record references while emitting structured quality tiers and certification postures;
+- and dataset, analytic, and data-profile lifecycle semantics that keep `ACTIVE` releases promotable, keep `SUPERSEDED` releases reproducible, block new work on `QUARANTINED` releases, and mark dependents suspect when a release is `REVOKED`.
+
+Deterministic validation and lifecycle fixtures currently live in [`shared/fixtures/policy/release_validation_cases.json`](/home/ubuntu/ntm_Dev/Backtesting_Engine/shared/fixtures/policy/release_validation_cases.json), and the corresponding contract tests live in [`tests/test_release_validation.py`](/home/ubuntu/ntm_Dev/Backtesting_Engine/tests/test_release_validation.py).
 
 ## Planned Monorepo Layout
 

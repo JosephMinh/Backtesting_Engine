@@ -1,0 +1,248 @@
+{
+  "validation_cases": [
+    {
+      "case_id": "clean_dataset_release_is_certifiable",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "structural_schema_failures": 0,
+      "session_misalignment_events": 0,
+      "gap_events": 0,
+      "price_anomaly_events": 0,
+      "duplicate_or_out_of_order_events": 0,
+      "suspicious_zero_or_locked_events": 0,
+      "event_window_sensitive_events": 0,
+      "failing_records_preserved": true,
+      "source_truth_preserved": true,
+      "destructive_rewrite_attempted": false,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_VALIDATION_CLEAN",
+      "expected_quality_tier": "reference",
+      "expected_certification_status": "certifiable",
+      "expected_mask_classes": []
+    },
+    {
+      "case_id": "event_window_sensitivity_requires_conditioning",
+      "release_id": "dataset_release_macro_sensitive_2026q1_v1",
+      "release_kind": "dataset",
+      "structural_schema_failures": 0,
+      "session_misalignment_events": 0,
+      "gap_events": 0,
+      "price_anomaly_events": 0,
+      "duplicate_or_out_of_order_events": 0,
+      "suspicious_zero_or_locked_events": 0,
+      "event_window_sensitive_events": 12,
+      "failing_records_preserved": true,
+      "source_truth_preserved": true,
+      "destructive_rewrite_attempted": false,
+      "expected_status": "review",
+      "expected_reason_code": "RELEASE_VALIDATION_CONDITIONAL_EVENT_WINDOW_SENSITIVITY",
+      "expected_quality_tier": "sensitive",
+      "expected_certification_status": "conditional",
+      "expected_mask_classes": [
+        "event_window_sensitivity"
+      ]
+    },
+    {
+      "case_id": "degraded_quality_blocks_release",
+      "release_id": "analytic_release_masks_2026q1_v2",
+      "release_kind": "analytic",
+      "structural_schema_failures": 0,
+      "session_misalignment_events": 0,
+      "gap_events": 3,
+      "price_anomaly_events": 4,
+      "duplicate_or_out_of_order_events": 0,
+      "suspicious_zero_or_locked_events": 9,
+      "event_window_sensitive_events": 0,
+      "failing_records_preserved": true,
+      "source_truth_preserved": true,
+      "destructive_rewrite_attempted": false,
+      "expected_status": "review",
+      "expected_reason_code": "RELEASE_VALIDATION_BLOCKED_PENDING_REMEDIATION",
+      "expected_quality_tier": "degraded",
+      "expected_certification_status": "blocked",
+      "expected_mask_classes": [
+        "gaps",
+        "price_anomaly",
+        "suspicious_zero_or_locked"
+      ]
+    },
+    {
+      "case_id": "hard_failures_require_quarantine",
+      "release_id": "data_profile_ibkr_mgc_1m_v3",
+      "release_kind": "data_profile",
+      "structural_schema_failures": 2,
+      "session_misalignment_events": 7,
+      "gap_events": 0,
+      "price_anomaly_events": 0,
+      "duplicate_or_out_of_order_events": 5,
+      "suspicious_zero_or_locked_events": 0,
+      "event_window_sensitive_events": 0,
+      "failing_records_preserved": true,
+      "source_truth_preserved": true,
+      "destructive_rewrite_attempted": false,
+      "expected_status": "violation",
+      "expected_reason_code": "RELEASE_VALIDATION_QUARANTINE_REQUIRED",
+      "expected_quality_tier": "quarantined",
+      "expected_certification_status": "suspect",
+      "expected_mask_classes": [
+        "duplicate_or_out_of_order",
+        "session_misalignment",
+        "structural_schema_failure"
+      ]
+    },
+    {
+      "case_id": "missing_failing_record_retention_is_a_violation",
+      "release_id": "dataset_release_missing_sidecars_v1",
+      "release_kind": "dataset",
+      "structural_schema_failures": 0,
+      "session_misalignment_events": 0,
+      "gap_events": 2,
+      "price_anomaly_events": 0,
+      "duplicate_or_out_of_order_events": 0,
+      "suspicious_zero_or_locked_events": 0,
+      "event_window_sensitive_events": 0,
+      "failing_records_preserved": false,
+      "source_truth_preserved": true,
+      "destructive_rewrite_attempted": false,
+      "expected_status": "violation",
+      "expected_reason_code": "RELEASE_VALIDATION_FAILED_RECORDS_NOT_PRESERVED",
+      "expected_quality_tier": "quarantined",
+      "expected_certification_status": "suspect",
+      "expected_mask_classes": [
+        "gaps"
+      ]
+    },
+    {
+      "case_id": "source_truth_mutation_is_rejected",
+      "release_id": "dataset_release_rewritten_v1",
+      "release_kind": "dataset",
+      "structural_schema_failures": 0,
+      "session_misalignment_events": 0,
+      "gap_events": 0,
+      "price_anomaly_events": 1,
+      "duplicate_or_out_of_order_events": 0,
+      "suspicious_zero_or_locked_events": 0,
+      "event_window_sensitive_events": 0,
+      "failing_records_preserved": true,
+      "source_truth_preserved": false,
+      "destructive_rewrite_attempted": true,
+      "expected_status": "violation",
+      "expected_reason_code": "RELEASE_VALIDATION_SOURCE_TRUTH_MUTATED",
+      "expected_quality_tier": "quarantined",
+      "expected_certification_status": "suspect",
+      "expected_mask_classes": []
+    }
+  ],
+  "lifecycle_cases": [
+    {
+      "case_id": "dataset_draft_to_staging",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "from_state": "DRAFT",
+      "to_state": "STAGING",
+      "dependent_artifact_ids": [],
+      "reproducibility_stamp_present": true,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_new_work_posture": "not_promotable",
+      "expected_dependency_action": "none",
+      "expected_reproducibility_preserved": true
+    },
+    {
+      "case_id": "dataset_approved_to_active",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "from_state": "APPROVED",
+      "to_state": "ACTIVE",
+      "dependent_artifact_ids": [
+        "analytic_release_gold_masks_v1"
+      ],
+      "reproducibility_stamp_present": true,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_new_work_posture": "promotable",
+      "expected_dependency_action": "none",
+      "expected_reproducibility_preserved": true
+    },
+    {
+      "case_id": "dataset_active_to_superseded",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "from_state": "ACTIVE",
+      "to_state": "SUPERSEDED",
+      "dependent_artifact_ids": [
+        "analytic_release_gold_masks_v1",
+        "strategy_candidate_q1"
+      ],
+      "reproducibility_stamp_present": true,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_new_work_posture": "reproducible_only",
+      "expected_dependency_action": "freeze_existing_references",
+      "expected_reproducibility_preserved": true
+    },
+    {
+      "case_id": "dataset_active_to_quarantined",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "from_state": "ACTIVE",
+      "to_state": "QUARANTINED",
+      "dependent_artifact_ids": [
+        "analytic_release_gold_masks_v1"
+      ],
+      "reproducibility_stamp_present": true,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_new_work_posture": "blocked",
+      "expected_dependency_action": "block_new_experiments",
+      "expected_reproducibility_preserved": true
+    },
+    {
+      "case_id": "analytic_active_to_revoked",
+      "release_id": "analytic_release_gold_masks_v1",
+      "release_kind": "analytic",
+      "from_state": "ACTIVE",
+      "to_state": "REVOKED",
+      "dependent_artifact_ids": [
+        "strategy_candidate_q1",
+        "paper_pass_2026-03-20"
+      ],
+      "reproducibility_stamp_present": true,
+      "expected_status": "pass",
+      "expected_reason_code": "RELEASE_LIFECYCLE_TRANSITION_ALLOWED",
+      "expected_new_work_posture": "suspect",
+      "expected_dependency_action": "mark_dependents_suspect",
+      "expected_reproducibility_preserved": true
+    },
+    {
+      "case_id": "data_profile_unknown_staging_state_is_invalid",
+      "release_id": "data_profile_ibkr_mgc_1m_v3",
+      "release_kind": "data_profile",
+      "from_state": "DRAFT",
+      "to_state": "STAGING",
+      "dependent_artifact_ids": [],
+      "reproducibility_stamp_present": true,
+      "expected_status": "invalid",
+      "expected_reason_code": "RELEASE_LIFECYCLE_UNKNOWN_STATE",
+      "expected_new_work_posture": "suspect",
+      "expected_dependency_action": "mark_dependents_suspect",
+      "expected_reproducibility_preserved": false
+    },
+    {
+      "case_id": "superseded_without_reproducibility_is_rejected",
+      "release_id": "dataset_release_gold_2026q1_v1",
+      "release_kind": "dataset",
+      "from_state": "ACTIVE",
+      "to_state": "SUPERSEDED",
+      "dependent_artifact_ids": [
+        "analytic_release_gold_masks_v1"
+      ],
+      "reproducibility_stamp_present": false,
+      "expected_status": "violation",
+      "expected_reason_code": "RELEASE_LIFECYCLE_SUPERSEDED_REQUIRES_REPRODUCIBILITY",
+      "expected_new_work_posture": "reproducible_only",
+      "expected_dependency_action": "freeze_existing_references",
+      "expected_reproducibility_preserved": false
+    }
+  ]
+}

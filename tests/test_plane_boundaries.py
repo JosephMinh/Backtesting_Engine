@@ -120,13 +120,14 @@ class TestImportBoundaryChecks(unittest.TestCase):
 
 class TestSharedContractCompatibility(unittest.TestCase):
     def test_shared_contract_surfaces_are_declared(self):
-        self.assertGreaterEqual(len(SHARED_CONTRACT_SURFACES), 9)
+        self.assertGreaterEqual(len(SHARED_CONTRACT_SURFACES), 10)
         surface_ids = [surface.surface_id for surface in SHARED_CONTRACT_SURFACES]
         self.assertEqual(len(surface_ids), len(set(surface_ids)))
         self.assertIn("clock_discipline_contract", surface_ids)
         self.assertIn("metadata_vs_telemetry_contract", surface_ids)
         self.assertIn("product_and_account_profiles", surface_ids)
         self.assertIn("storage_tiers_and_point_in_time_binding", surface_ids)
+        self.assertIn("validation_and_release_lifecycle", surface_ids)
 
     def test_shared_contract_surfaces_compile(self):
         reports = shared_contract_compile_reports()
