@@ -1,0 +1,251 @@
+{
+  "shared_request_defaults": {
+    "case_id": "shared_default_request",
+    "product_profile_id": "oneoz_comex_v1",
+    "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+    "strategy_contract": {
+      "contract_id": "gold_momentum_contract",
+      "strategy_family_id": "gold_momentum",
+      "lifecycle_class": "promotable",
+      "parameter_schema_id": "gold_momentum_params_v2",
+      "required_inputs": [
+        "bars.1m",
+        "calendar.rth",
+        "volatility.surface"
+      ],
+      "decision_cadence": {
+        "decision_basis": "bar_close",
+        "interval_seconds": 60
+      },
+      "warmup": {
+        "min_history_bars": 300,
+        "min_history_minutes": 0,
+        "requires_state_seed": true
+      },
+      "risk_control_hooks": [
+        "max_position_check",
+        "daily_loss_lockout",
+        "delivery_fence_check"
+      ],
+      "order_intent_schema": {
+        "schema_id": "order_intent_v1",
+        "required_fields": [
+          "intent_id",
+          "strategy_decision_id",
+          "symbol",
+          "side",
+          "quantity",
+          "order_type",
+          "time_in_force"
+        ]
+      },
+      "dependency_dag": [
+        {
+          "node_id": "features",
+          "depends_on": []
+        },
+        {
+          "node_id": "signal",
+          "depends_on": [
+            "features"
+          ]
+        },
+        {
+          "node_id": "risk",
+          "depends_on": [
+            "signal"
+          ]
+        },
+        {
+          "node_id": "orders",
+          "depends_on": [
+            "risk"
+          ]
+        }
+      ],
+      "signal_kernel": {
+        "signal_kernel_digest": "rust_kernel_sha256_001",
+        "research_kernel_hash": "rust_kernel_sha256_001",
+        "live_kernel_hash": "rust_kernel_sha256_001",
+        "canonical_implementation_kind": "rust",
+        "rust_crate": "rust/kernels/gold_momentum",
+        "python_binding_module": "python.bindings.gold_momentum",
+        "python_promotable_logic_present": false,
+        "kernel_abi_version": "abi_v2",
+        "state_serialization_version": "state_v2",
+        "semantic_version": "1.2.0"
+      },
+      "candidate_freeze_ready": true,
+      "equivalence_certification": {
+        "certification_id": "equivalence_gold_momentum_v1",
+        "golden_session_fixture_id": "golden_session_gold_momentum_v1",
+        "property_case_count": 64
+      }
+    },
+    "current_position_size": 0,
+    "projected_position_size": 1,
+    "pending_order_intent_count": 1,
+    "data_quality_degraded": false,
+    "proposed_order_increases_risk": true,
+    "daily_loss_fraction": 0.01,
+    "drawdown_fraction": 0.05,
+    "delivery_window_active": false,
+    "warmup_bars_observed": 300,
+    "warmup_minutes_observed": 0,
+    "state_seed_loaded": true,
+    "requested_initial_margin_fraction": 0.2,
+    "requested_maintenance_margin_fraction": 0.25,
+    "requested_operating_posture": "intraday_flat_default",
+    "overnight_requested": false,
+    "overnight_approval_granted": false,
+    "waivers": [],
+    "evaluated_at_utc": "2026-03-26T12:00:00+00:00",
+    "schema_version": 1
+  },
+  "evaluation_cases": [
+    {
+      "case_id": "baseline_allow_path",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "action": "allow",
+        "reason_code": "BASELINE_RISK_ALLOW",
+        "triggered_control_ids": [],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "max_position_waiver_path",
+      "overrides": {
+        "projected_position_size": 2,
+        "waivers": [
+          {
+            "waiver_id": "waiver_pos_limit_v1",
+            "categories": [
+              "baseline_risk_controls"
+            ],
+            "rule_ids": [
+              "max_position_limit"
+            ],
+            "reason_codes": [
+              "BASELINE_RISK_POSITION_LIMIT_EXCEEDED"
+            ],
+            "approved_by": "operator@example.com",
+            "justification": "Controlled live drill",
+            "expires_at_utc": "2026-04-01T00:00:00+00:00",
+            "related_incident_id": "incident-pos-limit-drill"
+          }
+        ]
+      },
+      "expected": {
+        "status": "pass",
+        "action": "allow_with_waiver",
+        "reason_code": "BASELINE_RISK_ALLOW_WITH_WAIVER",
+        "triggered_control_ids": [
+          "max_position_limit"
+        ],
+        "waiver_references": [
+          "waiver_pos_limit_v1"
+        ]
+      }
+    },
+    {
+      "case_id": "degraded_data_restricts_entries",
+      "overrides": {
+        "data_quality_degraded": true
+      },
+      "expected": {
+        "status": "violation",
+        "action": "restrict",
+        "reason_code": "BASELINE_RISK_DATA_DEGRADED_ENTRY_SUPPRESSION",
+        "triggered_control_ids": [
+          "degraded_data_entry_suppression"
+        ],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "daily_loss_exit_only",
+      "overrides": {
+        "current_position_size": 1,
+        "projected_position_size": 1,
+        "daily_loss_fraction": 0.03
+      },
+      "expected": {
+        "status": "violation",
+        "action": "exit_only",
+        "reason_code": "BASELINE_RISK_DAILY_LOSS_LOCKOUT",
+        "triggered_control_ids": [
+          "daily_loss_lockout"
+        ],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "delivery_fence_forces_flatten",
+      "overrides": {
+        "current_position_size": 1,
+        "projected_position_size": 1,
+        "delivery_window_active": true
+      },
+      "expected": {
+        "status": "violation",
+        "action": "flatten",
+        "reason_code": "BASELINE_RISK_DELIVERY_FENCE_FLATTEN",
+        "triggered_control_ids": [
+          "delivery_fence_forced_flat"
+        ],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "margin_breach_halts",
+      "overrides": {
+        "requested_initial_margin_fraction": 0.3
+      },
+      "expected": {
+        "status": "violation",
+        "action": "halt",
+        "reason_code": "BASELINE_RISK_MARGIN_LIMIT",
+        "triggered_control_ids": [
+          "margin_pretrade_check"
+        ],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "warmup_hold_restricts_first_trade",
+      "overrides": {
+        "warmup_bars_observed": 50,
+        "state_seed_loaded": false
+      },
+      "expected": {
+        "status": "violation",
+        "action": "restrict",
+        "reason_code": "BASELINE_RISK_WARMUP_HOLD",
+        "triggered_control_ids": [
+          "warmup_hold"
+        ],
+        "waiver_references": []
+      }
+    },
+    {
+      "case_id": "overnight_without_approval_exit_only",
+      "overrides": {
+        "current_position_size": 1,
+        "projected_position_size": 1,
+        "requested_operating_posture": "overnight_strict",
+        "overnight_requested": true
+      },
+      "expected": {
+        "status": "violation",
+        "action": "exit_only",
+        "reason_code": "BASELINE_RISK_OVERNIGHT_APPROVAL_REQUIRED",
+        "triggered_control_ids": [
+          "overnight_approval"
+        ],
+        "waiver_references": []
+      }
+    }
+  ]
+}

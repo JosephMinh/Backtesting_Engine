@@ -498,6 +498,47 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
 
+    def test_bead_52_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.5.2" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "baseline_risk_controls_and_waiver_defaults",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_5", "phase_7"), matching[0].phase_gates)
+
+    def test_bead_52_profile_declares_risk_control_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "baseline_risk_controls_and_waiver_defaults"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.REPRODUCIBILITY_STAMPS,
+            profile.retained_artifacts,
+        )
+
     def test_bead_55_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile

@@ -357,6 +357,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="baseline_risk_controls_and_waiver_defaults",
+        module="shared.policy.baseline_risk_controls",
+        source_path="shared/policy/baseline_risk_controls.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="5.2",
+        purpose=(
+            "Inherited live-lane position, loss, drawdown, delivery-fence, warm-up, "
+            "margin, and overnight controls with signed-waiver traces"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="fully_loaded_economics",
         module="shared.policy.fully_loaded_economics",
         source_path="shared/policy/fully_loaded_economics.py",
