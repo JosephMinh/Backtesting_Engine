@@ -32,7 +32,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | `phase_2_5` | execution-lane vertical slice |
 | `phase_3` | simulation/execution profiles, fast-screening governance |
 | `phase_4` | research governance and selection |
-| `phase_5` | research governance and selection, strategy contracts and canonical signal kernels |
+| `phase_5` | research governance and selection, strategy contracts and canonical signal kernels, fully loaded economics |
 | `phase_6` | candidate freeze and certification, strategy contracts and canonical signal kernels, lifecycle state machines and compatibility domains |
 | `phase_7` | paper runtime and operational evidence, lifecycle state machines and compatibility domains |
 | `phase_8` | live-readiness and resilience, lifecycle state machines and compatibility domains |
@@ -52,6 +52,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Simulation and execution profiles | `backtesting_engine-ltc.4.1`, `4.2`, `4.4`, `4.5` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Fast-screening governance | `backtesting_engine-ltc.4.6` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Strategy contracts and canonical signal kernels | `backtesting_engine-ltc.5.1` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
+| Fully loaded economics and recurring cost model | `backtesting_engine-ltc.5.5` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Lifecycle state machines and compatibility domains | `backtesting_engine-ltc.8.2` | `unit`, `contract`, `property` | `golden_path` | `failure_path`, `operational_rehearsal` |
 | Structured logging and artifact capture | `backtesting_engine-ltc.11.6` | `unit`, `contract`, `property` | `golden_path`, `replay_certification`, `operational_rehearsal` | `failure_path` |
 | Research governance and selection | `backtesting_engine-ltc.6.1`, `6.2`, `6.6`, `6.7` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |

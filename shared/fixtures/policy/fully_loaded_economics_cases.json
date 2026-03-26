@@ -1,0 +1,209 @@
+{
+  "cases": [
+    {
+      "case_id": "heterogeneous_profiles_preserve_layered_breakdown",
+      "request": {
+        "evaluation_id": "econ-eval-001",
+        "candidate_id": "candidate-gc-001",
+        "strategy_family_id": "family-gc-trend",
+        "liquidity_materially_heterogeneous": true,
+        "execution_profiles": [
+          {
+            "profile_id": "gc-rth",
+            "session_bucket_id": "rth",
+            "gross_pnl_usd": 780.0,
+            "trade_count": 26,
+            "active_session_ids": [
+              "cme_gc_rth"
+            ],
+            "direct_costs": {
+              "broker_commissions_and_fees_usd": 35.0,
+              "exchange_and_regulatory_fees_usd": 14.0,
+              "slippage_usd": 45.0
+            }
+          },
+          {
+            "profile_id": "gc-eth",
+            "session_bucket_id": "eth",
+            "gross_pnl_usd": 420.0,
+            "trade_count": 18,
+            "active_session_ids": [
+              "cme_gc_eth"
+            ],
+            "direct_costs": {
+              "broker_commissions_and_fees_usd": 20.0,
+              "exchange_and_regulatory_fees_usd": 8.0,
+              "slippage_usd": 38.0
+            }
+          }
+        ],
+        "recurring_cost_allocation": {
+          "allocation_basis": "30d_candidate_family_share",
+          "allocation_window_days": 30,
+          "live_market_data_usd": 180.0,
+          "historical_data_amortized_usd": 120.0,
+          "always_on_infrastructure_usd": 140.0,
+          "operator_time_hours": 5.0,
+          "operator_hourly_rate_usd": 30.0
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": null,
+        "liquidity_conditioning_used": true,
+        "gross_pnl_usd": 1200.0,
+        "net_direct_pnl_usd": 1040.0,
+        "net_fully_loaded_pnl_usd": 450.0,
+        "direct_cost_breakdown": {
+          "broker_commissions_and_fees_usd": 55.0,
+          "exchange_and_regulatory_fees_usd": 22.0,
+          "slippage_usd": 83.0
+        },
+        "recurring_cost_breakdown": {
+          "live_market_data_usd": 180.0,
+          "historical_data_amortized_usd": 120.0,
+          "always_on_infrastructure_usd": 140.0,
+          "operator_time_usd": 150.0
+        },
+        "layer_order": [
+          "gross",
+          "net_direct",
+          "net_fully_loaded"
+        ]
+      }
+    },
+    {
+      "case_id": "blended_profile_allowed_when_liquidity_is_not_materially_heterogeneous",
+      "request": {
+        "evaluation_id": "econ-eval-002",
+        "candidate_id": "candidate-gc-002",
+        "strategy_family_id": "family-gc-breakout",
+        "liquidity_materially_heterogeneous": false,
+        "execution_profiles": [
+          {
+            "profile_id": "gc-blended",
+            "session_bucket_id": "blended",
+            "gross_pnl_usd": 900.0,
+            "trade_count": 22,
+            "active_session_ids": [
+              "cme_gc_rth",
+              "cme_gc_eth"
+            ],
+            "direct_costs": {
+              "broker_commissions_and_fees_usd": 40.0,
+              "exchange_and_regulatory_fees_usd": 12.0,
+              "slippage_usd": 68.0
+            }
+          }
+        ],
+        "recurring_cost_allocation": {
+          "allocation_basis": "30d_blended_lane_share",
+          "allocation_window_days": 30,
+          "live_market_data_usd": 120.0,
+          "historical_data_amortized_usd": 60.0,
+          "always_on_infrastructure_usd": 90.0,
+          "operator_time_hours": 2.0,
+          "operator_hourly_rate_usd": 25.0
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": null,
+        "liquidity_conditioning_used": false,
+        "gross_pnl_usd": 900.0,
+        "net_direct_pnl_usd": 780.0,
+        "net_fully_loaded_pnl_usd": 460.0,
+        "direct_cost_breakdown": {
+          "broker_commissions_and_fees_usd": 40.0,
+          "exchange_and_regulatory_fees_usd": 12.0,
+          "slippage_usd": 68.0
+        },
+        "recurring_cost_breakdown": {
+          "live_market_data_usd": 120.0,
+          "historical_data_amortized_usd": 60.0,
+          "always_on_infrastructure_usd": 90.0,
+          "operator_time_usd": 50.0
+        },
+        "layer_order": [
+          "gross",
+          "net_direct",
+          "net_fully_loaded"
+        ]
+      }
+    },
+    {
+      "case_id": "heterogeneous_liquidity_requires_profile_conditioning",
+      "request": {
+        "evaluation_id": "econ-eval-003",
+        "candidate_id": "candidate-gc-003",
+        "strategy_family_id": "family-gc-meanrev",
+        "liquidity_materially_heterogeneous": true,
+        "execution_profiles": [
+          {
+            "profile_id": "gc-blended-only",
+            "session_bucket_id": "blended",
+            "gross_pnl_usd": 640.0,
+            "trade_count": 14,
+            "active_session_ids": [
+              "cme_gc_rth",
+              "cme_gc_eth"
+            ],
+            "direct_costs": {
+              "broker_commissions_and_fees_usd": 26.0,
+              "exchange_and_regulatory_fees_usd": 10.0,
+              "slippage_usd": 54.0
+            }
+          }
+        ],
+        "recurring_cost_allocation": {
+          "allocation_basis": "30d_candidate_family_share",
+          "allocation_window_days": 30,
+          "live_market_data_usd": 110.0,
+          "historical_data_amortized_usd": 70.0,
+          "always_on_infrastructure_usd": 80.0,
+          "operator_time_hours": 2.5,
+          "operator_hourly_rate_usd": 24.0
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "reason_code": "EXECUTION_PROFILE_CONDITIONING_REQUIRED"
+      }
+    },
+    {
+      "case_id": "negative_recurring_cost_component_is_rejected_at_parse_time",
+      "request": {
+        "evaluation_id": "econ-eval-004",
+        "candidate_id": "candidate-gc-004",
+        "strategy_family_id": "family-gc-meanrev",
+        "liquidity_materially_heterogeneous": false,
+        "execution_profiles": [
+          {
+            "profile_id": "gc-rth-only",
+            "session_bucket_id": "rth",
+            "gross_pnl_usd": 510.0,
+            "trade_count": 10,
+            "active_session_ids": [
+              "cme_gc_rth"
+            ],
+            "direct_costs": {
+              "broker_commissions_and_fees_usd": 18.0,
+              "exchange_and_regulatory_fees_usd": 7.0,
+              "slippage_usd": 28.0
+            }
+          }
+        ],
+        "recurring_cost_allocation": {
+          "allocation_basis": "30d_candidate_family_share",
+          "allocation_window_days": 30,
+          "live_market_data_usd": -1.0,
+          "historical_data_amortized_usd": 55.0,
+          "always_on_infrastructure_usd": 75.0,
+          "operator_time_hours": 1.5,
+          "operator_hourly_rate_usd": 24.0
+        }
+      },
+      "expected_parse_error": "live_market_data_usd: must be non-negative"
+    }
+  ]
+}

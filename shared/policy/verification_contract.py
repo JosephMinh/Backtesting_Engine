@@ -861,6 +861,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="fully_loaded_economics",
+        title="Fully loaded economics and recurring cost model",
+        related_beads=("backtesting_engine-ltc.5.5",),
+        phase_gates=("phase_5",),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="structured_logging_and_artifact_capture",
         title="Structured logs, trace correlation, and artifact capture",
         related_beads=("backtesting_engine-ltc.11.6",),

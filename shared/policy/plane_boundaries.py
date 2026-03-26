@@ -357,6 +357,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="fully_loaded_economics",
+        module="shared.policy.fully_loaded_economics",
+        source_path="shared/policy/fully_loaded_economics.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.7",
+        purpose=(
+            "Gross, net-direct, and net-fully-loaded economics with explicit recurring "
+            "cost allocation and execution-profile conditioning"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="solo_governance_workflows",
         module="shared.policy.solo_governance",
         source_path="shared/policy/solo_governance.py",
