@@ -700,6 +700,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH, VerificationClass.OPERATIONAL_REHEARSAL),
     ),
     _gate_profile(
+        surface_id="phase_0_foundation_and_qa_gate",
+        title="Phase 0 foundation and QA gate",
+        related_beads=("backtesting_engine-ltc.9.1",),
+        phase_gates=("phase_0",),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="plane_boundaries_and_shared_contracts",
         title="Plane separation and shared contract boundaries",
         related_beads=("backtesting_engine-ltc.2.1",),
@@ -722,6 +735,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
             FixtureSource.SYNTHETIC_FAILURE_CASE,
         ),
         golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
+        surface_id="phase_1_raw_archive_and_reference_gate",
+        title="Phase 1 raw archive and bitemporal reference gate",
+        related_beads=("backtesting_engine-ltc.9.2",),
+        phase_gates=("phase_1",),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH, VerificationClass.PARITY_CERTIFICATION),
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
@@ -797,6 +823,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         related_beads=(
             "backtesting_engine-ltc.4.1",
             "backtesting_engine-ltc.4.2",
+            "backtesting_engine-ltc.4.4",
             "backtesting_engine-ltc.4.5",
         ),
         phase_gates=("phase_3",),

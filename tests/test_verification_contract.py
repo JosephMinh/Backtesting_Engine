@@ -336,6 +336,85 @@ class VerificationContractTest(unittest.TestCase):
         self.assertEqual("simulation_and_execution_profiles", matching[0].surface_id)
         self.assertEqual(("phase_3",), matching[0].phase_gates)
 
+    def test_bead_44_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.4.4" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("simulation_and_execution_profiles", matching[0].surface_id)
+        self.assertEqual(("phase_3",), matching[0].phase_gates)
+
+    def test_bead_91_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.9.1" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("phase_0_foundation_and_qa_gate", matching[0].surface_id)
+        self.assertEqual(("phase_0",), matching[0].phase_gates)
+
+    def test_bead_91_profile_declares_foundation_gate_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "phase_0_foundation_and_qa_gate"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual((VerificationClass.GOLDEN_PATH,), profile.golden_path)
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.ARTIFACT_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
+    def test_bead_92_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.9.2" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("phase_1_raw_archive_and_reference_gate", matching[0].surface_id)
+        self.assertEqual(("phase_1",), matching[0].phase_gates)
+
+    def test_bead_92_profile_declares_phase_1_gate_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "phase_1_raw_archive_and_reference_gate"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.PARITY_CERTIFICATION,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.ARTIFACT_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS, profile.retained_artifacts)
+
     def test_bead_46_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile
