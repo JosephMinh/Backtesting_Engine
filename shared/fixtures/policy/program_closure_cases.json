@@ -1,0 +1,129 @@
+{
+  "shared_request_defaults": {
+    "review_id": "program_closure_baseline_review",
+    "strategy_family_id": "family.gc_intraday_trend",
+    "execution_symbol": "1OZ",
+    "target_session_class": "us_regular",
+    "approved_posture_id": "posture.live_one_1oz_5k",
+    "source_tradability_report_id": "tradability_report_20260327",
+    "source_economics_report_id": "absolute_dollar_viability_20260327",
+    "source_runtime_report_id": "runtime_resilience_20260327",
+    "approved_live_capital_usd": 5000.0,
+    "required_live_capital_usd": 5000.0,
+    "conservative_monthly_net_usd": 640.0,
+    "de_minimis_monthly_net_threshold_usd": 250.0,
+    "monthly_operational_friction_cost_usd": 70.0,
+    "monthly_operator_hours": 3.0,
+    "max_monthly_operator_hours": 6.0,
+    "tradability_verified": true,
+    "intraday_only_viable": false,
+    "alternate_execution_symbol_available": false,
+    "paper_only_fallback_viable": false,
+    "higher_capital_posture_available": false,
+    "retained_artifact_ids": [
+      "artifact.tradability.1oz.study.20260327",
+      "artifact.economics.absolute_dollar.20260327",
+      "artifact.runtime.readiness.20260327"
+    ],
+    "operator_notes": [
+      "Continuation review remains the only place that can authorize scope changes."
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "continue_when_all_program_closure_checks_clear",
+      "description": "The lane remains tradable, economically worthwhile, operationally supportable, and inside the approved posture.",
+      "overrides": {},
+      "expected": {
+        "decision": "continue",
+        "recommended_action": "continue_current_lane",
+        "reason_code": "PROGRAM_CLOSURE_CONTINUE",
+        "triggered_rule_ids": []
+      }
+    },
+    {
+      "case_id": "narrow_to_intraday_when_full_session_tradability_breaks",
+      "description": "The intended session class is no longer tradable, but an intraday-flat lane remains governed and viable.",
+      "overrides": {
+        "tradability_verified": false,
+        "intraday_only_viable": true
+      },
+      "expected": {
+        "decision": "narrow",
+        "recommended_action": "narrow_to_intraday_flat_only",
+        "reason_code": "PROGRAM_CLOSURE_TRADABILITY_NARROW",
+        "triggered_rule_ids": [
+          "program_closure.execution_symbol_tradability"
+        ]
+      }
+    },
+    {
+      "case_id": "raise_capital_when_approved_posture_is_de_minimis",
+      "description": "The live posture remains de minimis, but a larger governed capital posture is available as the only valid pivot.",
+      "overrides": {
+        "conservative_monthly_net_usd": 125.0,
+        "higher_capital_posture_available": true,
+        "higher_capital_posture_usd": 12000.0
+      },
+      "expected": {
+        "decision": "pivot",
+        "recommended_action": "raise_minimum_capital_posture",
+        "reason_code": "PROGRAM_CLOSURE_ECONOMICS_RAISE_CAPITAL",
+        "triggered_rule_ids": [
+          "program_closure.de_minimis_economics"
+        ]
+      }
+    },
+    {
+      "case_id": "remain_paper_only_when_operational_friction_dominates_edge",
+      "description": "Broker or data friction consumes the available edge, so the governed fallback is to remain paper-only.",
+      "overrides": {
+        "monthly_operational_friction_cost_usd": 710.0,
+        "paper_only_fallback_viable": true
+      },
+      "expected": {
+        "decision": "pivot",
+        "recommended_action": "remain_paper_only",
+        "reason_code": "PROGRAM_CLOSURE_FRICTION_PAPER_ONLY",
+        "triggered_rule_ids": [
+          "program_closure.operational_friction"
+        ]
+      }
+    },
+    {
+      "case_id": "terminate_when_tradability_and_economics_fail_together",
+      "description": "The lane is neither reliably tradable nor economically worthwhile, so the governed outcome is termination.",
+      "overrides": {
+        "tradability_verified": false,
+        "conservative_monthly_net_usd": 80.0
+      },
+      "expected": {
+        "decision": "terminate",
+        "recommended_action": "terminate_program",
+        "reason_code": "PROGRAM_CLOSURE_TERMINATE_TRADABILITY_AND_ECONOMICS",
+        "triggered_rule_ids": [
+          "program_closure.execution_symbol_tradability",
+          "program_closure.de_minimis_economics"
+        ]
+      }
+    },
+    {
+      "case_id": "raise_capital_when_posture_requirements_exceed_current_lane",
+      "description": "The lane requires more operator time and live capital than the approved posture, so the governed pivot is a higher capital posture.",
+      "overrides": {
+        "required_live_capital_usd": 9000.0,
+        "monthly_operator_hours": 9.0,
+        "higher_capital_posture_available": true,
+        "higher_capital_posture_usd": 10000.0
+      },
+      "expected": {
+        "decision": "pivot",
+        "recommended_action": "raise_minimum_capital_posture",
+        "reason_code": "PROGRAM_CLOSURE_POSTURE_RAISE_CAPITAL",
+        "triggered_rule_ids": [
+          "program_closure.posture_overreach"
+        ]
+      }
+    }
+  ]
+}
