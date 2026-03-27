@@ -385,6 +385,36 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="promotable_tuning_protocol_and_research_run_logging",
+        module="shared.policy.promotable_tuning",
+        source_path="shared/policy/promotable_tuning.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.8",
+        purpose=(
+            "Three-stage promotable tuning, live-lane shared-kernel gating, and "
+            "mandatory research_run recording for every batch execution"
+        ),
+    ),
+    SharedContractSurface(
+        surface_id="broker_conformance_and_order_intent_idempotency",
+        module="shared.policy.broker_semantics",
+        source_path="shared/policy/broker_semantics.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="10.9-10.11",
+        purpose=(
+            "Versioned broker capability descriptors, durable order-intent identity, "
+            "and immutable broker-session fixture libraries for runtime and promotion lanes"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="strategy_contracts_and_canonical_signal_kernel",
         module="shared.policy.strategy_contract",
         source_path="shared/policy/strategy_contract.py",

@@ -1,0 +1,782 @@
+{
+  "conformance_cases": [
+    {
+      "case_id": "paper_lane_conformance_passes_for_active_ibkr_descriptor",
+      "request": {
+        "case_id": "paper_lane_conformance_passes_for_active_ibkr_descriptor",
+        "product_profile_id": "oneoz_comex_v1",
+        "lane": "paper",
+        "descriptor": {
+          "schema_version": "1.0.0",
+          "descriptor_id": "ibkr_gateway_v1",
+          "adapter_id": "ibkr_adapter_v1",
+          "broker": "IBKR",
+          "supported_order_types": ["market", "limit", "stop"],
+          "supported_time_in_force": ["day", "gtc"],
+          "modify_cancel_supported": true,
+          "flatten_supported": true,
+          "session_definition_supported": true,
+          "partial_fill_behavior": "incremental_callbacks_with_cumulative_quantity",
+          "reject_behavior": "synchronous_or_async_reject_with_reason_code",
+          "maintenance_window_behavior": "daily_maintenance_window_blocks_new_mutations",
+          "message_rate_limit_per_second": 45,
+          "exchange_constraints": {
+            "COMEX": ["cash_settled_1oz_supported"]
+          }
+        },
+        "active_contract": {
+          "symbol": "1OZ",
+          "exchange": "COMEX",
+          "currency": "USD",
+          "contract_size_oz": 1,
+          "minimum_price_fluctuation_usd_per_oz": 0.25,
+          "settlement_type": "cash_settled",
+          "session_calendar_id": "comex_metals_globex_v1"
+        },
+        "required_order_types": ["limit", "market"],
+        "required_time_in_force": ["day"]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_CONFORMANCE_CONFIRMED"
+    },
+    {
+      "case_id": "tradeable_lane_blocks_missing_flatten_support",
+      "request": {
+        "case_id": "tradeable_lane_blocks_missing_flatten_support",
+        "product_profile_id": "oneoz_comex_v1",
+        "lane": "live",
+        "descriptor": {
+          "schema_version": "1.0.0",
+          "descriptor_id": "ibkr_gateway_v1_without_flatten",
+          "adapter_id": "ibkr_adapter_v1",
+          "broker": "IBKR",
+          "supported_order_types": ["market", "limit", "stop"],
+          "supported_time_in_force": ["day", "gtc"],
+          "modify_cancel_supported": true,
+          "flatten_supported": false,
+          "session_definition_supported": true,
+          "partial_fill_behavior": "incremental_callbacks_with_cumulative_quantity",
+          "reject_behavior": "synchronous_or_async_reject_with_reason_code",
+          "maintenance_window_behavior": "daily_maintenance_window_blocks_new_mutations",
+          "message_rate_limit_per_second": 45,
+          "exchange_constraints": {
+            "COMEX": ["cash_settled_1oz_supported"]
+          }
+        },
+        "active_contract": {
+          "symbol": "1OZ",
+          "exchange": "COMEX",
+          "currency": "USD",
+          "contract_size_oz": 1,
+          "minimum_price_fluctuation_usd_per_oz": 0.25,
+          "settlement_type": "cash_settled",
+          "session_calendar_id": "comex_metals_globex_v1"
+        },
+        "required_order_types": ["limit", "market"],
+        "required_time_in_force": ["day"]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_FLATTEN_SUPPORT_REQUIRED"
+    },
+    {
+      "case_id": "contract_mismatch_blocks_tradeable_lane",
+      "request": {
+        "case_id": "contract_mismatch_blocks_tradeable_lane",
+        "product_profile_id": "oneoz_comex_v1",
+        "lane": "shadow_live",
+        "descriptor": {
+          "schema_version": "1.0.0",
+          "descriptor_id": "ibkr_gateway_v1",
+          "adapter_id": "ibkr_adapter_v1",
+          "broker": "IBKR",
+          "supported_order_types": ["market", "limit", "stop"],
+          "supported_time_in_force": ["day", "gtc"],
+          "modify_cancel_supported": true,
+          "flatten_supported": true,
+          "session_definition_supported": true,
+          "partial_fill_behavior": "incremental_callbacks_with_cumulative_quantity",
+          "reject_behavior": "synchronous_or_async_reject_with_reason_code",
+          "maintenance_window_behavior": "daily_maintenance_window_blocks_new_mutations",
+          "message_rate_limit_per_second": 45,
+          "exchange_constraints": {
+            "COMEX": ["cash_settled_1oz_supported"]
+          }
+        },
+        "active_contract": {
+          "symbol": "1OZ",
+          "exchange": "COMEX",
+          "currency": "USD",
+          "contract_size_oz": 1,
+          "minimum_price_fluctuation_usd_per_oz": 0.5,
+          "settlement_type": "cash_settled",
+          "session_calendar_id": "comex_metals_globex_v1"
+        },
+        "required_order_types": ["limit", "market"],
+        "required_time_in_force": ["day"]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_CONTRACT_INVARIANT_MISMATCH"
+    }
+  ],
+  "idempotency_cases": [
+    {
+      "case_id": "submit_timeout_reconciles_without_resend",
+      "scenario": {
+        "case_id": "submit_timeout_reconciles_without_resend",
+        "mutation_kind": "submit",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_paper_001",
+          "decision_sequence_number": 17,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "open_position"
+        },
+        "observed_order_intent_id": "deploy_gold_paper_001:17:entry:buy:open_position",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "unknown",
+        "broker_order_ids": ["ibkr_order_991"],
+        "ambiguous_recovery": true,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "submit_attempt",
+          "timeout_with_no_response",
+          "reconnect",
+          "ack_received"
+        ],
+        "correlation_id": "corr_broker_001",
+        "decision_trace_id": "trace_broker_001",
+        "expected_timeline_id": "timeline_expected_submit_timeout_001",
+        "actual_timeline_id": "timeline_actual_submit_timeout_001",
+        "artifact_manifest_id": "artifact_manifest_broker_submit_timeout_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_submit_timeout_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_IDEMPOTENCY_GUARDED"
+    },
+    {
+      "case_id": "submit_requires_durable_intent_before_broker_mutation",
+      "scenario": {
+        "case_id": "submit_requires_durable_intent_before_broker_mutation",
+        "mutation_kind": "submit",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_paper_001",
+          "decision_sequence_number": 18,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "open_position"
+        },
+        "observed_order_intent_id": "deploy_gold_paper_001:18:entry:buy:open_position",
+        "persisted_before_submit": false,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "pending",
+        "broker_order_ids": ["ibkr_order_992"],
+        "ambiguous_recovery": false,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": ["submit_attempt", "ack_received"],
+        "correlation_id": "corr_broker_002",
+        "decision_trace_id": "trace_broker_002",
+        "expected_timeline_id": "timeline_expected_persist_gap_001",
+        "actual_timeline_id": "timeline_actual_persist_gap_001",
+        "artifact_manifest_id": "artifact_manifest_broker_persist_gap_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_persist_gap_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_ORDER_INTENT_NOT_DURABLE_BEFORE_SUBMIT"
+    },
+    {
+      "case_id": "ambiguous_recovery_cannot_resend_mutation",
+      "scenario": {
+        "case_id": "ambiguous_recovery_cannot_resend_mutation",
+        "mutation_kind": "modify",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_live_001",
+          "decision_sequence_number": 41,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "tighten_stop"
+        },
+        "observed_order_intent_id": "deploy_gold_live_001:41:entry:buy:tighten_stop",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "unknown",
+        "broker_order_ids": ["ibkr_order_1201"],
+        "ambiguous_recovery": true,
+        "ambiguous_recovery_policy": "resend_mutation",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "modify_attempt",
+          "disconnect",
+          "reconnect"
+        ],
+        "correlation_id": "corr_broker_003",
+        "decision_trace_id": "trace_broker_003",
+        "expected_timeline_id": "timeline_expected_ambiguous_modify_001",
+        "actual_timeline_id": "timeline_actual_ambiguous_modify_001",
+        "artifact_manifest_id": "artifact_manifest_broker_ambiguous_modify_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_ambiguous_modify_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_AMBIGUOUS_RECOVERY_REQUIRES_RECONCILIATION"
+    },
+    {
+      "case_id": "acknowledgement_loss_reconciles_without_duplicate_submit",
+      "scenario": {
+        "case_id": "acknowledgement_loss_reconciles_without_duplicate_submit",
+        "mutation_kind": "submit",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_live_001",
+          "decision_sequence_number": 42,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "open_position"
+        },
+        "observed_order_intent_id": "deploy_gold_live_001:42:entry:buy:open_position",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "unknown",
+        "broker_order_ids": ["ibkr_order_1202"],
+        "ambiguous_recovery": true,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "submit_attempt",
+          "disconnect",
+          "reconnect"
+        ],
+        "correlation_id": "corr_broker_004a",
+        "decision_trace_id": "trace_broker_004a",
+        "expected_timeline_id": "timeline_expected_ack_loss_001",
+        "actual_timeline_id": "timeline_actual_ack_loss_001",
+        "artifact_manifest_id": "artifact_manifest_broker_ack_loss_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_ack_loss_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_IDEMPOTENCY_GUARDED"
+    },
+    {
+      "case_id": "reconnect_before_ack_preserves_single_intent_mapping",
+      "scenario": {
+        "case_id": "reconnect_before_ack_preserves_single_intent_mapping",
+        "mutation_kind": "submit",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_live_001",
+          "decision_sequence_number": 43,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "open_position"
+        },
+        "observed_order_intent_id": "deploy_gold_live_001:43:entry:buy:open_position",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "pending",
+        "broker_order_ids": ["ibkr_order_1203"],
+        "ambiguous_recovery": true,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "submit_attempt",
+          "disconnect",
+          "reconnect",
+          "ack_received"
+        ],
+        "correlation_id": "corr_broker_004b",
+        "decision_trace_id": "trace_broker_004b",
+        "expected_timeline_id": "timeline_expected_reconnect_before_ack_001",
+        "actual_timeline_id": "timeline_actual_reconnect_before_ack_001",
+        "artifact_manifest_id": "artifact_manifest_broker_reconnect_before_ack_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_reconnect_before_ack_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_IDEMPOTENCY_GUARDED"
+    },
+    {
+      "case_id": "cancel_replace_race_reuses_single_order_intent_mapping",
+      "scenario": {
+        "case_id": "cancel_replace_race_reuses_single_order_intent_mapping",
+        "mutation_kind": "modify",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_live_001",
+          "decision_sequence_number": 44,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "tighten_stop"
+        },
+        "observed_order_intent_id": "deploy_gold_live_001:44:entry:buy:tighten_stop",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "acknowledged",
+        "broker_order_ids": ["ibkr_order_1204"],
+        "ambiguous_recovery": false,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "modify_attempt",
+          "cancel_attempt",
+          "ack_received"
+        ],
+        "correlation_id": "corr_broker_004c",
+        "decision_trace_id": "trace_broker_004c",
+        "expected_timeline_id": "timeline_expected_cancel_replace_race_001",
+        "actual_timeline_id": "timeline_actual_cancel_replace_race_001",
+        "artifact_manifest_id": "artifact_manifest_broker_cancel_replace_race_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_cancel_replace_race_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_IDEMPOTENCY_GUARDED"
+    },
+    {
+      "case_id": "operator_retry_race_must_reuse_original_intent_id",
+      "scenario": {
+        "case_id": "operator_retry_race_must_reuse_original_intent_id",
+        "mutation_kind": "cancel",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_live_001",
+          "decision_sequence_number": 45,
+          "leg_id": "entry",
+          "side": "buy",
+          "intent_purpose": "abort_entry"
+        },
+        "observed_order_intent_id": "deploy_gold_live_001:45:entry:buy:abort_entry",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "acknowledged",
+        "broker_order_ids": ["ibkr_order_1205"],
+        "ambiguous_recovery": false,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": true,
+        "operator_retry_reuses_order_intent_id": false,
+        "timeline_event_types": [
+          "persist_intent",
+          "cancel_attempt",
+          "operator_retry",
+          "ack_received"
+        ],
+        "correlation_id": "corr_broker_004d",
+        "decision_trace_id": "trace_broker_004d",
+        "expected_timeline_id": "timeline_expected_operator_retry_race_001",
+        "actual_timeline_id": "timeline_actual_operator_retry_race_001",
+        "artifact_manifest_id": "artifact_manifest_broker_operator_retry_race_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_operator_retry_race_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_OPERATOR_RETRY_BREAKS_IDEMPOTENCY"
+    },
+    {
+      "case_id": "duplicate_fill_callbacks_must_deduplicate_state",
+      "scenario": {
+        "case_id": "duplicate_fill_callbacks_must_deduplicate_state",
+        "mutation_kind": "submit",
+        "order_intent_identity": {
+          "deployment_instance_id": "deploy_gold_paper_001",
+          "decision_sequence_number": 19,
+          "leg_id": "exit",
+          "side": "sell",
+          "intent_purpose": "close_position"
+        },
+        "observed_order_intent_id": "deploy_gold_paper_001:19:exit:sell:close_position",
+        "persisted_before_submit": true,
+        "persistence_atomic_with_submit": false,
+        "mapping_persisted": true,
+        "last_known_ack_state": "acknowledged",
+        "broker_order_ids": ["ibkr_order_993"],
+        "ambiguous_recovery": false,
+        "ambiguous_recovery_policy": "reconcile_first_no_resend",
+        "duplicate_callback_handled": false,
+        "operator_retry_reuses_order_intent_id": true,
+        "timeline_event_types": [
+          "persist_intent",
+          "submit_attempt",
+          "ack_received",
+          "partial_fill",
+          "duplicate_fill_callback"
+        ],
+        "correlation_id": "corr_broker_004",
+        "decision_trace_id": "trace_broker_004",
+        "expected_timeline_id": "timeline_expected_duplicate_fill_001",
+        "actual_timeline_id": "timeline_actual_duplicate_fill_001",
+        "artifact_manifest_id": "artifact_manifest_broker_duplicate_fill_001",
+        "operator_reason_bundle_id": "reason_bundle_broker_duplicate_fill_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_DUPLICATE_CALLBACK_NOT_IDEMPOTENT"
+    }
+  ],
+  "fixture_library_cases": [
+    {
+      "case_id": "complete_fixture_library_covers_required_broker_scenarios",
+      "library": {
+        "schema_version": "1.0.0",
+        "library_id": "ibkr_broker_session_library_v1",
+        "fixtures": [
+          {
+            "fixture_id": "ibkr_clean_fill_flow_v1",
+            "scenario_kind": "clean_fill_flow",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:00:00+00:00",
+            "immutable_sha256": "sha256:broker_clean_fill_flow_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_clean_fill_001",
+            "expected_timeline_id": "timeline_expected_clean_fill_001",
+            "correlation_log_id": "corr_log_clean_fill_001",
+            "artifact_manifest_id": "artifact_manifest_clean_fill_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_partial_fills_v1",
+            "scenario_kind": "partial_fills",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:05:00+00:00",
+            "immutable_sha256": "sha256:broker_partial_fills_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_partial_fills_001",
+            "expected_timeline_id": "timeline_expected_partial_fills_001",
+            "correlation_log_id": "corr_log_partial_fills_001",
+            "artifact_manifest_id": "artifact_manifest_partial_fills_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "partial_fill", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_unsolicited_cancel_v1",
+            "scenario_kind": "unsolicited_cancel",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:10:00+00:00",
+            "immutable_sha256": "sha256:broker_unsolicited_cancel_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_unsolicited_cancel_001",
+            "expected_timeline_id": "timeline_expected_unsolicited_cancel_001",
+            "correlation_log_id": "corr_log_unsolicited_cancel_001",
+            "artifact_manifest_id": "artifact_manifest_unsolicited_cancel_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "unsolicited_cancel"]
+          },
+          {
+            "fixture_id": "ibkr_reject_after_ack_v1",
+            "scenario_kind": "reject_after_acknowledgement",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:15:00+00:00",
+            "immutable_sha256": "sha256:broker_reject_after_ack_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_reject_after_ack_001",
+            "expected_timeline_id": "timeline_expected_reject_after_ack_001",
+            "correlation_log_id": "corr_log_reject_after_ack_001",
+            "artifact_manifest_id": "artifact_manifest_reject_after_ack_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "reject"]
+          },
+          {
+            "fixture_id": "ibkr_disconnect_reconnect_v1",
+            "scenario_kind": "disconnect_reconnect_mid_order",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:20:00+00:00",
+            "immutable_sha256": "sha256:broker_disconnect_reconnect_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_disconnect_reconnect_001",
+            "expected_timeline_id": "timeline_expected_disconnect_reconnect_001",
+            "correlation_log_id": "corr_log_disconnect_reconnect_001",
+            "artifact_manifest_id": "artifact_manifest_disconnect_reconnect_001",
+            "event_types": ["persist_intent", "submit_attempt", "disconnect", "reconnect", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_daily_reset_resume_v1",
+            "scenario_kind": "daily_reset_and_post_reset_resume",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:25:00+00:00",
+            "immutable_sha256": "sha256:broker_daily_reset_resume_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_daily_reset_resume_001",
+            "expected_timeline_id": "timeline_expected_daily_reset_resume_001",
+            "correlation_log_id": "corr_log_daily_reset_resume_001",
+            "artifact_manifest_id": "artifact_manifest_daily_reset_resume_001",
+            "event_types": ["daily_reset", "post_reset_resume", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_contract_mismatch_v1",
+            "scenario_kind": "contract_definition_mismatch_detection",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:30:00+00:00",
+            "immutable_sha256": "sha256:broker_contract_mismatch_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_contract_mismatch_001",
+            "expected_timeline_id": "timeline_expected_contract_mismatch_001",
+            "correlation_log_id": "corr_log_contract_mismatch_001",
+            "artifact_manifest_id": "artifact_manifest_contract_mismatch_001",
+            "event_types": ["contract_definition_mismatch"]
+          },
+          {
+            "fixture_id": "ibkr_timeout_no_response_v1",
+            "scenario_kind": "timeout_with_no_response",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:35:00+00:00",
+            "immutable_sha256": "sha256:broker_timeout_no_response_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_timeout_no_response_001",
+            "expected_timeline_id": "timeline_expected_timeout_no_response_001",
+            "correlation_log_id": "corr_log_timeout_no_response_001",
+            "artifact_manifest_id": "artifact_manifest_timeout_no_response_001",
+            "event_types": ["persist_intent", "submit_attempt", "timeout_with_no_response"]
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "BROKER_SESSION_FIXTURE_LIBRARY_COMPLETE"
+    },
+    {
+      "case_id": "fixture_library_requires_timeout_scenario",
+      "library": {
+        "schema_version": "1.0.0",
+        "library_id": "ibkr_broker_session_library_missing_timeout_v1",
+        "fixtures": [
+          {
+            "fixture_id": "ibkr_clean_fill_flow_v1",
+            "scenario_kind": "clean_fill_flow",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:00:00+00:00",
+            "immutable_sha256": "sha256:broker_clean_fill_flow_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_clean_fill_001",
+            "expected_timeline_id": "timeline_expected_clean_fill_001",
+            "correlation_log_id": "corr_log_clean_fill_001",
+            "artifact_manifest_id": "artifact_manifest_clean_fill_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_partial_fills_v1",
+            "scenario_kind": "partial_fills",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:05:00+00:00",
+            "immutable_sha256": "sha256:broker_partial_fills_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_partial_fills_001",
+            "expected_timeline_id": "timeline_expected_partial_fills_001",
+            "correlation_log_id": "corr_log_partial_fills_001",
+            "artifact_manifest_id": "artifact_manifest_partial_fills_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "partial_fill", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_unsolicited_cancel_v1",
+            "scenario_kind": "unsolicited_cancel",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:10:00+00:00",
+            "immutable_sha256": "sha256:broker_unsolicited_cancel_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_unsolicited_cancel_001",
+            "expected_timeline_id": "timeline_expected_unsolicited_cancel_001",
+            "correlation_log_id": "corr_log_unsolicited_cancel_001",
+            "artifact_manifest_id": "artifact_manifest_unsolicited_cancel_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "unsolicited_cancel"]
+          },
+          {
+            "fixture_id": "ibkr_reject_after_ack_v1",
+            "scenario_kind": "reject_after_acknowledgement",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:15:00+00:00",
+            "immutable_sha256": "sha256:broker_reject_after_ack_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_reject_after_ack_001",
+            "expected_timeline_id": "timeline_expected_reject_after_ack_001",
+            "correlation_log_id": "corr_log_reject_after_ack_001",
+            "artifact_manifest_id": "artifact_manifest_reject_after_ack_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "reject"]
+          },
+          {
+            "fixture_id": "ibkr_disconnect_reconnect_v1",
+            "scenario_kind": "disconnect_reconnect_mid_order",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:20:00+00:00",
+            "immutable_sha256": "sha256:broker_disconnect_reconnect_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_disconnect_reconnect_001",
+            "expected_timeline_id": "timeline_expected_disconnect_reconnect_001",
+            "correlation_log_id": "corr_log_disconnect_reconnect_001",
+            "artifact_manifest_id": "artifact_manifest_disconnect_reconnect_001",
+            "event_types": ["persist_intent", "submit_attempt", "disconnect", "reconnect", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_daily_reset_resume_v1",
+            "scenario_kind": "daily_reset_and_post_reset_resume",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:25:00+00:00",
+            "immutable_sha256": "sha256:broker_daily_reset_resume_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_daily_reset_resume_001",
+            "expected_timeline_id": "timeline_expected_daily_reset_resume_001",
+            "correlation_log_id": "corr_log_daily_reset_resume_001",
+            "artifact_manifest_id": "artifact_manifest_daily_reset_resume_001",
+            "event_types": ["daily_reset", "post_reset_resume", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_contract_mismatch_v1",
+            "scenario_kind": "contract_definition_mismatch_detection",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:30:00+00:00",
+            "immutable_sha256": "sha256:broker_contract_mismatch_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_contract_mismatch_001",
+            "expected_timeline_id": "timeline_expected_contract_mismatch_001",
+            "correlation_log_id": "corr_log_contract_mismatch_001",
+            "artifact_manifest_id": "artifact_manifest_contract_mismatch_001",
+            "event_types": ["contract_definition_mismatch"]
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "BROKER_SESSION_FIXTURE_SCENARIOS_MISSING"
+    },
+    {
+      "case_id": "fixture_library_requires_immutable_metadata",
+      "library": {
+        "schema_version": "1.0.0",
+        "library_id": "ibkr_broker_session_library_incomplete_metadata_v1",
+        "fixtures": [
+          {
+            "fixture_id": "ibkr_clean_fill_flow_v1",
+            "scenario_kind": "clean_fill_flow",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:00:00+00:00",
+            "immutable_sha256": "",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_clean_fill_001",
+            "expected_timeline_id": "timeline_expected_clean_fill_001",
+            "correlation_log_id": "corr_log_clean_fill_001",
+            "artifact_manifest_id": "artifact_manifest_clean_fill_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_partial_fills_v1",
+            "scenario_kind": "partial_fills",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:05:00+00:00",
+            "immutable_sha256": "sha256:broker_partial_fills_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_partial_fills_001",
+            "expected_timeline_id": "timeline_expected_partial_fills_001",
+            "correlation_log_id": "corr_log_partial_fills_001",
+            "artifact_manifest_id": "artifact_manifest_partial_fills_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "partial_fill", "fill"]
+          },
+          {
+            "fixture_id": "ibkr_unsolicited_cancel_v1",
+            "scenario_kind": "unsolicited_cancel",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:10:00+00:00",
+            "immutable_sha256": "sha256:broker_unsolicited_cancel_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_unsolicited_cancel_001",
+            "expected_timeline_id": "timeline_expected_unsolicited_cancel_001",
+            "correlation_log_id": "corr_log_unsolicited_cancel_001",
+            "artifact_manifest_id": "artifact_manifest_unsolicited_cancel_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "unsolicited_cancel"]
+          },
+          {
+            "fixture_id": "ibkr_reject_after_ack_v1",
+            "scenario_kind": "reject_after_acknowledgement",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:15:00+00:00",
+            "immutable_sha256": "sha256:broker_reject_after_ack_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_reject_after_ack_001",
+            "expected_timeline_id": "timeline_expected_reject_after_ack_001",
+            "correlation_log_id": "corr_log_reject_after_ack_001",
+            "artifact_manifest_id": "artifact_manifest_reject_after_ack_001",
+            "event_types": ["persist_intent", "submit_attempt", "ack_received", "reject"]
+          },
+          {
+            "fixture_id": "ibkr_disconnect_reconnect_v1",
+            "scenario_kind": "disconnect_reconnect_mid_order",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:20:00+00:00",
+            "immutable_sha256": "sha256:broker_disconnect_reconnect_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_disconnect_reconnect_001",
+            "expected_timeline_id": "timeline_expected_disconnect_reconnect_001",
+            "correlation_log_id": "corr_log_disconnect_reconnect_001",
+            "artifact_manifest_id": "artifact_manifest_disconnect_reconnect_001",
+            "event_types": ["persist_intent", "submit_attempt", "disconnect", "reconnect", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_daily_reset_resume_v1",
+            "scenario_kind": "daily_reset_and_post_reset_resume",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:25:00+00:00",
+            "immutable_sha256": "sha256:broker_daily_reset_resume_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_daily_reset_resume_001",
+            "expected_timeline_id": "timeline_expected_daily_reset_resume_001",
+            "correlation_log_id": "corr_log_daily_reset_resume_001",
+            "artifact_manifest_id": "artifact_manifest_daily_reset_resume_001",
+            "event_types": ["daily_reset", "post_reset_resume", "ack_received"]
+          },
+          {
+            "fixture_id": "ibkr_contract_mismatch_v1",
+            "scenario_kind": "contract_definition_mismatch_detection",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:30:00+00:00",
+            "immutable_sha256": "sha256:broker_contract_mismatch_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_contract_mismatch_001",
+            "expected_timeline_id": "timeline_expected_contract_mismatch_001",
+            "correlation_log_id": "corr_log_contract_mismatch_001",
+            "artifact_manifest_id": "artifact_manifest_contract_mismatch_001",
+            "event_types": ["contract_definition_mismatch"]
+          },
+          {
+            "fixture_id": "ibkr_timeout_no_response_v1",
+            "scenario_kind": "timeout_with_no_response",
+            "broker": "IBKR",
+            "adapter_id": "ibkr_adapter_v1",
+            "recorded_at_utc": "2026-03-26T18:35:00+00:00",
+            "immutable_sha256": "sha256:broker_timeout_no_response_v1",
+            "interface_schema_id": "broker_adapter_interface_v1",
+            "replay_seed": "seed_timeout_no_response_001",
+            "expected_timeline_id": "timeline_expected_timeout_no_response_001",
+            "correlation_log_id": "corr_log_timeout_no_response_001",
+            "artifact_manifest_id": "artifact_manifest_timeout_no_response_001",
+            "event_types": ["persist_intent", "submit_attempt", "timeout_with_no_response"]
+          }
+        ]
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "BROKER_SESSION_FIXTURE_METADATA_INCOMPLETE"
+    }
+  ]
+}

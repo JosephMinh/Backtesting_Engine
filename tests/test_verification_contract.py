@@ -427,6 +427,47 @@ class VerificationContractTest(unittest.TestCase):
             }.issubset(phase_two_five_surface_ids)
         )
 
+    def test_bead_710_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.7.10" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("paper_runtime_and_operational_evidence", matching[0].surface_id)
+        self.assertEqual(("phase_7",), matching[0].phase_gates)
+
+    def test_bead_710_profile_requires_broker_recording_and_replay_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "paper_runtime_and_operational_evidence"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.BROKER_SESSION_RECORDING,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.FAILURE_PATH,
+                VerificationClass.REPLAY_CERTIFICATION,
+            ),
+            profile.failure_path,
+        )
+        self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(ArtifactRequirement.CORRELATION_IDS, profile.retained_artifacts)
+
     def test_bead_41_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile
@@ -869,6 +910,17 @@ class VerificationContractTest(unittest.TestCase):
             ArtifactRequirement.STRUCTURED_LOGS,
             profile.retained_artifacts,
         )
+
+    def test_bead_67_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.6.7" in profile.related_beads
+        ]
+        profile = matching[0]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("research_governance_and_selection", profile.surface_id)
+        self.assertEqual(("phase_4", "phase_5"), profile.phase_gates)
         self.assertIn(
             ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
             profile.retained_artifacts,
