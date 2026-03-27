@@ -1,0 +1,447 @@
+{
+  "shared_request_defaults": {
+    "case_id": "strict_overnight_candidate_qualifies",
+    "candidate_id": "candidate_gold_overnight_v1",
+    "allow_overnight": true,
+    "overnight_candidate_class": "strict",
+    "requested_operating_posture": "overnight_strict",
+    "account_fit_request": {
+      "case_id": "overnight_candidate_account_fit_pass",
+      "candidate_id": "candidate_gold_overnight_v1",
+      "promotion_target": "live",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "requested_contract_count": 1,
+      "requested_operating_posture": "overnight_strict",
+      "overnight_requested": true,
+      "expected_daily_loss_usd": 60.0,
+      "expected_max_drawdown_usd": 500.0,
+      "expected_overnight_gap_stress_usd": 20.0,
+      "margin_snapshot": {
+        "snapshot_id": "broker_margin_snapshot_1oz_overnight_20260327",
+        "broker": "IBKR",
+        "symbol": "1OZ",
+        "initial_margin_requirement_usd": 125.0,
+        "maintenance_margin_requirement_usd": 110.0,
+        "captured_at_utc": "2026-03-27T11:30:00+00:00",
+        "valid_to_utc": "2026-03-27T23:59:00+00:00"
+      },
+      "fee_schedule": {
+        "snapshot_id": "fee_schedule_snapshot_1oz_20260327",
+        "broker": "IBKR",
+        "symbol": "1OZ",
+        "commission_per_contract_side_usd": 1.0,
+        "exchange_and_regulatory_per_contract_side_usd": 0.5,
+        "captured_at_utc": "2026-03-27T00:00:00+00:00",
+        "valid_from_utc": "2026-03-27T00:00:00+00:00",
+        "valid_to_utc": "2026-03-31T23:59:00+00:00"
+      },
+      "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+    },
+    "session_conditioned_risk_profile": {
+      "profile_id": "gold_overnight_session_risk_v1",
+      "operating_envelope_profile_id": "gold_momentum_operating_envelope_v1",
+      "rules": [
+        {
+          "session_class": "overnight",
+          "band": "yellow",
+          "actions": [
+            "size_reduction",
+            "lower_max_trades"
+          ],
+          "size_multiplier": 0.5,
+          "max_trade_count_multiplier": 0.5,
+          "required_operating_posture": "overnight_strict",
+          "overnight_carry_allowed": true,
+          "diagnostic": "Use the strict overnight posture with smaller size.",
+          "remediation": "Reduce overnight size while the overnight session class is active."
+        },
+        {
+          "session_class": "regular_comex",
+          "band": "green",
+          "actions": [],
+          "size_multiplier": 1.0,
+          "max_trade_count_multiplier": 1.0,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": true,
+          "diagnostic": "Regular COMEX uses the default posture.",
+          "remediation": "No remediation required."
+        },
+        {
+          "session_class": "maintenance_adjacent",
+          "band": "red",
+          "actions": [
+            "no_new_overnight_carry",
+            "exit_only"
+          ],
+          "size_multiplier": 0.0,
+          "max_trade_count_multiplier": 0.0,
+          "required_operating_posture": "overnight_strict",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Do not add new overnight carry near maintenance windows.",
+          "remediation": "Move to exit-only until maintenance risk clears."
+        },
+        {
+          "session_class": "macro_event",
+          "band": "yellow",
+          "actions": [
+            "passive_entry_suppression",
+            "lower_max_trades"
+          ],
+          "size_multiplier": 0.5,
+          "max_trade_count_multiplier": 0.5,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Scheduled macro events require a stricter posture.",
+          "remediation": "Reduce activity through the event window."
+        },
+        {
+          "session_class": "degraded_data",
+          "band": "red",
+          "actions": [
+            "no_new_overnight_carry",
+            "forced_flatten"
+          ],
+          "size_multiplier": 0.0,
+          "max_trade_count_multiplier": 0.0,
+          "required_operating_posture": "overnight_strict",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Data degradation is not compatible with new overnight carry.",
+          "remediation": "Flatten and block overnight entry until data quality recovers."
+        }
+      ]
+    },
+    "evidence_records": [
+      {
+        "lane": "paper",
+        "scenario_type": "overnight_hold",
+        "passed": true,
+        "artifact_ids": [
+          "paper_overnight_hold_v1"
+        ],
+        "diagnostic": "Paper evidence retained the overnight hold scenario."
+      },
+      {
+        "lane": "paper",
+        "scenario_type": "overnight_exit",
+        "passed": true,
+        "artifact_ids": [
+          "paper_overnight_exit_v1"
+        ],
+        "diagnostic": "Paper evidence retained the overnight exit scenario."
+      },
+      {
+        "lane": "paper",
+        "scenario_type": "restart_while_holding",
+        "passed": true,
+        "artifact_ids": [
+          "paper_restart_while_holding_v1"
+        ],
+        "diagnostic": "Paper evidence retained the restart-while-holding scenario."
+      },
+      {
+        "lane": "shadow_live",
+        "scenario_type": "overnight_hold",
+        "passed": true,
+        "artifact_ids": [
+          "shadow_overnight_hold_v1"
+        ],
+        "diagnostic": "Shadow evidence retained the overnight hold scenario."
+      },
+      {
+        "lane": "shadow_live",
+        "scenario_type": "overnight_exit",
+        "passed": true,
+        "artifact_ids": [
+          "shadow_overnight_exit_v1"
+        ],
+        "diagnostic": "Shadow evidence retained the overnight exit scenario."
+      },
+      {
+        "lane": "shadow_live",
+        "scenario_type": "restart_while_holding",
+        "passed": true,
+        "artifact_ids": [
+          "shadow_restart_while_holding_v1"
+        ],
+        "diagnostic": "Shadow evidence retained the restart-while-holding scenario."
+      },
+      {
+        "lane": "paper",
+        "scenario_type": "data_degradation",
+        "passed": true,
+        "artifact_ids": [
+          "paper_data_degradation_v1"
+        ],
+        "diagnostic": "Paper evidence retained the degraded-data scenario."
+      },
+      {
+        "lane": "shadow_live",
+        "scenario_type": "broker_disconnect",
+        "passed": true,
+        "artifact_ids": [
+          "shadow_broker_disconnect_v1"
+        ],
+        "diagnostic": "Shadow evidence retained the broker disconnect scenario."
+      }
+    ],
+    "carry_restriction_rules": [
+      {
+        "trigger_id": "maintenance_window",
+        "action": "no_new_overnight_carry",
+        "blocks_new_carry": true,
+        "diagnostic": "No new overnight carry is allowed near maintenance.",
+        "remediation": "Wait until maintenance clears before establishing overnight risk."
+      },
+      {
+        "trigger_id": "severe_data_degradation",
+        "action": "forced_flatten",
+        "blocks_new_carry": true,
+        "diagnostic": "Severe data degradation forces a flatten decision.",
+        "remediation": "Flatten and rebuild state before considering overnight carry again."
+      },
+      {
+        "trigger_id": "reconciliation_uncertainty",
+        "action": "exit_only",
+        "blocks_new_carry": true,
+        "diagnostic": "Reconciliation uncertainty blocks new overnight carry.",
+        "remediation": "Resolve the mismatch before re-enabling overnight carrying."
+      },
+      {
+        "trigger_id": "broker_disconnect",
+        "action": "forced_flatten",
+        "blocks_new_carry": true,
+        "diagnostic": "Broker impairment is handled as an emergency flatten path.",
+        "remediation": "Restore broker health before considering new overnight risk."
+      }
+    ],
+    "session_boundary_margin_checks": [
+      {
+        "boundary": "session_close",
+        "threshold_basis": "maintenance_margin_fraction",
+        "required_margin_usd": 110.0,
+        "artifact_id": "session_close_margin_snapshot_v1",
+        "diagnostic": "Session close maintenance margin remains inside the approved threshold."
+      },
+      {
+        "boundary": "maintenance_window",
+        "threshold_basis": "maintenance_margin_fraction",
+        "required_margin_usd": 135.0,
+        "artifact_id": "maintenance_window_margin_snapshot_v1",
+        "diagnostic": "Maintenance-window margin remains inside the approved threshold."
+      },
+      {
+        "boundary": "next_session_open",
+        "threshold_basis": "initial_margin_fraction",
+        "required_margin_usd": 150.0,
+        "artifact_id": "next_session_open_margin_snapshot_v1",
+        "diagnostic": "Next-session-open margin remains inside the approved threshold."
+      }
+    ],
+    "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+  },
+  "evaluation_cases": [
+    {
+      "case_id": "strict_overnight_candidate_qualifies",
+      "overrides": {},
+      "expected": {
+        "status": "qualified",
+        "reason_code": "OVERNIGHT_CANDIDATE_QUALIFIED",
+        "failed_check_ids": [],
+        "boundary_passes": {
+          "session_close": true,
+          "maintenance_window": true,
+          "next_session_open": true
+        }
+      }
+    },
+    {
+      "case_id": "missing_allow_overnight_blocks",
+      "overrides": {
+        "case_id": "missing_allow_overnight_blocks",
+        "allow_overnight": false
+      },
+      "expected": {
+        "status": "blocked",
+        "reason_code": "OVERNIGHT_CANDIDATE_DECLARATION_REQUIRED",
+        "failed_check_ids": [
+          "declaration"
+        ]
+      }
+    },
+    {
+      "case_id": "stale_account_fit_blocks_overnight_candidate",
+      "overrides": {
+        "case_id": "stale_account_fit_blocks_overnight_candidate",
+        "account_fit_request": {
+          "case_id": "stale_overnight_account_fit",
+          "margin_snapshot": {
+            "snapshot_id": "broker_margin_snapshot_1oz_overnight_stale",
+            "captured_at_utc": "2026-03-26T11:30:00+00:00",
+            "valid_to_utc": "2026-03-26T23:59:00+00:00"
+          }
+        }
+      },
+      "expected": {
+        "status": "stale",
+        "reason_code": "OVERNIGHT_CANDIDATE_ACCOUNT_FIT_STALE",
+        "failed_check_ids": []
+      }
+    },
+    {
+      "case_id": "missing_shadow_restart_evidence_blocks",
+      "overrides": {
+        "case_id": "missing_shadow_restart_evidence_blocks",
+        "evidence_records": [
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": [
+              "paper_overnight_hold_v1"
+            ],
+            "diagnostic": "Paper evidence retained the overnight hold scenario."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": [
+              "paper_overnight_exit_v1"
+            ],
+            "diagnostic": "Paper evidence retained the overnight exit scenario."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "restart_while_holding",
+            "passed": true,
+            "artifact_ids": [
+              "paper_restart_while_holding_v1"
+            ],
+            "diagnostic": "Paper evidence retained the restart-while-holding scenario."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": [
+              "shadow_overnight_hold_v1"
+            ],
+            "diagnostic": "Shadow evidence retained the overnight hold scenario."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": [
+              "shadow_overnight_exit_v1"
+            ],
+            "diagnostic": "Shadow evidence retained the overnight exit scenario."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "data_degradation",
+            "passed": true,
+            "artifact_ids": [
+              "paper_data_degradation_v1"
+            ],
+            "diagnostic": "Paper evidence retained the degraded-data scenario."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "broker_disconnect",
+            "passed": true,
+            "artifact_ids": [
+              "shadow_broker_disconnect_v1"
+            ],
+            "diagnostic": "Shadow evidence retained the broker disconnect scenario."
+          }
+        ]
+      },
+      "expected": {
+        "status": "blocked",
+        "reason_code": "OVERNIGHT_CANDIDATE_EVIDENCE_INCOMPLETE",
+        "failed_check_ids": [
+          "evidence"
+        ]
+      }
+    },
+    {
+      "case_id": "missing_reconciliation_restriction_blocks",
+      "overrides": {
+        "case_id": "missing_reconciliation_restriction_blocks",
+        "carry_restriction_rules": [
+          {
+            "trigger_id": "maintenance_window",
+            "action": "no_new_overnight_carry",
+            "blocks_new_carry": true,
+            "diagnostic": "No new overnight carry is allowed near maintenance.",
+            "remediation": "Wait until maintenance clears before establishing overnight risk."
+          },
+          {
+            "trigger_id": "severe_data_degradation",
+            "action": "forced_flatten",
+            "blocks_new_carry": true,
+            "diagnostic": "Severe data degradation forces a flatten decision.",
+            "remediation": "Flatten and rebuild state before considering overnight carry again."
+          },
+          {
+            "trigger_id": "broker_disconnect",
+            "action": "forced_flatten",
+            "blocks_new_carry": true,
+            "diagnostic": "Broker impairment is handled as an emergency flatten path.",
+            "remediation": "Restore broker health before considering new overnight risk."
+          }
+        ]
+      },
+      "expected": {
+        "status": "blocked",
+        "reason_code": "OVERNIGHT_CANDIDATE_CARRY_RESTRICTION_MISSING",
+        "failed_check_ids": [
+          "carry_restrictions"
+        ]
+      }
+    },
+    {
+      "case_id": "maintenance_window_margin_exceeds_threshold",
+      "overrides": {
+        "case_id": "maintenance_window_margin_exceeds_threshold",
+        "session_boundary_margin_checks": [
+          {
+            "boundary": "session_close",
+            "threshold_basis": "maintenance_margin_fraction",
+            "required_margin_usd": 110.0,
+            "artifact_id": "session_close_margin_snapshot_v1",
+            "diagnostic": "Session close maintenance margin remains inside the approved threshold."
+          },
+          {
+            "boundary": "maintenance_window",
+            "threshold_basis": "maintenance_margin_fraction",
+            "required_margin_usd": 1900.0,
+            "artifact_id": "maintenance_window_margin_snapshot_fail_v1",
+            "diagnostic": "Maintenance-window margin expands beyond the approved threshold."
+          },
+          {
+            "boundary": "next_session_open",
+            "threshold_basis": "initial_margin_fraction",
+            "required_margin_usd": 150.0,
+            "artifact_id": "next_session_open_margin_snapshot_v1",
+            "diagnostic": "Next-session-open margin remains inside the approved threshold."
+          }
+        ]
+      },
+      "expected": {
+        "status": "blocked",
+        "reason_code": "OVERNIGHT_CANDIDATE_SESSION_BOUNDARY_MARGIN_EXCEEDED",
+        "failed_check_ids": [
+          "session_boundary_margin"
+        ],
+        "boundary_passes": {
+          "session_close": true,
+          "maintenance_window": false,
+          "next_session_open": true
+        }
+      }
+    }
+  ]
+}
