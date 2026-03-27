@@ -785,8 +785,8 @@ pub fn sample_recovery_scenario(name: &str) -> Option<(ShutdownBarrierRequest, R
 #[cfg(test)]
 mod tests {
     use super::{
-        evaluate_recovery, plan_graceful_shutdown, sample_recovery_scenario, RecoveryStatus,
-        ShutdownBarrierStatus, WarmupSource,
+        RecoveryStatus, ShutdownBarrierStatus, WarmupSource, evaluate_recovery,
+        plan_graceful_shutdown, sample_recovery_scenario,
     };
 
     #[test]
