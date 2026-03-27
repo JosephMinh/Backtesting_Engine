@@ -821,6 +821,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         related_beads=(
             "backtesting_engine-ltc.1.5",
             "backtesting_engine-ltc.4.3",
+            "backtesting_engine-ltc.11.9",
         ),
         phase_gates=("phase_2_5",),
         fixture_sources=(
@@ -852,6 +853,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
             "backtesting_engine-ltc.4.2",
             "backtesting_engine-ltc.4.4",
             "backtesting_engine-ltc.4.5",
+            "backtesting_engine-ltc.11.9",
         ),
         phase_gates=("phase_3",),
         fixture_sources=(

@@ -521,6 +521,20 @@ class VerificationContractTest(unittest.TestCase):
         self.assertEqual("simulation_and_execution_profiles", matching[0].surface_id)
         self.assertEqual(("phase_3",), matching[0].phase_gates)
 
+    def test_bead_119_links_execution_lane_and_calibration_profiles(self) -> None:
+        matching = [
+            profile.surface_id
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.11.9" in profile.related_beads
+        ]
+        self.assertEqual(
+            {
+                "execution_lane_vertical_slice",
+                "simulation_and_execution_profiles",
+            },
+            set(matching),
+        )
+
     def test_bead_91_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile

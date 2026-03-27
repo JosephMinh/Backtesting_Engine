@@ -1,0 +1,471 @@
+{
+  "shared_request_defaults": {
+    "run_id": "verification-run-11-9",
+    "correlation_id": "corr-11-9-seeded",
+    "decision_trace_id": "trace-11-9-seeded",
+    "candidate_id": "candidate-gold-001",
+    "strategy_class_id": "bar_close_breakout_1m",
+    "research_symbol": "MGC",
+    "execution_symbol": "1OZ",
+    "route_broker": "IBKR",
+    "route_lane": "paper",
+    "product_profile_id": "oneoz_comex_v1",
+    "account_value_usd": 5000,
+    "live_contracts": 1,
+    "decision_interval_seconds": 60,
+    "active_bundles": 1,
+    "deployment_hosts": 1,
+    "preserved_input_artifact_ids": [
+      "fixture/request_snapshot.json",
+      "fixture/session_definition.json"
+    ],
+    "supporting_data_refs": [
+      "databento/oneoz-bars-1m-v1",
+      "ibkr/paper/2026-03-26-session"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "vertical_slice_passes_cleanly",
+      "description": "All non-economic IBKR and 1OZ vertical-slice checks pass with correlated evidence.",
+      "overrides": {
+        "scenario_kind": "vertical_slice",
+        "vertical_slice": {
+          "sentinel_strategy_route": "paper_sentinel_ibkr_1oz",
+          "expected_sentinel_strategy_route": "paper_sentinel_ibkr_1oz",
+          "broker_reconnect_observed": true,
+          "reconnect_observation_reference": "broker-session/ibkr-paper-reconnect-001",
+          "viability_gate_inputs": {
+            "oz1_entitled": true,
+            "session_coverage_verified": true,
+            "ibkr_setup_confirmed": true,
+            "data_profile_release_approved": true,
+            "bar_construction_deterministic": true,
+            "opsd_routing_ok": true,
+            "paper_routing_ok": true,
+            "shadow_live_suppression_ok": true,
+            "statement_ingestion_ok": true,
+            "reconciliation_ok": true,
+            "oz1_tradable_by_session_class": true,
+            "account_type_ok": true,
+            "permissions_ok": true,
+            "contract_definition_ok": true,
+            "operational_reset_ok": true
+          }
+        }
+      },
+      "expected_decision": "pass",
+      "expected_reason_code": "EXECUTION_LANE_VERTICAL_SLICE_PASS",
+      "expected_vertical_slice_reason_code": "VIABILITY_GATE_PASSED"
+    },
+    {
+      "case_id": "vertical_slice_pivots_on_bar_construction",
+      "description": "The vertical slice preserves enough evidence to pivot when bar construction is not deterministic.",
+      "overrides": {
+        "scenario_kind": "vertical_slice",
+        "vertical_slice": {
+          "sentinel_strategy_route": "paper_sentinel_ibkr_1oz",
+          "expected_sentinel_strategy_route": "paper_sentinel_ibkr_1oz",
+          "broker_reconnect_observed": true,
+          "reconnect_observation_reference": "broker-session/ibkr-paper-reconnect-002",
+          "viability_gate_inputs": {
+            "oz1_entitled": true,
+            "session_coverage_verified": true,
+            "ibkr_setup_confirmed": true,
+            "data_profile_release_approved": true,
+            "bar_construction_deterministic": false,
+            "opsd_routing_ok": true,
+            "paper_routing_ok": true,
+            "shadow_live_suppression_ok": true,
+            "statement_ingestion_ok": true,
+            "reconciliation_ok": true,
+            "oz1_tradable_by_session_class": true,
+            "account_type_ok": true,
+            "permissions_ok": true,
+            "contract_definition_ok": true,
+            "operational_reset_ok": true
+          }
+        }
+      },
+      "expected_decision": "pivot",
+      "expected_reason_code": "EXECUTION_LANE_VERTICAL_SLICE_PIVOT",
+      "expected_vertical_slice_reason_code": "VIABILITY_GATE_FAILED"
+    },
+    {
+      "case_id": "calibration_passes_with_portability_and_fidelity",
+      "description": "Execution-symbol viability, portability certification, and lower-frequency fidelity all pass.",
+      "overrides": {
+        "scenario_kind": "calibration",
+        "calibration": {
+          "research_artifact_id": "research/mgc-family-study-v1",
+          "native_execution_history_obtained": true,
+          "live_or_paper_observations_obtained": true,
+          "execution_symbol_dimensions": [
+            {
+              "dimension_id": "VS01",
+              "dimension_name": "quote_print_presence_by_session_class",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS01_QUOTE_PRINT_PRESENCE",
+              "diagnostic": "Quote and print presence are sufficient.",
+              "measured_value": {
+                "quote_presence_ratio": 0.99,
+                "print_presence_ratio": 0.98
+              },
+              "threshold": {
+                "min_quote_presence_ratio": 0.95,
+                "min_print_presence_ratio": 0.95
+              },
+              "data_source_reference": "study/oneoz-session-coverage",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "VS02",
+              "dimension_name": "spread_and_bar_completeness",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS02_SPREAD_AND_COMPLETENESS",
+              "diagnostic": "Spread and completeness are acceptable.",
+              "measured_value": {
+                "median_spread_bps": 4.2,
+                "bar_completeness_ratio": 0.995
+              },
+              "threshold": {
+                "max_allowed_spread_bps": 8.0,
+                "min_bar_completeness_ratio": 0.99
+              },
+              "data_source_reference": "study/oneoz-bars-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "VS03",
+              "dimension_name": "fee_and_slippage_feasibility",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS03_FEE_AND_SLIPPAGE",
+              "diagnostic": "Round-trip cost is feasible at one contract.",
+              "measured_value": {
+                "intended_contract_count": 1,
+                "estimated_round_trip_cost_bps": 9.0,
+                "estimated_round_trip_cost_usd": 14.0
+              },
+              "threshold": {
+                "approved_contract_count": 1,
+                "max_allowed_round_trip_cost_bps": 12.0,
+                "max_allowed_round_trip_cost_usd": 18.0
+              },
+              "data_source_reference": "study/oneoz-costs-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "VS04",
+              "dimension_name": "tradable_session_coverage",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS04_SESSION_COVERAGE",
+              "diagnostic": "Tradable-session coverage is sufficient.",
+              "measured_value": {
+                "tradable_session_coverage_ratio": 0.96,
+                "protected_windows_respected": true,
+                "maintenance_fence_respected": true
+              },
+              "threshold": {
+                "min_tradable_session_coverage_ratio": 0.9,
+                "protected_windows_respected": true,
+                "maintenance_fence_respected": true
+              },
+              "data_source_reference": "study/oneoz-session-windows-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "VS05",
+              "dimension_name": "holding_period_compatibility",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS05_HOLDING_PERIOD",
+              "diagnostic": "Holding period is compatible with 1OZ liquidity.",
+              "measured_value": {
+                "intended_holding_period_minutes": 5,
+                "liquidity_supported_holding_period_minutes": 10
+              },
+              "threshold": {
+                "min_liquidity_supported_holding_period_minutes": 5
+              },
+              "data_source_reference": "study/oneoz-holding-window-v1",
+              "session_class": "regular"
+            }
+          ],
+          "portability_study_id": "portability/mgc-to-1oz-v1",
+          "portability_dimensions": [
+            {
+              "dimension_id": "PT01",
+              "dimension_name": "directional_agreement",
+              "passed": true,
+              "reason_code": "PORTABILITY_PT01_DIRECTIONAL_AGREEMENT",
+              "diagnostic": "Directional agreement stays inside threshold.",
+              "measured_value": {
+                "directional_agreement_ratio": 0.97
+              },
+              "threshold": {
+                "min_directional_agreement_ratio": 0.95
+              },
+              "data_source_reference": "portability/mgc-to-1oz-v1"
+            },
+            {
+              "dimension_id": "PT02",
+              "dimension_name": "timing_alignment",
+              "passed": true,
+              "reason_code": "PORTABILITY_PT02_TIMING_ALIGNMENT",
+              "diagnostic": "Timing alignment stays within threshold.",
+              "measured_value": {
+                "median_timing_drift_seconds": 4
+              },
+              "threshold": {
+                "max_median_timing_drift_seconds": 10
+              },
+              "data_source_reference": "portability/mgc-to-1oz-v1"
+            },
+            {
+              "dimension_id": "PT07",
+              "dimension_name": "after_cost_degradation",
+              "passed": true,
+              "reason_code": "PORTABILITY_PT07_AFTER_COST_DEGRADATION",
+              "diagnostic": "After-cost degradation remains inside policy.",
+              "measured_value": {
+                "after_cost_degradation_bps": 5.0
+              },
+              "threshold": {
+                "max_after_cost_degradation_bps": 10.0
+              },
+              "data_source_reference": "portability/mgc-to-1oz-v1"
+            }
+          ],
+          "sufficient_native_1oz_history_exists": false,
+          "native_1oz_validation_study_id": null,
+          "native_1oz_validation_passed": null,
+          "calibration_evidence_report_id": "calibration/oneoz-fidelity-v1",
+          "fidelity_dimensions": [
+            {
+              "dimension_id": "FC01",
+              "dimension_name": "bar_sufficiency",
+              "passed": true,
+              "reason_code": "FIDELITY_FC01_BAR_SUFFICIENCY",
+              "diagnostic": "Bar coverage is sufficient.",
+              "measured_value": {
+                "bar_coverage_ratio": 0.997,
+                "largest_gap_seconds": 0
+              },
+              "threshold": {
+                "min_bar_coverage_ratio": 0.99,
+                "max_allowed_gap_seconds": 60
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "FC02",
+              "dimension_name": "slippage_realism",
+              "passed": true,
+              "reason_code": "FIDELITY_FC02_SLIPPAGE_REALISM",
+              "diagnostic": "Observed slippage remains inside threshold.",
+              "measured_value": {
+                "estimated_slippage_bps": 7.0
+              },
+              "threshold": {
+                "max_allowed_slippage_bps": 10.0
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "FC03",
+              "dimension_name": "passive_assumption_credibility",
+              "passed": true,
+              "reason_code": "FIDELITY_FC03_PASSIVE_ASSUMPTION",
+              "diagnostic": "Passive assumptions remain credible.",
+              "measured_value": {
+                "passive_fill_ratio": 0.41
+              },
+              "threshold": {
+                "max_passive_fill_ratio": 0.5
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v1",
+              "session_class": "regular"
+            },
+            {
+              "dimension_id": "FC04",
+              "dimension_name": "session_liquidity_differences",
+              "passed": true,
+              "reason_code": "FIDELITY_FC04_SESSION_LIQUIDITY",
+              "diagnostic": "Session-conditioned liquidity differences are covered.",
+              "measured_value": {
+                "session_surface_count": 2
+              },
+              "threshold": {
+                "min_session_surface_count": 2
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v1",
+              "session_class": "overnight"
+            }
+          ],
+          "decision_interval_seconds": 60,
+          "uses_bar_based_logic": true,
+          "uses_one_bar_late_decisions": false,
+          "depends_on_order_book_imbalance": false,
+          "requires_queue_position_edge": false,
+          "requires_sub_minute_market_making": false,
+          "requires_premium_live_depth_data": false
+        }
+      },
+      "expected_decision": "pass",
+      "expected_reason_code": "EXECUTION_LANE_CALIBRATION_PASS",
+      "expected_certification_reason_code": "EXECUTION_SYMBOL_CERTIFICATION_PASSED",
+      "expected_fidelity_reason_code": "FIDELITY_CALIBRATION_ADMISSIBLE"
+    },
+    {
+      "case_id": "calibration_pivots_when_portability_study_missing",
+      "description": "Viability passes, but the scenario remains a pivot until the portability study is completed.",
+      "overrides": {
+        "scenario_kind": "calibration",
+        "calibration": {
+          "research_artifact_id": "research/mgc-family-study-v1",
+          "native_execution_history_obtained": true,
+          "live_or_paper_observations_obtained": true,
+          "execution_symbol_dimensions": [
+            {
+              "dimension_id": "VS01",
+              "dimension_name": "quote_print_presence_by_session_class",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS01_QUOTE_PRINT_PRESENCE",
+              "diagnostic": "Quote and print presence are sufficient.",
+              "measured_value": {
+                "quote_presence_ratio": 0.99,
+                "print_presence_ratio": 0.98
+              },
+              "threshold": {
+                "min_quote_presence_ratio": 0.95,
+                "min_print_presence_ratio": 0.95
+              },
+              "data_source_reference": "study/oneoz-session-coverage",
+              "session_class": "regular"
+            }
+          ],
+          "portability_study_id": null,
+          "portability_dimensions": [],
+          "sufficient_native_1oz_history_exists": false,
+          "native_1oz_validation_study_id": null,
+          "native_1oz_validation_passed": null,
+          "calibration_evidence_report_id": "calibration/oneoz-fidelity-v2",
+          "fidelity_dimensions": [
+            {
+              "dimension_id": "FC01",
+              "dimension_name": "bar_sufficiency",
+              "passed": true,
+              "reason_code": "FIDELITY_FC01_BAR_SUFFICIENCY",
+              "diagnostic": "Bar coverage is sufficient.",
+              "measured_value": {
+                "bar_coverage_ratio": 0.996,
+                "largest_gap_seconds": 0
+              },
+              "threshold": {
+                "min_bar_coverage_ratio": 0.99,
+                "max_allowed_gap_seconds": 60
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v2",
+              "session_class": "regular"
+            }
+          ],
+          "decision_interval_seconds": 60,
+          "uses_bar_based_logic": true,
+          "uses_one_bar_late_decisions": false,
+          "depends_on_order_book_imbalance": false,
+          "requires_queue_position_edge": false,
+          "requires_sub_minute_market_making": false,
+          "requires_premium_live_depth_data": false
+        }
+      },
+      "expected_decision": "pivot",
+      "expected_reason_code": "EXECUTION_LANE_CALIBRATION_PIVOT",
+      "expected_certification_reason_code": "PORTABILITY_STUDY_REQUIRED",
+      "expected_fidelity_reason_code": "FIDELITY_CALIBRATION_ADMISSIBLE"
+    },
+    {
+      "case_id": "calibration_excludes_order_book_dependency",
+      "description": "The scenario is explicitly excluded when the strategy depends on order-book and premium-depth edges.",
+      "overrides": {
+        "scenario_kind": "calibration",
+        "strategy_class_id": "order_book_imbalance_reversion",
+        "calibration": {
+          "research_artifact_id": "research/mgc-family-study-v1",
+          "native_execution_history_obtained": true,
+          "live_or_paper_observations_obtained": true,
+          "execution_symbol_dimensions": [
+            {
+              "dimension_id": "VS01",
+              "dimension_name": "quote_print_presence_by_session_class",
+              "passed": true,
+              "reason_code": "VIABILITY_SCREEN_VS01_QUOTE_PRINT_PRESENCE",
+              "diagnostic": "Quote and print presence are sufficient.",
+              "measured_value": {
+                "quote_presence_ratio": 0.99,
+                "print_presence_ratio": 0.98
+              },
+              "threshold": {
+                "min_quote_presence_ratio": 0.95,
+                "min_print_presence_ratio": 0.95
+              },
+              "data_source_reference": "study/oneoz-session-coverage",
+              "session_class": "regular"
+            }
+          ],
+          "portability_study_id": "portability/mgc-to-1oz-v2",
+          "portability_dimensions": [
+            {
+              "dimension_id": "PT01",
+              "dimension_name": "directional_agreement",
+              "passed": true,
+              "reason_code": "PORTABILITY_PT01_DIRECTIONAL_AGREEMENT",
+              "diagnostic": "Directional agreement stays inside threshold.",
+              "measured_value": {
+                "directional_agreement_ratio": 0.97
+              },
+              "threshold": {
+                "min_directional_agreement_ratio": 0.95
+              },
+              "data_source_reference": "portability/mgc-to-1oz-v2"
+            }
+          ],
+          "sufficient_native_1oz_history_exists": false,
+          "native_1oz_validation_study_id": null,
+          "native_1oz_validation_passed": null,
+          "calibration_evidence_report_id": "calibration/oneoz-fidelity-v3",
+          "fidelity_dimensions": [
+            {
+              "dimension_id": "FC01",
+              "dimension_name": "bar_sufficiency",
+              "passed": true,
+              "reason_code": "FIDELITY_FC01_BAR_SUFFICIENCY",
+              "diagnostic": "Bar coverage is sufficient.",
+              "measured_value": {
+                "bar_coverage_ratio": 0.996,
+                "largest_gap_seconds": 0
+              },
+              "threshold": {
+                "min_bar_coverage_ratio": 0.99,
+                "max_allowed_gap_seconds": 60
+              },
+              "data_source_reference": "calibration/oneoz-fidelity-v3",
+              "session_class": "regular"
+            }
+          ],
+          "decision_interval_seconds": 60,
+          "uses_bar_based_logic": true,
+          "uses_one_bar_late_decisions": false,
+          "depends_on_order_book_imbalance": true,
+          "requires_queue_position_edge": false,
+          "requires_sub_minute_market_making": false,
+          "requires_premium_live_depth_data": true
+        }
+      },
+      "expected_decision": "excluded",
+      "expected_reason_code": "EXECUTION_LANE_CALIBRATION_EXCLUDED",
+      "expected_certification_reason_code": "EXECUTION_SYMBOL_CERTIFICATION_PASSED",
+      "expected_fidelity_reason_code": "FIDELITY_CALIBRATION_BLOCKED"
+    }
+  ]
+}

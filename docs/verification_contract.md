@@ -49,9 +49,9 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Phase 1 raw archive and bitemporal reference gate | `backtesting_engine-ltc.9.2` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Phase 2 validation and release-pipeline gate | `backtesting_engine-ltc.9.3` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Data/reference and release pipeline | `backtesting_engine-ltc.3.1`, `3.4`, `3.8`, `3.9`, `3.10`, `3.11` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
-| Execution-lane vertical slice | `backtesting_engine-ltc.1.5`, `4.3` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Execution-lane vertical slice | `backtesting_engine-ltc.1.5`, `4.3`, `11.9` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Operational runtime supervision and deterministic state ownership | `backtesting_engine-ltc.7.9` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
-| Simulation and execution profiles | `backtesting_engine-ltc.4.1`, `4.2`, `4.4`, `4.5` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
+| Simulation and execution profiles | `backtesting_engine-ltc.4.1`, `4.2`, `4.4`, `4.5`, `11.9` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Fast-screening governance | `backtesting_engine-ltc.4.6` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Strategy contracts and canonical signal kernels | `backtesting_engine-ltc.5.1` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Baseline risk controls and waiver defaults | `backtesting_engine-ltc.5.2` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
