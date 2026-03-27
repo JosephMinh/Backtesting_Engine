@@ -547,6 +547,35 @@
       "expected_reason_code": "PROMOTION_PACKET_SIGNED_AND_BOUND"
     },
     {
+      "case_id": "allow_live_promotion_packet",
+      "payload": {
+        "promotion_packet_id": "promotion_packet_gold_live_v1",
+        "lane": "live",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "account_risk_profile_hash": "account_risk_hash_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "replay_certification_id": "replay_cert_gold_v1",
+        "portability_certification_id": "portability_cert_gold_v1",
+        "native_validation_id": "native_validation_1oz_v1",
+        "execution_symbol_tradability_study_id": "tradability_study_1oz_v1",
+        "paper_pass_evidence_id": "paper_pass_evidence_v1",
+        "shadow_pass_evidence_id": "shadow_pass_evidence_v1",
+        "fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "market_data_entitlement_check_id": "entitlement_check_2026q1_v1",
+        "active_waiver_ids": [],
+        "incident_reference_ids": [],
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "compatibility_matrix_version": "compat_v1",
+        "signoff_ids": ["ops_signoff_a", "risk_signoff_b"],
+        "evidence_expiry_timestamps_utc": ["2026-03-30T00:00:00+00:00"],
+        "signed_packet_hash": "promotion_packet_sha256_003"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PROMOTION_PACKET_SIGNED_AND_BOUND"
+    },
+    {
       "case_id": "reject_live_promotion_without_shadow_pass",
       "payload": {
         "promotion_packet_id": "promotion_packet_gold_live_v1",
@@ -576,6 +605,112 @@
       "expected_reason_code": "PROMOTION_PACKET_LIVE_EVIDENCE_REQUIRED"
     }
   ],
+  "promotion_preflight_cases": [
+    {
+      "case_id": "allow_live_promotion_preflight",
+      "promotion_case_id": "allow_live_promotion_packet",
+      "preflight_overrides": {
+        "preflight_report_id": "promotion_preflight_report_live_v1",
+        "resolved_artifact_ids": [
+          "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+          "bundle_readiness_gold_candidate_v1",
+          "replay_cert_gold_v1",
+          "portability_cert_gold_v1",
+          "native_validation_1oz_v1",
+          "tradability_study_1oz_v1",
+          "paper_pass_evidence_v1",
+          "shadow_pass_evidence_v1",
+          "fee_schedule_snapshot_2026q1_v1",
+          "broker_margin_snapshot_2026q1_v1",
+          "entitlement_check_2026q1_v1"
+        ],
+        "integrity_verified_artifact_ids": [
+          "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+          "bundle_readiness_gold_candidate_v1",
+          "replay_cert_gold_v1",
+          "portability_cert_gold_v1",
+          "native_validation_1oz_v1",
+          "tradability_study_1oz_v1",
+          "paper_pass_evidence_v1",
+          "shadow_pass_evidence_v1",
+          "fee_schedule_snapshot_2026q1_v1",
+          "broker_margin_snapshot_2026q1_v1",
+          "entitlement_check_2026q1_v1"
+        ],
+        "verified_compatibility_domain_ids": [
+          "data_protocol",
+          "strategy_protocol",
+          "ops_protocol",
+          "policy_bundle_hash",
+          "compatibility_matrix_version"
+        ],
+        "broker_capability_check_id": "broker_capability_preflight_live_v1",
+        "backup_freshness_check_id": "backup_freshness_preflight_live_v1",
+        "restore_drill_check_id": "restore_drill_preflight_live_v1",
+        "clock_health_check_id": "clock_health_preflight_live_v1",
+        "secret_health_check_id": "ops_health_preflight_live_v1",
+        "failed_check_ids": [],
+        "correlation_id": "corr-promotion-preflight-live-v1",
+        "operator_reason_bundle": [
+          "live activation preflight resolved every required artifact and infrastructure check"
+        ],
+        "signed_preflight_hash": "promotion_preflight_sha256_live_v1"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PROMOTION_PREFLIGHT_SIGNED_AND_READY"
+    },
+    {
+      "case_id": "reject_live_promotion_preflight_with_stale_evidence",
+      "promotion_case_id": "allow_live_promotion_packet",
+      "preflight_overrides": {
+        "preflight_report_id": "promotion_preflight_report_live_v2",
+        "stale_evidence_ids": ["shadow_pass_evidence_v1"],
+        "correlation_id": "corr-promotion-preflight-live-v2",
+        "operator_reason_bundle": [
+          "shadow-pass evidence expired before activation"
+        ],
+        "signed_preflight_hash": "promotion_preflight_sha256_live_v2"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTION_PREFLIGHT_EVIDENCE_STALE"
+    },
+    {
+      "case_id": "reject_live_promotion_preflight_with_missing_compatibility",
+      "promotion_case_id": "allow_live_promotion_packet",
+      "preflight_overrides": {
+        "preflight_report_id": "promotion_preflight_report_live_v3",
+        "verified_compatibility_domain_ids": [
+          "data_protocol",
+          "strategy_protocol",
+          "policy_bundle_hash",
+          "compatibility_matrix_version"
+        ],
+        "correlation_id": "corr-promotion-preflight-live-v3",
+        "operator_reason_bundle": [
+          "ops compatibility was not verified"
+        ],
+        "signed_preflight_hash": "promotion_preflight_sha256_live_v3"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTION_PREFLIGHT_COMPATIBILITY_INCOMPLETE"
+    },
+    {
+      "case_id": "reject_live_promotion_preflight_with_failed_infra_check",
+      "promotion_case_id": "allow_live_promotion_packet",
+      "preflight_overrides": {
+        "preflight_report_id": "promotion_preflight_report_live_v4",
+        "failed_check_ids": ["clock_health_preflight_live_v4"],
+        "clock_health_check_id": "clock_health_preflight_live_v4",
+        "correlation_id": "corr-promotion-preflight-live-v4",
+        "operator_reason_bundle": [
+          "clock synchronization health blocked activation"
+        ],
+        "signed_preflight_hash": "promotion_preflight_sha256_live_v4"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "PROMOTION_PREFLIGHT_INFRASTRUCTURE_CHECK_FAILED"
+    }
+  ],
   "session_cases": [
     {
       "case_id": "allow_green_session_readiness_packet",
@@ -593,7 +728,7 @@
         "backup_freshness_check_id": "backup_check_live_20260326",
         "restore_drill_check_id": "restore_drill_check_live_20260326",
         "clock_health_check_id": "clock_health_live_20260326",
-        "secret_health_check_id": "secret_health_live_20260326",
+        "secret_health_check_id": "ops_health_live_20260326",
         "unresolved_discrepancy_status": "clear",
         "operating_envelope_check_id": "operating_envelope_live_20260326",
         "session_eligibility_check_id": "session_eligibility_live_20260326",
@@ -620,7 +755,7 @@
         "backup_freshness_check_id": "backup_check_live_20260327",
         "restore_drill_check_id": "restore_drill_check_live_20260327",
         "clock_health_check_id": "clock_health_live_20260327",
-        "secret_health_check_id": "secret_health_live_20260327",
+        "secret_health_check_id": "ops_health_live_20260327",
         "unresolved_discrepancy_status": "blocking",
         "operating_envelope_check_id": "operating_envelope_live_20260327",
         "session_eligibility_check_id": "session_eligibility_live_20260327",

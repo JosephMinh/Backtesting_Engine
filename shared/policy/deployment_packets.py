@@ -13,6 +13,7 @@ from shared.policy.clock_discipline import canonicalize_persisted_timestamp
 from shared.policy.lifecycle_specs import (
     APPROVAL_REQUIRED_TAG,
     BUNDLE_READINESS_MACHINE_ID,
+    DEFAULT_COMPATIBILITY_DOMAIN_IDS,
     DEPLOYMENT_INSTANCE_MACHINE_ID,
     FRESHNESS_REQUIRED_TAG,
     RUNTIME_ACTIVE_TAG,
@@ -563,6 +564,91 @@ class PromotionPacket:
 
 
 @dataclass(frozen=True)
+class PromotionPreflightRequest:
+    preflight_report_id: str
+    promotion_packet: PromotionPacket
+    resolved_artifact_ids: tuple[str, ...]
+    integrity_verified_artifact_ids: tuple[str, ...]
+    verified_compatibility_domain_ids: tuple[str, ...]
+    stale_evidence_ids: tuple[str, ...]
+    superseded_artifact_ids: tuple[str, ...]
+    broker_capability_check_id: str
+    backup_freshness_check_id: str
+    restore_drill_check_id: str
+    clock_health_check_id: str
+    secret_health_check_id: str
+    failed_check_ids: tuple[str, ...]
+    correlation_id: str
+    operator_reason_bundle: tuple[str, ...]
+    signed_preflight_hash: str
+    schema_version: int = SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "preflight_report_id": self.preflight_report_id,
+            "promotion_packet": self.promotion_packet.to_dict(),
+            "resolved_artifact_ids": list(self.resolved_artifact_ids),
+            "integrity_verified_artifact_ids": list(self.integrity_verified_artifact_ids),
+            "verified_compatibility_domain_ids": list(
+                self.verified_compatibility_domain_ids
+            ),
+            "stale_evidence_ids": list(self.stale_evidence_ids),
+            "superseded_artifact_ids": list(self.superseded_artifact_ids),
+            "broker_capability_check_id": self.broker_capability_check_id,
+            "backup_freshness_check_id": self.backup_freshness_check_id,
+            "restore_drill_check_id": self.restore_drill_check_id,
+            "clock_health_check_id": self.clock_health_check_id,
+            "secret_health_check_id": self.secret_health_check_id,
+            "failed_check_ids": list(self.failed_check_ids),
+            "correlation_id": self.correlation_id,
+            "operator_reason_bundle": list(self.operator_reason_bundle),
+            "signed_preflight_hash": self.signed_preflight_hash,
+            "schema_version": self.schema_version,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "PromotionPreflightRequest":
+        return cls(
+            preflight_report_id=str(payload["preflight_report_id"]),
+            promotion_packet=PromotionPacket.from_dict(dict(payload["promotion_packet"])),
+            resolved_artifact_ids=tuple(
+                str(item) for item in payload["resolved_artifact_ids"]
+            ),
+            integrity_verified_artifact_ids=tuple(
+                str(item) for item in payload["integrity_verified_artifact_ids"]
+            ),
+            verified_compatibility_domain_ids=tuple(
+                str(item) for item in payload["verified_compatibility_domain_ids"]
+            ),
+            stale_evidence_ids=tuple(str(item) for item in payload["stale_evidence_ids"]),
+            superseded_artifact_ids=tuple(
+                str(item) for item in payload["superseded_artifact_ids"]
+            ),
+            broker_capability_check_id=str(payload["broker_capability_check_id"]),
+            backup_freshness_check_id=str(payload["backup_freshness_check_id"]),
+            restore_drill_check_id=str(payload["restore_drill_check_id"]),
+            clock_health_check_id=str(payload["clock_health_check_id"]),
+            secret_health_check_id=str(payload["secret_health_check_id"]),
+            failed_check_ids=tuple(str(item) for item in payload["failed_check_ids"]),
+            correlation_id=str(payload["correlation_id"]),
+            operator_reason_bundle=tuple(
+                str(item) for item in payload["operator_reason_bundle"]
+            ),
+            signed_preflight_hash=str(payload["signed_preflight_hash"]),
+            schema_version=int(
+                payload.get("schema_version", SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION)
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "PromotionPreflightRequest":
+        return cls.from_dict(_decode_json(payload, "promotion_preflight_request"))
+
+
+@dataclass(frozen=True)
 class SessionReadinessPacket:
     session_readiness_packet_id: str
     deployment_instance_id: str
@@ -865,6 +951,39 @@ def _promotion_context(packet: PromotionPacket) -> dict[str, str | None]:
         "target_account_binding_id": packet.target_account_binding_id,
         "compatibility_matrix_version": packet.compatibility_matrix_version,
     }
+
+
+def _promotion_preflight_context(request: PromotionPreflightRequest) -> dict[str, Any]:
+    return {
+        "preflight_report_id": request.preflight_report_id,
+        "promotion_packet_id": request.promotion_packet.promotion_packet_id,
+        "lane": request.promotion_packet.lane.value,
+        "candidate_bundle_id": request.promotion_packet.candidate_bundle_id,
+        "target_account_binding_id": request.promotion_packet.target_account_binding_id,
+        "correlation_id": request.correlation_id,
+    }
+
+
+def _promotion_packet_required_artifact_ids(packet: PromotionPacket) -> tuple[str, ...]:
+    artifact_ids: list[str] = [
+        packet.candidate_bundle_id,
+        packet.bundle_readiness_record_id,
+        packet.replay_certification_id,
+        packet.portability_certification_id,
+        packet.execution_symbol_tradability_study_id,
+        packet.fee_schedule_snapshot_id,
+        packet.margin_snapshot_id,
+        packet.market_data_entitlement_check_id,
+        *packet.active_waiver_ids,
+        *packet.incident_reference_ids,
+    ]
+    if packet.native_validation_id:
+        artifact_ids.append(packet.native_validation_id)
+    if packet.paper_pass_evidence_id:
+        artifact_ids.append(packet.paper_pass_evidence_id)
+    if packet.shadow_pass_evidence_id:
+        artifact_ids.append(packet.shadow_pass_evidence_id)
+    return tuple(dict.fromkeys(artifact_ids))
 
 
 def _session_context(packet: SessionReadinessPacket) -> dict[str, str | None]:
@@ -1718,6 +1837,216 @@ def validate_promotion_packet(
         explanation=(
             "The promotion packet freezes the exact approval evidence, freshness checks, "
             "account context, and policy bundle required for activation."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_promotion_preflight(
+    case_id: str,
+    request: PromotionPreflightRequest,
+) -> PacketValidationReport:
+    packet_report = validate_promotion_packet(case_id, request.promotion_packet)
+    if packet_report.status != PacketStatus.PASS.value:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id or None,
+            status=(
+                PacketStatus.INVALID.value
+                if packet_report.status == PacketStatus.INVALID.value
+                else PacketStatus.VIOLATION.value
+            ),
+            reason_code="PROMOTION_PREFLIGHT_PACKET_INVALID",
+            context=_promotion_preflight_context(request),
+            missing_fields=packet_report.missing_fields,
+            explanation=(
+                "Activation preflight cannot succeed until the underlying promotion packet is complete and policy-valid."
+            ),
+            remediation="Repair the promotion packet before rerunning activation preflight.",
+        )
+
+    if request.schema_version != SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id or None,
+            status=PacketStatus.INVALID.value,
+            reason_code="PROMOTION_PREFLIGHT_SCHEMA_VERSION_UNSUPPORTED",
+            context=_promotion_preflight_context(request),
+            missing_fields=(),
+            explanation="The promotion preflight request uses an unsupported schema version.",
+            remediation="Rebuild the promotion preflight request with the supported schema version.",
+        )
+
+    missing_fields = tuple(
+        field_name
+        for field_name, field_value in {
+            "preflight_report_id": request.preflight_report_id,
+            "resolved_artifact_ids": request.resolved_artifact_ids,
+            "integrity_verified_artifact_ids": request.integrity_verified_artifact_ids,
+            "verified_compatibility_domain_ids": request.verified_compatibility_domain_ids,
+            "broker_capability_check_id": request.broker_capability_check_id,
+            "backup_freshness_check_id": request.backup_freshness_check_id,
+            "restore_drill_check_id": request.restore_drill_check_id,
+            "clock_health_check_id": request.clock_health_check_id,
+            "secret_health_check_id": request.secret_health_check_id,
+            "correlation_id": request.correlation_id,
+            "operator_reason_bundle": request.operator_reason_bundle,
+            "signed_preflight_hash": request.signed_preflight_hash,
+        }.items()
+        if not field_value
+    )
+    if missing_fields:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id or None,
+            status=PacketStatus.INVALID.value,
+            reason_code="PROMOTION_PREFLIGHT_MISSING_REQUIRED_FIELDS",
+            context=_promotion_preflight_context(request),
+            missing_fields=missing_fields,
+            explanation=(
+                "Activation preflight requires a signed report envelope plus explicit broker, backup, restore, clock, and secret-health checks."
+            ),
+            remediation="Populate the missing preflight bindings before activation.",
+        )
+
+    required_artifact_ids = set(
+        _promotion_packet_required_artifact_ids(request.promotion_packet)
+    )
+    resolved_artifact_ids = set(request.resolved_artifact_ids)
+    unresolved_artifact_ids = tuple(sorted(required_artifact_ids - resolved_artifact_ids))
+    if unresolved_artifact_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_ARTIFACT_RESOLUTION_INCOMPLETE",
+            context={
+                **_promotion_preflight_context(request),
+                "unresolved_artifact_ids": list(unresolved_artifact_ids),
+            },
+            missing_fields=unresolved_artifact_ids,
+            explanation=(
+                "Activation preflight must resolve every referenced approval, evidence, waiver, and infrastructure artifact by digest or immutable identifier."
+            ),
+            remediation="Resolve every referenced artifact before activation.",
+        )
+
+    integrity_verified_artifact_ids = set(request.integrity_verified_artifact_ids)
+    unverified_integrity_artifact_ids = tuple(
+        sorted(required_artifact_ids - integrity_verified_artifact_ids)
+    )
+    if unverified_integrity_artifact_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_INTEGRITY_VERIFICATION_INCOMPLETE",
+            context={
+                **_promotion_preflight_context(request),
+                "unverified_integrity_artifact_ids": list(
+                    unverified_integrity_artifact_ids
+                ),
+            },
+            missing_fields=unverified_integrity_artifact_ids,
+            explanation=(
+                "Activation preflight must verify the integrity of every referenced immutable artifact before the lane can start."
+            ),
+            remediation="Verify the unresolved artifact digests before activation.",
+        )
+
+    missing_compatibility_domains = tuple(
+        sorted(
+            set(DEFAULT_COMPATIBILITY_DOMAIN_IDS)
+            - set(request.verified_compatibility_domain_ids)
+        )
+    )
+    if missing_compatibility_domains:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_COMPATIBILITY_INCOMPLETE",
+            context={
+                **_promotion_preflight_context(request),
+                "missing_compatibility_domains": list(missing_compatibility_domains),
+            },
+            missing_fields=missing_compatibility_domains,
+            explanation=(
+                "Activation preflight must verify data, strategy, ops, policy-bundle, and compatibility-matrix bindings explicitly."
+            ),
+            remediation="Run the missing compatibility checks before activation.",
+        )
+
+    if request.stale_evidence_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_EVIDENCE_STALE",
+            context={
+                **_promotion_preflight_context(request),
+                "stale_evidence_ids": list(request.stale_evidence_ids),
+            },
+            missing_fields=request.stale_evidence_ids,
+            explanation=(
+                "Activation must fail when freshness-bound evidence has expired."
+            ),
+            remediation="Refresh the stale evidence and issue a new promotion packet before activation.",
+        )
+
+    if request.superseded_artifact_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_ARTIFACT_SUPERSEDED",
+            context={
+                **_promotion_preflight_context(request),
+                "superseded_artifact_ids": list(request.superseded_artifact_ids),
+            },
+            missing_fields=request.superseded_artifact_ids,
+            explanation=(
+                "Activation must fail when a referenced artifact has been superseded incompatibly."
+            ),
+            remediation="Issue a fresh promotion packet against the current approved artifact set.",
+        )
+
+    if request.failed_check_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="promotion_preflight",
+            packet_id=request.preflight_report_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="PROMOTION_PREFLIGHT_INFRASTRUCTURE_CHECK_FAILED",
+            context={
+                **_promotion_preflight_context(request),
+                "failed_check_ids": list(request.failed_check_ids),
+            },
+            missing_fields=request.failed_check_ids,
+            explanation=(
+                "Activation preflight blocked on at least one broker, backup, restore, clock, secret, or entitlement precondition."
+            ),
+            remediation="Clear the failed infrastructure or operational check before activation.",
+        )
+
+    return PacketValidationReport(
+        case_id=case_id,
+        packet_kind="promotion_preflight",
+        packet_id=request.preflight_report_id,
+        status=PacketStatus.PASS.value,
+        reason_code="PROMOTION_PREFLIGHT_SIGNED_AND_READY",
+        context=_promotion_preflight_context(request),
+        missing_fields=(),
+        explanation=(
+            "The signed activation preflight resolved and integrity-checked every referenced artifact, verified all compatibility domains, and cleared broker, backup, restore, clock, secret, and freshness preconditions."
         ),
         remediation="No remediation required.",
     )

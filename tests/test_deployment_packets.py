@@ -16,6 +16,7 @@ from shared.policy.deployment_packets import (
     DeploymentState,
     PacketStatus,
     PromotionPacket,
+    PromotionPreflightRequest,
     ReadinessState,
     SessionReadinessPacket,
     SessionReadinessStatus,
@@ -28,6 +29,7 @@ from shared.policy.deployment_packets import (
     validate_candidate_bundle_load,
     validate_candidate_bundle_replay_readiness,
     validate_deployment_instance,
+    validate_promotion_preflight,
     validate_promotion_packet,
     validate_session_readiness_packet,
 )
@@ -66,6 +68,10 @@ def build_promotion(payload: dict[str, object]) -> PromotionPacket:
     return PromotionPacket.from_dict(payload)
 
 
+def build_preflight_request(payload: dict[str, object]) -> PromotionPreflightRequest:
+    return PromotionPreflightRequest.from_dict(payload)
+
+
 def build_session(payload: dict[str, object]) -> SessionReadinessPacket:
     return SessionReadinessPacket.from_dict(payload)
 
@@ -86,6 +92,14 @@ def candidate_payload_by_case(case_id: str) -> dict[str, object]:
         case for case in fixtures["candidate_cases"] if case["case_id"] == case_id
     )
     return dict(candidate_case["payload"])
+
+
+def promotion_payload_by_case(case_id: str) -> dict[str, object]:
+    fixtures = load_cases()
+    promotion_case = next(
+        case for case in fixtures["promotion_cases"] if case["case_id"] == case_id
+    )
+    return dict(promotion_case["payload"])
 
 
 def build_freeze_registration(
@@ -125,6 +139,68 @@ def build_replay_context(
     return CandidateBundleReplayContext.from_dict(payload)
 
 
+def build_promotion_preflight_request(
+    packet: PromotionPacket, overrides: dict[str, object] | None = None
+) -> PromotionPreflightRequest:
+    payload: dict[str, object] = {
+        "preflight_report_id": "promotion_preflight_report_default",
+        "promotion_packet": packet.to_dict(),
+        "resolved_artifact_ids": [
+            packet.candidate_bundle_id,
+            packet.bundle_readiness_record_id,
+            packet.replay_certification_id,
+            packet.portability_certification_id,
+            packet.execution_symbol_tradability_study_id,
+            packet.fee_schedule_snapshot_id,
+            packet.margin_snapshot_id,
+            packet.market_data_entitlement_check_id,
+            *packet.active_waiver_ids,
+            *packet.incident_reference_ids,
+        ],
+        "integrity_verified_artifact_ids": [
+            packet.candidate_bundle_id,
+            packet.bundle_readiness_record_id,
+            packet.replay_certification_id,
+            packet.portability_certification_id,
+            packet.execution_symbol_tradability_study_id,
+            packet.fee_schedule_snapshot_id,
+            packet.margin_snapshot_id,
+            packet.market_data_entitlement_check_id,
+            *packet.active_waiver_ids,
+            *packet.incident_reference_ids,
+        ],
+        "verified_compatibility_domain_ids": [
+            "data_protocol",
+            "strategy_protocol",
+            "ops_protocol",
+            "policy_bundle_hash",
+            "compatibility_matrix_version",
+        ],
+        "stale_evidence_ids": [],
+        "superseded_artifact_ids": [],
+        "broker_capability_check_id": "broker_capability_preflight_default",
+        "backup_freshness_check_id": "backup_freshness_preflight_default",
+        "restore_drill_check_id": "restore_drill_preflight_default",
+        "clock_health_check_id": "clock_health_preflight_default",
+        "secret_health_check_id": "ops_health_preflight_default",
+        "failed_check_ids": [],
+        "correlation_id": "corr-promotion-preflight-default",
+        "operator_reason_bundle": ["promotion preflight completed"],
+        "signed_preflight_hash": "promotion_preflight_sha256_default",
+    }
+    if packet.native_validation_id:
+        payload["resolved_artifact_ids"].append(packet.native_validation_id)
+        payload["integrity_verified_artifact_ids"].append(packet.native_validation_id)
+    if packet.paper_pass_evidence_id:
+        payload["resolved_artifact_ids"].append(packet.paper_pass_evidence_id)
+        payload["integrity_verified_artifact_ids"].append(packet.paper_pass_evidence_id)
+    if packet.shadow_pass_evidence_id:
+        payload["resolved_artifact_ids"].append(packet.shadow_pass_evidence_id)
+        payload["integrity_verified_artifact_ids"].append(packet.shadow_pass_evidence_id)
+    payload = deep_merge(payload, overrides or {})
+    return PromotionPreflightRequest.from_dict(payload)
+
+
 class DeploymentPacketContractTest(unittest.TestCase):
     def test_validation_contract_has_no_internal_errors(self) -> None:
         self.assertEqual([], VALIDATION_ERRORS)
@@ -135,12 +211,17 @@ class DeploymentPacketContractTest(unittest.TestCase):
         readiness = build_readiness(fixtures["readiness_cases"][0]["payload"])
         deployment = build_deployment(fixtures["deployment_cases"][0]["payload"])
         promotion = build_promotion(fixtures["promotion_cases"][0]["payload"])
+        preflight = build_promotion_preflight_request(promotion)
         session = build_session(fixtures["session_cases"][0]["payload"])
 
         self.assertEqual(candidate, CandidateBundle.from_json(candidate.to_json()))
         self.assertEqual(readiness, BundleReadinessRecord.from_json(readiness.to_json()))
         self.assertEqual(deployment, DeploymentInstance.from_json(deployment.to_json()))
         self.assertEqual(promotion, PromotionPacket.from_json(promotion.to_json()))
+        self.assertEqual(
+            preflight,
+            PromotionPreflightRequest.from_json(preflight.to_json()),
+        )
         self.assertEqual(session, SessionReadinessPacket.from_json(session.to_json()))
 
     def test_from_json_rejects_invalid_candidate_payload(self) -> None:
@@ -288,6 +369,22 @@ class DeploymentPacketContractTest(unittest.TestCase):
                 self.assertEqual(payload["expected_status"], report.status)
                 self.assertEqual(payload["expected_reason_code"], report.reason_code)
 
+        for case in fixtures["promotion_preflight_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                packet = build_promotion(
+                    deep_merge(
+                        promotion_payload_by_case(case["promotion_case_id"]),
+                        case.get("promotion_overrides", {}),
+                    )
+                )
+                request = build_promotion_preflight_request(
+                    packet,
+                    case.get("preflight_overrides"),
+                )
+                report = validate_promotion_preflight(case["case_id"], request)
+                self.assertEqual(case["expected_status"], report.status)
+                self.assertEqual(case["expected_reason_code"], report.reason_code)
+
         for payload in fixtures["session_cases"]:
             with self.subTest(case_id=payload["case_id"]):
                 report = validate_session_readiness_packet(
@@ -381,6 +478,29 @@ class DeploymentPacketContractTest(unittest.TestCase):
                 payload.keys()
             )
         )
+
+    def test_promotion_preflight_report_mentions_signed_preflight(self) -> None:
+        case = next(
+            case
+            for case in load_cases()["promotion_preflight_cases"]
+            if case["case_id"] == "allow_live_promotion_preflight"
+        )
+        packet = build_promotion(
+            deep_merge(
+                promotion_payload_by_case(case["promotion_case_id"]),
+                case.get("promotion_overrides", {}),
+            )
+        )
+        request = build_promotion_preflight_request(
+            packet,
+            case.get("preflight_overrides"),
+        )
+
+        report = validate_promotion_preflight(case["case_id"], request)
+
+        self.assertEqual(PacketStatus.PASS.value, report.status)
+        self.assertIn("signed activation preflight", report.explanation.lower())
+        self.assertEqual("promotion_preflight", report.packet_kind)
 
     def test_session_packet_report_is_structured_and_green_when_valid(self) -> None:
         report = validate_session_readiness_packet(
