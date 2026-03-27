@@ -1,0 +1,464 @@
+{
+  "cases": [
+    {
+      "case_id": "local_search_rejection_still_records_research_run",
+      "request": {
+        "evaluation_id": "tune-001",
+        "family_id": "gold_breakout",
+        "subfamily_id": "baseline",
+        "stage": "local_search",
+        "continuation_decision": {
+          "decision_record_id": "decision-continue-001",
+          "family_id": "gold_breakout",
+          "decision_timestamp_utc": "2026-03-27T04:15:00+00:00",
+          "decision_type": "continue",
+          "evidence_references": [
+            "continuation-run-001"
+          ],
+          "budget_consumed_usd": 180.0,
+          "next_budget_authorized_usd": 600.0,
+          "reviewer_self_attestations": [
+            {
+              "reviewer_id": "operator_self",
+              "attested_controls": [
+                "budget_review",
+                "evidence_review"
+              ],
+              "signed_at_utc": "2026-03-27T04:14:00+00:00"
+            }
+          ],
+          "reason_bundle": [
+            "continuation_bar_cleared",
+            "viability_confirmed"
+          ],
+          "revisit_at_utc": null,
+          "lifecycle_state": "active"
+        },
+        "research_run": {
+          "research_run_id": "tuning-run-001",
+          "family_id": "gold_breakout",
+          "subfamily_id": "baseline",
+          "run_purpose": "validation",
+          "code_digests": [
+            "kernel:abc123",
+            "research:def456"
+          ],
+          "environment_lock_id": "uv.lock:sha256:001",
+          "dataset_release_id": "dataset_release_v1",
+          "analytic_release_id": "analytic_release_v1",
+          "data_profile_release_id": "data_profile_release_v1",
+          "execution_profile_id": "execution_profile_v1",
+          "parameter_reference_id": "param_sweep_anchor_001",
+          "seeds": [
+            7,
+            11
+          ],
+          "policy_bundle_hash": "policy_bundle_v1",
+          "compatibility_matrix_version": "compat_v1",
+          "output_artifact_digests": [
+            "artifact:tuning-run-001:report",
+            "artifact:tuning-run-001:manifest"
+          ],
+          "admissibility_class": "execution_calibration_admissible",
+          "parent_run_ids": [],
+          "lifecycle_state": "recorded",
+          "created_at_utc": "2026-03-27T04:16:00+00:00"
+        },
+        "trials": [
+          {
+            "trial_id": "trial-001-a",
+            "parameter_reference_id": "params/local/001",
+            "seed": 7,
+            "objective_definition": "maximize net pnl subject to drawdown cap",
+            "objective_value": 120.5,
+            "disposition": "retain",
+            "retained_artifact_digests": [
+              "artifact:trial-001-a"
+            ]
+          },
+          {
+            "trial_id": "trial-001-b",
+            "parameter_reference_id": "params/local/002",
+            "seed": 11,
+            "objective_definition": "maximize net pnl subject to drawdown cap",
+            "objective_value": 95.0,
+            "disposition": "prune",
+            "pruning_reason": "fails omission robustness threshold",
+            "retained_artifact_digests": [
+              "artifact:trial-001-b"
+            ]
+          }
+        ],
+        "batch_outcome": "reject",
+        "structured_log_artifact_digests": [
+          "log:tuning-run-001:batch"
+        ],
+        "prior_completed_stages": [],
+        "live_eligible": true,
+        "deep_promotable_tuning": false,
+        "real_region_reference": "region-anchor-001",
+        "research_kernel_hash": "sha256:kernel-shared",
+        "live_kernel_hash": "sha256:kernel-shared",
+        "replay_manifest_id": "replay-manifest-001",
+        "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-001",
+        "batch_reason_bundle": [
+          "local_search_frontier_failed_robustness"
+        ]
+      },
+      "expected": {
+        "status": "pass",
+        "continuation_approved": true,
+        "shared_kernel_gate_required": false,
+        "shared_kernel_gate_passed": true,
+        "research_run_recorded": true,
+        "replayable": true,
+        "pruned_trial_ids": [
+          "trial-001-b"
+        ],
+        "finalist_trial_id": null,
+        "stored_run_ids": [
+          "tuning-run-001"
+        ],
+        "failing_reason_codes": []
+      }
+    },
+    {
+      "case_id": "robustness_stage_requires_prior_local_search",
+      "request": {
+        "evaluation_id": "tune-002",
+        "family_id": "gold_breakout",
+        "subfamily_id": "baseline",
+        "stage": "robustness_perturbation",
+        "continuation_decision": {
+          "decision_record_id": "decision-continue-002",
+          "family_id": "gold_breakout",
+          "decision_timestamp_utc": "2026-03-27T04:20:00+00:00",
+          "decision_type": "continue",
+          "evidence_references": [
+            "continuation-run-002"
+          ],
+          "budget_consumed_usd": 220.0,
+          "next_budget_authorized_usd": 750.0,
+          "reviewer_self_attestations": [
+            {
+              "reviewer_id": "operator_self",
+              "attested_controls": [
+                "budget_review",
+                "evidence_review"
+              ],
+              "signed_at_utc": "2026-03-27T04:19:00+00:00"
+            }
+          ],
+          "reason_bundle": [
+            "continuation_bar_cleared"
+          ],
+          "revisit_at_utc": null,
+          "lifecycle_state": "active"
+        },
+        "research_run": {
+          "research_run_id": "tuning-run-002",
+          "family_id": "gold_breakout",
+          "subfamily_id": "baseline",
+          "run_purpose": "stress",
+          "code_digests": [
+            "kernel:abc123",
+            "research:def456"
+          ],
+          "environment_lock_id": "uv.lock:sha256:002",
+          "dataset_release_id": "dataset_release_v1",
+          "analytic_release_id": "analytic_release_v1",
+          "data_profile_release_id": "data_profile_release_v1",
+          "execution_profile_id": "execution_profile_v1",
+          "parameter_reference_id": "param_sweep_anchor_002",
+          "seeds": [
+            13
+          ],
+          "policy_bundle_hash": "policy_bundle_v1",
+          "compatibility_matrix_version": "compat_v1",
+          "output_artifact_digests": [
+            "artifact:tuning-run-002:report"
+          ],
+          "admissibility_class": "execution_calibration_admissible",
+          "parent_run_ids": [],
+          "lifecycle_state": "recorded",
+          "created_at_utc": "2026-03-27T04:21:00+00:00"
+        },
+        "trials": [
+          {
+            "trial_id": "trial-002-a",
+            "parameter_reference_id": "params/robustness/001",
+            "seed": 13,
+            "objective_definition": "stress local optimum for sensitivity cliffs",
+            "objective_value": 88.0,
+            "disposition": "prune",
+            "pruning_reason": "degrades beyond acceptable perturbation range",
+            "retained_artifact_digests": [
+              "artifact:trial-002-a"
+            ]
+          }
+        ],
+        "batch_outcome": "reject",
+        "structured_log_artifact_digests": [
+          "log:tuning-run-002:batch"
+        ],
+        "prior_completed_stages": [],
+        "live_eligible": true,
+        "deep_promotable_tuning": false,
+        "research_kernel_hash": "sha256:kernel-shared",
+        "live_kernel_hash": "sha256:kernel-shared",
+        "replay_manifest_id": "replay-manifest-002",
+        "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-002",
+        "batch_reason_bundle": [
+          "robustness_reject"
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "continuation_approved": true,
+        "shared_kernel_gate_required": false,
+        "shared_kernel_gate_passed": true,
+        "research_run_recorded": true,
+        "replayable": true,
+        "pruned_trial_ids": [
+          "trial-002-a"
+        ],
+        "finalist_trial_id": null,
+        "stored_run_ids": [
+          "tuning-run-002"
+        ],
+        "failing_reason_codes": [
+          "PROMOTABLE_TUNING_STAGE_SEQUENCE_INVALID"
+        ]
+      }
+    },
+    {
+      "case_id": "deep_live_promotable_batch_requires_shared_kernel",
+      "request": {
+        "evaluation_id": "tune-003",
+        "family_id": "gold_breakout",
+        "subfamily_id": "baseline",
+        "stage": "robustness_perturbation",
+        "continuation_decision": {
+          "decision_record_id": "decision-continue-003",
+          "family_id": "gold_breakout",
+          "decision_timestamp_utc": "2026-03-27T04:25:00+00:00",
+          "decision_type": "continue",
+          "evidence_references": [
+            "continuation-run-003"
+          ],
+          "budget_consumed_usd": 240.0,
+          "next_budget_authorized_usd": 900.0,
+          "reviewer_self_attestations": [
+            {
+              "reviewer_id": "operator_self",
+              "attested_controls": [
+                "budget_review",
+                "evidence_review"
+              ],
+              "signed_at_utc": "2026-03-27T04:24:00+00:00"
+            }
+          ],
+          "reason_bundle": [
+            "continuation_bar_cleared"
+          ],
+          "revisit_at_utc": null,
+          "lifecycle_state": "active"
+        },
+        "research_run": {
+          "research_run_id": "tuning-run-003",
+          "family_id": "gold_breakout",
+          "subfamily_id": "baseline",
+          "run_purpose": "stress",
+          "code_digests": [
+            "kernel:abc123",
+            "research:def456"
+          ],
+          "environment_lock_id": "uv.lock:sha256:003",
+          "dataset_release_id": "dataset_release_v1",
+          "analytic_release_id": "analytic_release_v1",
+          "data_profile_release_id": "data_profile_release_v1",
+          "execution_profile_id": "execution_profile_v1",
+          "parameter_reference_id": "param_sweep_anchor_003",
+          "seeds": [
+            17
+          ],
+          "policy_bundle_hash": "policy_bundle_v1",
+          "compatibility_matrix_version": "compat_v1",
+          "output_artifact_digests": [
+            "artifact:tuning-run-003:report"
+          ],
+          "admissibility_class": "execution_calibration_admissible",
+          "parent_run_ids": [],
+          "lifecycle_state": "recorded",
+          "created_at_utc": "2026-03-27T04:26:00+00:00"
+        },
+        "trials": [
+          {
+            "trial_id": "trial-003-a",
+            "parameter_reference_id": "params/robustness/003",
+            "seed": 17,
+            "objective_definition": "stress local optimum for degradation rate",
+            "objective_value": 91.2,
+            "disposition": "retain",
+            "retained_artifact_digests": [
+              "artifact:trial-003-a"
+            ]
+          }
+        ],
+        "batch_outcome": "advance",
+        "structured_log_artifact_digests": [
+          "log:tuning-run-003:batch"
+        ],
+        "prior_completed_stages": [
+          "local_search"
+        ],
+        "live_eligible": true,
+        "deep_promotable_tuning": true,
+        "research_kernel_hash": "sha256:kernel-research",
+        "live_kernel_hash": "sha256:kernel-live",
+        "replay_manifest_id": "replay-manifest-003",
+        "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-003",
+        "batch_reason_bundle": []
+      },
+      "expected": {
+        "status": "violation",
+        "continuation_approved": true,
+        "shared_kernel_gate_required": true,
+        "shared_kernel_gate_passed": false,
+        "research_run_recorded": true,
+        "replayable": true,
+        "pruned_trial_ids": [],
+        "finalist_trial_id": null,
+        "stored_run_ids": [
+          "tuning-run-003"
+        ],
+        "failing_reason_codes": [
+          "GUARDRAIL_P10_MISSING_SHARED_KERNEL"
+        ]
+      }
+    },
+    {
+      "case_id": "candidate_freeze_selects_single_finalist",
+      "request": {
+        "evaluation_id": "tune-004",
+        "family_id": "gold_breakout",
+        "subfamily_id": "baseline",
+        "stage": "candidate_freeze",
+        "continuation_decision": {
+          "decision_record_id": "decision-continue-004",
+          "family_id": "gold_breakout",
+          "decision_timestamp_utc": "2026-03-27T04:30:00+00:00",
+          "decision_type": "continue",
+          "evidence_references": [
+            "continuation-run-004"
+          ],
+          "budget_consumed_usd": 300.0,
+          "next_budget_authorized_usd": 1200.0,
+          "reviewer_self_attestations": [
+            {
+              "reviewer_id": "operator_self",
+              "attested_controls": [
+                "budget_review",
+                "evidence_review"
+              ],
+              "signed_at_utc": "2026-03-27T04:29:00+00:00"
+            }
+          ],
+          "reason_bundle": [
+            "continuation_bar_cleared"
+          ],
+          "revisit_at_utc": null,
+          "lifecycle_state": "active"
+        },
+        "research_run": {
+          "research_run_id": "tuning-run-004",
+          "family_id": "gold_breakout",
+          "subfamily_id": "baseline",
+          "run_purpose": "lockbox",
+          "code_digests": [
+            "kernel:abc123",
+            "research:def456"
+          ],
+          "environment_lock_id": "uv.lock:sha256:004",
+          "dataset_release_id": "dataset_release_v1",
+          "analytic_release_id": "analytic_release_v1",
+          "data_profile_release_id": "data_profile_release_v1",
+          "execution_profile_id": "execution_profile_v1",
+          "parameter_reference_id": "param_sweep_anchor_004",
+          "seeds": [
+            19,
+            23
+          ],
+          "policy_bundle_hash": "policy_bundle_v1",
+          "compatibility_matrix_version": "compat_v1",
+          "output_artifact_digests": [
+            "artifact:tuning-run-004:report",
+            "artifact:tuning-run-004:freeze-manifest"
+          ],
+          "admissibility_class": "execution_calibration_admissible",
+          "parent_run_ids": [],
+          "lifecycle_state": "recorded",
+          "created_at_utc": "2026-03-27T04:31:00+00:00"
+        },
+        "trials": [
+          {
+            "trial_id": "trial-004-a",
+            "parameter_reference_id": "params/freeze/001",
+            "seed": 19,
+            "objective_definition": "select finalist on net pnl with omission and portability constraints",
+            "objective_value": 134.0,
+            "disposition": "finalist",
+            "retained_artifact_digests": [
+              "artifact:trial-004-a"
+            ]
+          },
+          {
+            "trial_id": "trial-004-b",
+            "parameter_reference_id": "params/freeze/002",
+            "seed": 23,
+            "objective_definition": "select finalist on net pnl with omission and portability constraints",
+            "objective_value": 129.5,
+            "disposition": "prune",
+            "pruning_reason": "worse robustness margin than finalist",
+            "retained_artifact_digests": [
+              "artifact:trial-004-b"
+            ]
+          }
+        ],
+        "batch_outcome": "freeze",
+        "structured_log_artifact_digests": [
+          "log:tuning-run-004:batch"
+        ],
+        "prior_completed_stages": [
+          "local_search",
+          "robustness_perturbation"
+        ],
+        "live_eligible": true,
+        "deep_promotable_tuning": true,
+        "research_kernel_hash": "sha256:kernel-shared",
+        "live_kernel_hash": "sha256:kernel-shared",
+        "replay_manifest_id": "replay-manifest-004",
+        "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-004",
+        "batch_reason_bundle": [
+          "freeze_candidate_bundle_ready"
+        ]
+      },
+      "expected": {
+        "status": "pass",
+        "continuation_approved": true,
+        "shared_kernel_gate_required": true,
+        "shared_kernel_gate_passed": true,
+        "research_run_recorded": true,
+        "replayable": true,
+        "pruned_trial_ids": [
+          "trial-004-b"
+        ],
+        "finalist_trial_id": "trial-004-a",
+        "stored_run_ids": [
+          "tuning-run-004"
+        ],
+        "failing_reason_codes": []
+      }
+    }
+  ]
+}

@@ -930,6 +930,25 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
 
+    def test_bead_66_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.6.6" in profile.related_beads
+        ]
+        profile = matching[0]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("research_governance_and_selection", profile.surface_id)
+        self.assertEqual(("phase_4", "phase_5"), profile.phase_gates)
+        self.assertIn(
+            ArtifactRequirement.CORRELATION_IDS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
+
     def test_bead_57_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile

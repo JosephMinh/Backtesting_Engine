@@ -385,6 +385,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="selection_hard_gates_with_secondary_ranking",
+        module="shared.policy.selection_hard_gates",
+        source_path="shared/policy/selection_hard_gates.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.7",
+        purpose=(
+            "Explicit advancement gates for profitability, null separation, robustness, "
+            "portability, tradability, account-fit, and benchmark comparisons"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="promotable_tuning_protocol_and_research_run_logging",
         module="shared.policy.promotable_tuning",
         source_path="shared/policy/promotable_tuning.py",

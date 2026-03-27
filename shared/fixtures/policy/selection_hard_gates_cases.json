@@ -1,0 +1,334 @@
+{
+  "shared_request_defaults": {
+    "evaluation_id": "selection-001",
+    "candidate_id": "candidate-gold-breakout-001",
+    "family_id": "gold_breakout",
+    "after_cost_profitability": {
+      "evidence_id": "profitability-001",
+      "candidate_id": "candidate-gold-breakout-001",
+      "family_id": "gold_breakout",
+      "passed": true,
+      "net_profit_after_costs_usd": 145.5,
+      "retained_artifact_ids": [
+        "artifact-profitability-001"
+      ],
+      "retained_log_ids": [
+        "log-profitability-001"
+      ],
+      "operator_reason_bundle": [
+        "after_cost_profitability_confirmed"
+      ],
+      "explanation": "After-cost PnL remains positive after slippage, fees, and recurring overhead."
+    },
+    "discovery_accounting_report": {
+      "case_id": "discovery-001",
+      "family_id": "gold_breakout",
+      "subfamily_id": "baseline",
+      "status": "pass",
+      "decision": "allow_with_continuation",
+      "reason_code": "DISCOVERY_ACCOUNTING_CONTINUATION_ALLOWED",
+      "exploratory_budget_limit_usd": 500.0,
+      "continuation_budget_limit_usd": 1500.0,
+      "family_total_spend_usd": 420.0,
+      "family_promotable_trial_count": 18,
+      "program_total_spend_usd": 1200.0,
+      "program_promotable_trial_count": 52,
+      "remaining_exploratory_budget_usd": 80.0,
+      "completed_null_model_ids": [
+        "random_entry",
+        "time_shifted_anchor",
+        "side_flipped_or_ablated",
+        "permutation",
+        "regime_conditional"
+      ],
+      "triggered_check_ids": [],
+      "check_results": [],
+      "decision_log": [],
+      "continuation_decision_record_id": "family_decision_gold_breakout_continue_001",
+      "guardrail_trace": null,
+      "evaluated_at_utc": "2026-03-27T05:15:00+00:00"
+    },
+    "evaluation_protocol_report": {
+      "case_id": "evaluation-001",
+      "status": "pass",
+      "decision": "freeze_candidate",
+      "reason_code": "EVALUATION_PROTOCOL_READY",
+      "passed_count": 9,
+      "failed_count": 0,
+      "triggered_check_ids": [],
+      "completed_stage_order": [
+        "screening",
+        "validation",
+        "stress",
+        "omission",
+        "lockbox",
+        "candidate_freeze"
+      ],
+      "omission_dimensions_covered": [
+        "anchor",
+        "event_cluster",
+        "regime",
+        "segment"
+      ],
+      "deep_tuning_allowed": true,
+      "candidate_freeze_ready": true,
+      "check_results": [],
+      "retained_artifact_ids": [
+        "candidate-freeze-001",
+        "lockbox-access-log-001"
+      ],
+      "correlation_ids": [
+        "corr-freeze-001"
+      ],
+      "operator_reason_bundle": [
+        "evaluation_protocol_green"
+      ],
+      "explanation": "Evaluation hierarchy and robustness evidence are complete.",
+      "remediation": "No remediation required.",
+      "timestamp": "2026-03-27T05:16:00+00:00"
+    },
+    "execution_symbol_certification": {
+      "research_symbol": "MGC",
+      "execution_symbol": "1OZ",
+      "finalist_id": "candidate-gold-breakout-001",
+      "execution_symbol_viability_report_id": "viability-001",
+      "execution_symbol_viability_passed": true,
+      "portability_study_required": true,
+      "portability_study_completed": true,
+      "portability_study_id": "portability-study-001",
+      "portability_certified": true,
+      "portability_dimensions": [],
+      "portability_passed_count": 7,
+      "portability_failed_count": 0,
+      "sufficient_native_1oz_history_exists": true,
+      "native_1oz_validation_required": true,
+      "native_1oz_validation_completed": true,
+      "native_1oz_validation_study_id": "native-validation-001",
+      "native_1oz_validation_passed": true,
+      "promotable_finalist_allowed": true,
+      "outcome_recommendation": "continue",
+      "rationale": "Execution-symbol viability, portability certification, and native 1OZ validation all passed.",
+      "reason_code": "EXECUTION_SYMBOL_CERTIFICATION_PASSED",
+      "timestamp": "2026-03-27T05:17:00+00:00"
+    },
+    "account_fit_decision": {
+      "candidate_id": "candidate-gold-breakout-001",
+      "status": "pass",
+      "reason_code": "ACCOUNT_FIT_EXECUTION_SYMBOL_RESTRICTED_TO_1OZ",
+      "allowed_execution_symbols": [
+        "1OZ"
+      ],
+      "selected_execution_symbol": "1OZ",
+      "source_case_ids": [
+        "account-fit-1oz-001"
+      ],
+      "report_status_by_symbol": {
+        "1OZ": "pass"
+      },
+      "explanation": "Only 1OZ passed account-fit, so promotion may proceed only with execution_symbol=1OZ.",
+      "remediation": "Carry the selected execution symbol into the promotion packet.",
+      "timestamp": "2026-03-27T05:18:00+00:00"
+    },
+    "absolute_dollar_viability_report": {
+      "case_id": "absolute-dollar-001",
+      "evaluation_id": "absolute-dollar-eval-001",
+      "candidate_id": "candidate-gold-breakout-001",
+      "strategy_family_id": "gold_breakout",
+      "status": "pass",
+      "decision": "keep",
+      "reason_code": "ABSOLUTE_DOLLAR_VIABILITY_PASSED",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "execution_symbol": "1OZ",
+      "source_ids": [
+        "account-fit-1oz-001",
+        "fully-loaded-econ-001"
+      ],
+      "thresholds": null,
+      "approved_starting_equity_usd": 5000,
+      "committed_margin_usd": 950.0,
+      "free_cash_usd": 4050.0,
+      "conservative_monthly_net_usd": 140.0,
+      "passive_gold_benchmark_monthly_usd": 45.0,
+      "cash_benchmark_monthly_usd": 18.0,
+      "monthly_excess_vs_passive_gold_usd": 95.0,
+      "monthly_excess_vs_cash_usd": 122.0,
+      "downside_low_turnover_monthly_net_usd": 70.0,
+      "operator_maintenance_hours_per_month": 4.0,
+      "net_per_operator_maintenance_hour_usd": 35.0,
+      "lower_touch_alternative_monthly_net_usd": 30.0,
+      "lower_touch_alternative_operator_hours_per_month": 2.0,
+      "lower_touch_alternative_net_per_hour_usd": 15.0,
+      "lower_touch_dominates": false,
+      "conservative_return_on_committed_margin": 0.147,
+      "worst_session_loss_usd": 80.0,
+      "worst_session_loss_fraction_of_free_cash": 0.01975,
+      "benchmark_comparisons": [],
+      "sensitivity_scenarios": [],
+      "failed_check_ids": [],
+      "check_results": [],
+      "explanation": "Candidate beats the passive-gold and cash benchmarks with conservative net dollars.",
+      "remediation": "No remediation required.",
+      "timestamp": "2026-03-27T05:19:00+00:00"
+    },
+    "selection_artifact_bundle": {
+      "artifact_manifest_id": "selection-manifest-001",
+      "retained_log_ids": [
+        "selection-log-001"
+      ],
+      "correlation_ids": [
+        "selection-corr-001"
+      ],
+      "expected_actual_diff_ids": [
+        "selection-diff-001"
+      ],
+      "operator_reason_bundle": [
+        "selection-hard-gates-complete"
+      ]
+    },
+    "selected_execution_symbol": "1OZ",
+    "pareto_ranking": {
+      "ranking_view_id": "pareto-001",
+      "frontier_rank": 3,
+      "dominance_score": 0.61,
+      "tie_break_metrics": [
+        "net_pnl",
+        "drawdown",
+        "stability"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "all_hard_gates_pass_and_ranking_stays_secondary",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "decision": "advance",
+        "reason_code": "SELECTION_HARD_GATES_PASSED",
+        "triggered_gate_ids": [],
+        "selected_execution_symbol": "1OZ",
+        "secondary_ranking_considered": true
+      }
+    },
+    {
+      "case_id": "ranking_cannot_override_absolute_dollar_reject",
+      "overrides": {
+        "pareto_ranking": {
+          "ranking_view_id": "pareto-elite",
+          "frontier_rank": 1,
+          "dominance_score": 0.99,
+          "tie_break_metrics": [
+            "net_pnl",
+            "sharpe"
+          ]
+        },
+        "absolute_dollar_viability_report": {
+          "status": "fail",
+          "decision": "reject",
+          "reason_code": "ABSOLUTE_DOLLAR_VIABILITY_REJECTED",
+          "failed_check_ids": [
+            "monthly_net_materiality"
+          ],
+          "explanation": "Benchmarks still dominate the candidate at the approved live size.",
+          "remediation": "Reject the current promotion path."
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "reject",
+        "reason_code": "ABSOLUTE_DOLLAR_VIABILITY_REJECTED",
+        "triggered_gate_ids": [
+          "absolute_dollar_viability_and_benchmarks"
+        ],
+        "selected_execution_symbol": "1OZ",
+        "secondary_ranking_considered": true
+      }
+    },
+    {
+      "case_id": "missing_required_null_suite_holds_advancement",
+      "overrides": {
+        "discovery_accounting_report": {
+          "status": "violation",
+          "decision": "block",
+          "reason_code": "DISCOVERY_ACCOUNTING_REQUIRED_NULLS_MISSING",
+          "completed_null_model_ids": [
+            "random_entry",
+            "time_shifted_anchor",
+            "side_flipped_or_ablated",
+            "permutation"
+          ],
+          "triggered_check_ids": [
+            "null_suite_coverage"
+          ]
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "DISCOVERY_ACCOUNTING_REQUIRED_NULLS_MISSING",
+        "triggered_gate_ids": [
+          "null_separation"
+        ],
+        "selected_execution_symbol": "1OZ",
+        "secondary_ranking_considered": true
+      }
+    },
+    {
+      "case_id": "unselected_execution_symbol_holds_even_if_reports_pass",
+      "overrides": {
+        "account_fit_decision": {
+          "reason_code": "ACCOUNT_FIT_MULTIPLE_EXECUTION_SYMBOLS_ALLOWED",
+          "allowed_execution_symbols": [
+            "1OZ",
+            "MGC"
+          ],
+          "selected_execution_symbol": null,
+          "source_case_ids": [
+            "account-fit-1oz-001",
+            "account-fit-mgc-001"
+          ],
+          "report_status_by_symbol": {
+            "1OZ": "pass",
+            "MGC": "pass"
+          },
+          "explanation": "More than one execution symbol passed account-fit, so the promotion path must pin one actual execution contract before activation.",
+          "remediation": "Choose one execution symbol before promotion."
+        },
+        "selected_execution_symbol": null
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "SELECTION_HARD_GATES_EXECUTION_SYMBOL_PIN_REQUIRED",
+        "triggered_gate_ids": [
+          "execution_symbol_pin"
+        ],
+        "selected_execution_symbol": null,
+        "secondary_ranking_considered": true
+      }
+    },
+    {
+      "case_id": "portability_pivot_surfaces_as_selection_pivot",
+      "overrides": {
+        "execution_symbol_certification": {
+          "portability_certified": false,
+          "promotable_finalist_allowed": false,
+          "outcome_recommendation": "pivot",
+          "reason_code": "PORTABILITY_CERTIFICATION_FAILED",
+          "rationale": "Portability certification failed on after-cost degradation and turnover drift."
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "pivot",
+        "reason_code": "PORTABILITY_CERTIFICATION_FAILED",
+        "triggered_gate_ids": [
+          "portability_and_tradability"
+        ],
+        "selected_execution_symbol": "1OZ",
+        "secondary_ranking_considered": true
+      }
+    }
+  ]
+}
