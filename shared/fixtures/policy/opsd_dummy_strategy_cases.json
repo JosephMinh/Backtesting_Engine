@@ -1,0 +1,36 @@
+{
+  "scenario_cases": [
+    {
+      "scenario": "paper-shadow-e2e-pass",
+      "expected_final_status": "pass",
+      "expected_final_reason_code": "DUMMY_STRATEGY_E2E_RECONCILED",
+      "expected_kernel_disposition": "long",
+      "expected_readiness_status": "green",
+      "expected_readiness_reason_code": "READINESS_READY_TO_ACTIVATE",
+      "expected_risk_status": "eligible",
+      "expected_paper_route_outcome": "routed_to_paper",
+      "expected_shadow_route_outcome": "suppressed",
+      "expected_next_session_eligibility": "eligible",
+      "expected_reset_reason_code": "SESSION_RESET_RECONNECT_WINDOW",
+      "expected_broker_reconnect_observed": true,
+      "expected_shadow_broker_artifact_delta": 0,
+      "expected_operational_evidence_record_count": 5
+    },
+    {
+      "scenario": "broker-state-blocked-before-routing",
+      "expected_final_status": "blocked",
+      "expected_final_reason_code": "READINESS_NOT_GREEN_FOR_NON_ECONOMIC_REHEARSAL",
+      "expected_kernel_disposition": "long",
+      "expected_readiness_status": "blocked",
+      "expected_readiness_reason_code": "READINESS_PROVIDER_BLOCKED",
+      "expected_risk_status": "eligible",
+      "expected_paper_route_outcome": "blocked",
+      "expected_shadow_route_outcome": "not_executed",
+      "expected_next_session_eligibility": "not_executed",
+      "expected_reset_reason_code": "SESSION_RESET_RECONNECT_WINDOW",
+      "expected_broker_reconnect_observed": false,
+      "expected_shadow_broker_artifact_delta": 0,
+      "expected_operational_evidence_record_count": 0
+    }
+  ]
+}
