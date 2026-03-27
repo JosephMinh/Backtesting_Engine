@@ -1,0 +1,17 @@
+case_id=gold_momentum_promotable
+lookback_bars=3
+threshold_ticks=6
+candidate_bundle=candidate_bundles/gold_momentum_candidate_bundle_v1.json
+resolved_context_bundle=resolved_context_bundles/gold_momentum_context_v1.json
+signal_kernel=signal_kernels/gold_momentum_v1.bin
+closes=100,104,108,112,109,116,105
+expected=4:long:12;5:flat:5;6:long:8;7:short:-7
+
+case_id=gold_momentum_research_replay
+lookback_bars=2
+threshold_ticks=4
+candidate_bundle=candidate_bundles/gold_momentum_candidate_bundle_research_v1.json
+resolved_context_bundle=resolved_context_bundles/gold_momentum_research_context_v1.json
+signal_kernel=signal_kernels/gold_momentum_v1.bin
+closes=210,214,218,217,213,219
+expected=3:long:8;4:flat:3;5:short:-5;6:long:6
