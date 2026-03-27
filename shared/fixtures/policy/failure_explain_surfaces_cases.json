@@ -1,0 +1,114 @@
+{
+  "shared_request_defaults": {
+    "operator_notes": [
+      "Keep the explain surface attached to the retained artifacts instead of replacing them."
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "policy_preflight_failed_infra_check_explain",
+      "source_kind": "policy_failure",
+      "source_fixture": {
+        "module": "deployment_packets",
+        "group": "promotion_preflight_cases",
+        "case_id": "reject_live_promotion_preflight_with_failed_infra_check"
+      },
+      "runbook_references": [
+        "runbook://promotion/preflight-blocked"
+      ],
+      "retained_log_ids": [
+        "log://promotion/preflight/corr-promotion-preflight-live-v4"
+      ],
+      "expected": {
+        "outcome": "blocked",
+        "reason_code": "PROMOTION_PREFLIGHT_INFRASTRUCTURE_CHECK_FAILED",
+        "remediation_classification": "repair_policy_bindings",
+        "expected_diff_min_count": 1
+      }
+    },
+    {
+      "case_id": "readiness_tradeability_blocked_status_explain",
+      "source_kind": "readiness_rejection",
+      "source_fixture": {
+        "module": "deployment_packets",
+        "group": "session_tradeability_cases",
+        "case_id": "reject_tradeability_with_blocked_session_status"
+      },
+      "runbook_references": [
+        "runbook://runtime/session-tradeability"
+      ],
+      "retained_log_ids": [
+        "log://session/tradeability/corr-session-tradeability-live-20260326-blocked"
+      ],
+      "expected": {
+        "outcome": "blocked",
+        "reason_code": "SESSION_TRADEABILITY_REQUIRES_GREEN_PACKET",
+        "remediation_classification": "clear_runtime_blockers",
+        "expected_diff_min_count": 1
+      }
+    },
+    {
+      "case_id": "parity_drift_explain",
+      "source_kind": "parity_drift",
+      "source_fixture": {
+        "module": "bar_parity",
+        "group": "bar_parity_cases",
+        "case_id": "databento_ibkr_parity_drift"
+      },
+      "runbook_references": [
+        "runbook://calibration/bar-parity-drift"
+      ],
+      "retained_log_ids": [
+        "log://parity/corr-bar-parity-drift-default"
+      ],
+      "correlation_ids": [
+        "corr-bar-parity-drift-default"
+      ],
+      "expected": {
+        "outcome": "blocked",
+        "reason_code": "BAR_PARITY_DIMENSION_DRIFT",
+        "remediation_classification": "repair_parity_semantics",
+        "expected_diff_min_count": 1
+      }
+    },
+    {
+      "case_id": "replay_divergence_explain",
+      "source_kind": "replay_divergence",
+      "source_fixture": {
+        "module": "replay_certification",
+        "group": "cases",
+        "case_id": "reject_signal_trace_divergence"
+      },
+      "runbook_references": [
+        "runbook://certification/replay-divergence"
+      ],
+      "expected": {
+        "outcome": "blocked",
+        "reason_code": "REPLAY_CERTIFICATION_DIVERGENCE_DETECTED",
+        "remediation_classification": "recertify_replay",
+        "expected_diff_min_count": 1
+      }
+    },
+    {
+      "case_id": "recovery_fence_missing_fresh_packet_explain",
+      "source_kind": "recovery_block",
+      "source_fixture": {
+        "module": "runtime_recovery",
+        "group": "recovery_fence_cases",
+        "case_id": "reject_recovery_fence_without_fresh_session_packet_after_reset"
+      },
+      "runbook_references": [
+        "runbook://recovery/session-reset"
+      ],
+      "retained_log_ids": [
+        "log://recovery/corr-recovery-live-20260327-004"
+      ],
+      "expected": {
+        "outcome": "blocked",
+        "reason_code": "RECOVERY_FENCE_SESSION_PACKET_REQUIRED_AFTER_RESET",
+        "remediation_classification": "halt_and_review",
+        "expected_diff_min_count": 1
+      }
+    }
+  ]
+}
