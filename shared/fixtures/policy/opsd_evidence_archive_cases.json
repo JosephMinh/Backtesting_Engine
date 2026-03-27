@@ -1,0 +1,155 @@
+{
+  "defaults": {
+    "candidate_id": "candidate_gc_v1",
+    "deployment_instance_id": "deployment_gc_shadow",
+    "session_id": "session_2026_03_18",
+    "retention_class": "tier_e_operational_evidence"
+  },
+  "cases": [
+    {
+      "case_id": "paper_bundle",
+      "evidence_id": "paper_bundle_001",
+      "artifact_class": "paper",
+      "drill_id": "paper_route",
+      "operator_summary": "Paper route evidence retained for the candidate.",
+      "source_files": [
+        {
+          "relative_path": "paper/runtime_log.txt",
+          "content": "paper route log"
+        },
+        {
+          "relative_path": "paper/intent_manifest.txt",
+          "content": "paper intent manifest"
+        }
+      ]
+    },
+    {
+      "case_id": "shadow_bundle",
+      "evidence_id": "shadow_bundle_001",
+      "artifact_class": "shadow_live",
+      "drill_id": "shadow_live",
+      "operator_summary": "Shadow-live suppression evidence retained for the candidate.",
+      "source_files": [
+        {
+          "relative_path": "shadow/suppression_log.txt",
+          "content": "shadow suppression log"
+        }
+      ]
+    },
+    {
+      "case_id": "replay_bundle",
+      "evidence_id": "replay_bundle_001",
+      "artifact_class": "replay",
+      "drill_id": "replay_certification",
+      "operator_summary": "Replay certification evidence retained for the candidate.",
+      "source_files": [
+        {
+          "relative_path": "replay/replay_diff.txt",
+          "content": "replay diff"
+        }
+      ]
+    },
+    {
+      "case_id": "broker_session_bundle",
+      "evidence_id": "broker_session_bundle_001",
+      "artifact_class": "broker_session",
+      "drill_id": "broker_session_review",
+      "operator_summary": "Broker session evidence retained for runtime review.",
+      "source_files": [
+        {
+          "relative_path": "broker/session_state.txt",
+          "content": "broker session state"
+        }
+      ]
+    },
+    {
+      "case_id": "recovery_bundle",
+      "evidence_id": "recovery_bundle_001",
+      "artifact_class": "recovery",
+      "drill_id": "restart_recovery",
+      "operator_summary": "Recovery drill evidence retained for restart review.",
+      "source_files": [
+        {
+          "relative_path": "recovery/recovery_trace.txt",
+          "content": "recovery trace"
+        }
+      ]
+    },
+    {
+      "case_id": "parity_bundle",
+      "evidence_id": "parity_bundle_001",
+      "artifact_class": "parity",
+      "drill_id": "parity_review",
+      "operator_summary": "Parity evidence retained for market data review.",
+      "source_files": [
+        {
+          "relative_path": "parity/parity_report.txt",
+          "content": "parity report"
+        }
+      ]
+    },
+    {
+      "case_id": "drift_bundle",
+      "evidence_id": "drift_bundle_001",
+      "artifact_class": "drift",
+      "drill_id": "strategy_drift",
+      "operator_summary": "Strategy-health drift evidence retained for continuation review.",
+      "source_files": [
+        {
+          "relative_path": "drift/drift_report.txt",
+          "content": "drift report"
+        }
+      ]
+    },
+    {
+      "case_id": "post_session_bundle",
+      "evidence_id": "post_session_bundle_001",
+      "artifact_class": "post_session_review",
+      "drill_id": "session_close_review",
+      "operator_summary": "Post-session review evidence retained after authoritative close.",
+      "source_files": [
+        {
+          "relative_path": "session_close/review_notes.txt",
+          "content": "session close review notes"
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "query_id": "by_artifact_class_drift",
+      "filters": {
+        "artifact_class": "drift"
+      },
+      "expected_evidence_ids": [
+        "drift_bundle_001"
+      ]
+    },
+    {
+      "query_id": "by_deployment_and_session",
+      "filters": {
+        "deployment_instance_id": "deployment_gc_shadow",
+        "session_id": "session_2026_03_18"
+      },
+      "expected_evidence_ids": [
+        "paper_bundle_001",
+        "shadow_bundle_001",
+        "replay_bundle_001",
+        "broker_session_bundle_001",
+        "recovery_bundle_001",
+        "parity_bundle_001",
+        "drift_bundle_001",
+        "post_session_bundle_001"
+      ]
+    },
+    {
+      "query_id": "by_drill_id",
+      "filters": {
+        "drill_id": "restart_recovery"
+      },
+      "expected_evidence_ids": [
+        "recovery_bundle_001"
+      ]
+    }
+  ]
+}
