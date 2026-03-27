@@ -766,5 +766,111 @@
       "expected_status": "violation",
       "expected_reason_code": "SESSION_PACKET_GREEN_REQUIRES_CLEAR_DISCREPANCIES"
     }
+  ],
+  "session_tradeability_cases": [
+    {
+      "case_id": "allow_green_session_tradeability",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326",
+        "evaluated_at_utc": "2026-03-26T22:30:00+00:00",
+        "correlation_id": "corr-session-tradeability-live-20260326",
+        "operator_reason_bundle": [
+          "session readiness remains green and current for fresh entries"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "SESSION_TRADEABILITY_GREEN_FOR_NEW_ENTRIES"
+    },
+    {
+      "case_id": "reject_tradeability_with_blocked_session_status",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "session_overrides": {
+        "session_status": "blocked",
+        "blocked_check_ids": ["operating_envelope_live_20260326"],
+        "decision_trace_hash": "session_trace_sha256_003"
+      },
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326_blocked",
+        "evaluated_at_utc": "2026-03-26T22:30:00+00:00",
+        "correlation_id": "corr-session-tradeability-live-20260326-blocked",
+        "operator_reason_bundle": [
+          "operating envelope blocked fresh entries for the session"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326_blocked"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_TRADEABILITY_REQUIRES_GREEN_PACKET"
+    },
+    {
+      "case_id": "reject_tradeability_outside_validity_window",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326_expired",
+        "evaluated_at_utc": "2026-03-27T21:00:00+00:00",
+        "correlation_id": "corr-session-tradeability-live-20260326-expired",
+        "operator_reason_bundle": [
+          "session packet expired before the operator attempted new entries"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326_expired"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_TRADEABILITY_OUTSIDE_VALIDITY_WINDOW"
+    },
+    {
+      "case_id": "reject_tradeability_with_stale_checks",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326_stale",
+        "evaluated_at_utc": "2026-03-26T22:30:00+00:00",
+        "stale_check_ids": [
+          "fee_check_live_20260326",
+          "margin_check_live_20260326"
+        ],
+        "correlation_id": "corr-session-tradeability-live-20260326-stale",
+        "operator_reason_bundle": [
+          "freshness-bound fee and margin checks expired before session start"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326_stale"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_TRADEABILITY_FRESHNESS_CHECK_FAILED"
+    },
+    {
+      "case_id": "reject_tradeability_with_binding_mismatch",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326_mismatch",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v2",
+        "evaluated_at_utc": "2026-03-26T22:30:00+00:00",
+        "correlation_id": "corr-session-tradeability-live-20260326-mismatch",
+        "operator_reason_bundle": [
+          "active promotion binding no longer matches the approved session packet"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326_mismatch"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_TRADEABILITY_BINDING_MISMATCH"
+    },
+    {
+      "case_id": "reject_tradeability_with_failed_infrastructure_checks",
+      "session_case_id": "allow_green_session_readiness_packet",
+      "request_overrides": {
+        "tradeability_gate_id": "session_tradeability_gate_live_20260326_failed_checks",
+        "evaluated_at_utc": "2026-03-26T22:30:00+00:00",
+        "failed_check_ids": [
+          "clock_health_live_20260326",
+          "contract_conformance_live_20260326"
+        ],
+        "correlation_id": "corr-session-tradeability-live-20260326-failed-checks",
+        "operator_reason_bundle": [
+          "clock and contract conformance checks blocked session entry"
+        ],
+        "signed_gate_hash": "session_tradeability_sha256_live_20260326_failed_checks"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "SESSION_TRADEABILITY_INFRASTRUCTURE_CHECK_FAILED"
+    }
   ]
 }

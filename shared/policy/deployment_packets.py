@@ -717,6 +717,66 @@ class SessionReadinessPacket:
 
 
 @dataclass(frozen=True)
+class SessionTradeabilityRequest:
+    tradeability_gate_id: str
+    session_packet: SessionReadinessPacket
+    active_deployment_instance_id: str
+    active_promotion_packet_id: str
+    current_session_id: str
+    evaluated_at_utc: str
+    stale_check_ids: tuple[str, ...]
+    failed_check_ids: tuple[str, ...]
+    correlation_id: str
+    operator_reason_bundle: tuple[str, ...]
+    signed_gate_hash: str
+    schema_version: int = SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "tradeability_gate_id": self.tradeability_gate_id,
+            "session_packet": self.session_packet.to_dict(),
+            "active_deployment_instance_id": self.active_deployment_instance_id,
+            "active_promotion_packet_id": self.active_promotion_packet_id,
+            "current_session_id": self.current_session_id,
+            "evaluated_at_utc": self.evaluated_at_utc,
+            "stale_check_ids": list(self.stale_check_ids),
+            "failed_check_ids": list(self.failed_check_ids),
+            "correlation_id": self.correlation_id,
+            "operator_reason_bundle": list(self.operator_reason_bundle),
+            "signed_gate_hash": self.signed_gate_hash,
+            "schema_version": self.schema_version,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "SessionTradeabilityRequest":
+        return cls(
+            tradeability_gate_id=str(payload["tradeability_gate_id"]),
+            session_packet=SessionReadinessPacket.from_dict(dict(payload["session_packet"])),
+            active_deployment_instance_id=str(payload["active_deployment_instance_id"]),
+            active_promotion_packet_id=str(payload["active_promotion_packet_id"]),
+            current_session_id=str(payload["current_session_id"]),
+            evaluated_at_utc=str(payload["evaluated_at_utc"]),
+            stale_check_ids=tuple(str(item) for item in payload["stale_check_ids"]),
+            failed_check_ids=tuple(str(item) for item in payload["failed_check_ids"]),
+            correlation_id=str(payload["correlation_id"]),
+            operator_reason_bundle=tuple(
+                str(item) for item in payload["operator_reason_bundle"]
+            ),
+            signed_gate_hash=str(payload["signed_gate_hash"]),
+            schema_version=int(
+                payload.get("schema_version", SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION)
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "SessionTradeabilityRequest":
+        return cls.from_dict(_decode_json(payload, "session_tradeability_request"))
+
+
+@dataclass(frozen=True)
 class PacketValidationReport:
     case_id: str
     packet_kind: str
@@ -992,6 +1052,18 @@ def _session_context(packet: SessionReadinessPacket) -> dict[str, str | None]:
         "source_promotion_packet_id": packet.source_promotion_packet_id,
         "session_id": packet.session_id,
         "session_status": packet.session_status.value,
+    }
+
+
+def _session_tradeability_context(request: SessionTradeabilityRequest) -> dict[str, Any]:
+    return {
+        "tradeability_gate_id": request.tradeability_gate_id,
+        "session_readiness_packet_id": request.session_packet.session_readiness_packet_id,
+        "deployment_instance_id": request.session_packet.deployment_instance_id,
+        "source_promotion_packet_id": request.session_packet.source_promotion_packet_id,
+        "session_id": request.session_packet.session_id,
+        "evaluated_at_utc": request.evaluated_at_utc,
+        "correlation_id": request.correlation_id,
     }
 
 
@@ -2185,6 +2257,192 @@ def validate_session_readiness_packet(
         explanation=(
             "The session-readiness packet binds one deployment instance to one session window, "
             "one promotion packet, and explicit per-session safety checks."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_session_tradeability(
+    case_id: str,
+    request: SessionTradeabilityRequest,
+) -> PacketValidationReport:
+    session_report = validate_session_readiness_packet(case_id, request.session_packet)
+    if session_report.status != PacketStatus.PASS.value:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id or None,
+            status=(
+                PacketStatus.INVALID.value
+                if session_report.status == PacketStatus.INVALID.value
+                else PacketStatus.VIOLATION.value
+            ),
+            reason_code="SESSION_TRADEABILITY_SESSION_PACKET_INVALID",
+            context=_session_tradeability_context(request),
+            missing_fields=session_report.missing_fields,
+            explanation=(
+                "New-entry tradeability cannot be granted until the underlying session-readiness packet is complete and policy-valid."
+            ),
+            remediation="Repair the session-readiness packet before re-evaluating tradeability.",
+        )
+
+    if request.schema_version != SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id or None,
+            status=PacketStatus.INVALID.value,
+            reason_code="SESSION_TRADEABILITY_SCHEMA_VERSION_UNSUPPORTED",
+            context=_session_tradeability_context(request),
+            missing_fields=(),
+            explanation="The session tradeability request uses an unsupported schema version.",
+            remediation="Rebuild the tradeability request with the supported schema version.",
+        )
+
+    missing_fields = tuple(
+        field_name
+        for field_name, field_value in {
+            "tradeability_gate_id": request.tradeability_gate_id,
+            "active_deployment_instance_id": request.active_deployment_instance_id,
+            "active_promotion_packet_id": request.active_promotion_packet_id,
+            "current_session_id": request.current_session_id,
+            "evaluated_at_utc": request.evaluated_at_utc,
+            "correlation_id": request.correlation_id,
+            "operator_reason_bundle": request.operator_reason_bundle,
+            "signed_gate_hash": request.signed_gate_hash,
+        }.items()
+        if not field_value
+    )
+    if missing_fields:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id or None,
+            status=PacketStatus.INVALID.value,
+            reason_code="SESSION_TRADEABILITY_MISSING_REQUIRED_FIELDS",
+            context=_session_tradeability_context(request),
+            missing_fields=missing_fields,
+            explanation=(
+                "Per-session tradeability requires explicit active bindings, evaluation time, correlation metadata, and a signed gate artifact."
+            ),
+            remediation="Populate the missing tradeability gate fields before allowing new entries.",
+        )
+
+    try:
+        evaluated_at = _normalize_timestamp(request.evaluated_at_utc)
+        valid_from = _normalize_timestamp(request.session_packet.valid_from_utc)
+        valid_to = _normalize_timestamp(request.session_packet.valid_to_utc)
+    except ValueError:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.INVALID.value,
+            reason_code="SESSION_TRADEABILITY_INVALID_EVALUATION_TIME",
+            context=_session_tradeability_context(request),
+            missing_fields=(),
+            explanation="The tradeability evaluation time must be timezone-aware and UTC-normalizable.",
+            remediation="Record the evaluation time as a timezone-aware UTC-normalizable timestamp.",
+        )
+
+    binding_mismatches: list[str] = []
+    if request.active_deployment_instance_id != request.session_packet.deployment_instance_id:
+        binding_mismatches.append("active_deployment_instance_id")
+    if request.active_promotion_packet_id != request.session_packet.source_promotion_packet_id:
+        binding_mismatches.append("active_promotion_packet_id")
+    if request.current_session_id != request.session_packet.session_id:
+        binding_mismatches.append("current_session_id")
+    if binding_mismatches:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="SESSION_TRADEABILITY_BINDING_MISMATCH",
+            context=_session_tradeability_context(request),
+            missing_fields=tuple(binding_mismatches),
+            explanation=(
+                "Per-session tradeability must bind to the active deployment instance, current promotion packet, and exact session window being evaluated."
+            ),
+            remediation="Rebuild the tradeability decision against the active deployment, promotion packet, and session identifiers.",
+        )
+
+    if not (valid_from <= evaluated_at < valid_to):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="SESSION_TRADEABILITY_OUTSIDE_VALIDITY_WINDOW",
+            context=_session_tradeability_context(request),
+            missing_fields=(),
+            explanation=(
+                "New entries are blocked when the session-readiness packet is no longer valid for the current evaluation time."
+            ),
+            remediation="Issue a fresh session packet for the active session window before allowing new entries.",
+        )
+
+    if request.session_packet.session_status != SessionReadinessStatus.GREEN:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="SESSION_TRADEABILITY_REQUIRES_GREEN_PACKET",
+            context=_session_tradeability_context(request),
+            missing_fields=(request.session_packet.session_status.value,),
+            explanation=(
+                "Failure to produce a green session-readiness packet must block new entries for the session."
+            ),
+            remediation="Clear the blocked or suspect conditions and issue a green session packet before resuming entries.",
+        )
+
+    if request.stale_check_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="SESSION_TRADEABILITY_FRESHNESS_CHECK_FAILED",
+            context={
+                **_session_tradeability_context(request),
+                "stale_check_ids": list(request.stale_check_ids),
+            },
+            missing_fields=request.stale_check_ids,
+            explanation=(
+                "Fee, margin, entitlement, or other freshness-bound session checks expired before the session could begin."
+            ),
+            remediation="Refresh the stale session checks and issue a new green session packet.",
+        )
+
+    if request.failed_check_ids:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="session_tradeability",
+            packet_id=request.tradeability_gate_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="SESSION_TRADEABILITY_INFRASTRUCTURE_CHECK_FAILED",
+            context={
+                **_session_tradeability_context(request),
+                "failed_check_ids": list(request.failed_check_ids),
+            },
+            missing_fields=request.failed_check_ids,
+            explanation=(
+                "Clock, backup, restore-drill, contract-conformance, operating-envelope, or related session infrastructure checks blocked new entries."
+            ),
+            remediation="Clear the failed session checks before allowing new entries.",
+        )
+
+    return PacketValidationReport(
+        case_id=case_id,
+        packet_kind="session_tradeability",
+        packet_id=request.tradeability_gate_id,
+        status=PacketStatus.PASS.value,
+        reason_code="SESSION_TRADEABILITY_GREEN_FOR_NEW_ENTRIES",
+        context=_session_tradeability_context(request),
+        missing_fields=(),
+        explanation=(
+            "The active session packet is green, current, correctly bound to the active deployment, and clear for new entries in this session."
         ),
         remediation="No remediation required.",
     )

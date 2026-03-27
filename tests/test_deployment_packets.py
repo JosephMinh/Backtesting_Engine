@@ -20,6 +20,7 @@ from shared.policy.deployment_packets import (
     ReadinessState,
     SessionReadinessPacket,
     SessionReadinessStatus,
+    SessionTradeabilityRequest,
     build_candidate_bundle_freeze_registration,
     transition_bundle_readiness_record,
     transition_deployment_instance,
@@ -32,6 +33,7 @@ from shared.policy.deployment_packets import (
     validate_promotion_preflight,
     validate_promotion_packet,
     validate_session_readiness_packet,
+    validate_session_tradeability,
 )
 
 
@@ -74,6 +76,26 @@ def build_preflight_request(payload: dict[str, object]) -> PromotionPreflightReq
 
 def build_session(payload: dict[str, object]) -> SessionReadinessPacket:
     return SessionReadinessPacket.from_dict(payload)
+
+
+def build_session_tradeability_request(
+    packet: SessionReadinessPacket, overrides: dict[str, object] | None = None
+) -> SessionTradeabilityRequest:
+    payload: dict[str, object] = {
+        "tradeability_gate_id": "session_tradeability_gate_default",
+        "session_packet": packet.to_dict(),
+        "active_deployment_instance_id": packet.deployment_instance_id,
+        "active_promotion_packet_id": packet.source_promotion_packet_id,
+        "current_session_id": packet.session_id,
+        "evaluated_at_utc": packet.valid_from_utc,
+        "stale_check_ids": [],
+        "failed_check_ids": [],
+        "correlation_id": "corr-session-tradeability-default",
+        "operator_reason_bundle": ["session tradeability gate evaluated"],
+        "signed_gate_hash": "session_tradeability_sha256_default",
+    }
+    payload = deep_merge(payload, overrides or {})
+    return SessionTradeabilityRequest.from_dict(payload)
 
 
 def deep_merge(base: dict[str, object], overrides: dict[str, object]) -> dict[str, object]:
@@ -213,6 +235,7 @@ class DeploymentPacketContractTest(unittest.TestCase):
         promotion = build_promotion(fixtures["promotion_cases"][0]["payload"])
         preflight = build_promotion_preflight_request(promotion)
         session = build_session(fixtures["session_cases"][0]["payload"])
+        tradeability = build_session_tradeability_request(session)
 
         self.assertEqual(candidate, CandidateBundle.from_json(candidate.to_json()))
         self.assertEqual(readiness, BundleReadinessRecord.from_json(readiness.to_json()))
@@ -223,6 +246,10 @@ class DeploymentPacketContractTest(unittest.TestCase):
             PromotionPreflightRequest.from_json(preflight.to_json()),
         )
         self.assertEqual(session, SessionReadinessPacket.from_json(session.to_json()))
+        self.assertEqual(
+            tradeability,
+            SessionTradeabilityRequest.from_json(tradeability.to_json()),
+        )
 
     def test_from_json_rejects_invalid_candidate_payload(self) -> None:
         with self.assertRaisesRegex(ValueError, "candidate_bundle: invalid JSON payload"):
@@ -394,6 +421,26 @@ class DeploymentPacketContractTest(unittest.TestCase):
                 self.assertEqual(payload["expected_status"], report.status)
                 self.assertEqual(payload["expected_reason_code"], report.reason_code)
 
+        for case in fixtures["session_tradeability_cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                session = build_session(
+                    deep_merge(
+                        next(
+                            payload["payload"]
+                            for payload in fixtures["session_cases"]
+                            if payload["case_id"] == case["session_case_id"]
+                        ),
+                        case.get("session_overrides", {}),
+                    )
+                )
+                request = build_session_tradeability_request(
+                    session,
+                    case.get("request_overrides"),
+                )
+                report = validate_session_tradeability(case["case_id"], request)
+                self.assertEqual(case["expected_status"], report.status)
+                self.assertEqual(case["expected_reason_code"], report.reason_code)
+
     def test_candidate_report_is_structured_and_mentions_immutability(self) -> None:
         report = validate_candidate_bundle(
             "candidate-shape",
@@ -525,6 +572,33 @@ class DeploymentPacketContractTest(unittest.TestCase):
             }.issubset(payload.keys())
         )
         self.assertIn("one deployment instance", report.explanation.lower())
+
+    def test_session_tradeability_report_mentions_new_entries_gate(self) -> None:
+        case = next(
+            case
+            for case in load_cases()["session_tradeability_cases"]
+            if case["case_id"] == "allow_green_session_tradeability"
+        )
+        session = build_session(
+            deep_merge(
+                next(
+                    payload["payload"]
+                    for payload in load_cases()["session_cases"]
+                    if payload["case_id"] == case["session_case_id"]
+                ),
+                case.get("session_overrides", {}),
+            )
+        )
+        request = build_session_tradeability_request(
+            session,
+            case.get("request_overrides"),
+        )
+
+        report = validate_session_tradeability(case["case_id"], request)
+
+        self.assertEqual(PacketStatus.PASS.value, report.status)
+        self.assertEqual("session_tradeability", report.packet_kind)
+        self.assertIn("new entries", report.explanation.lower())
 
 
 if __name__ == "__main__":
