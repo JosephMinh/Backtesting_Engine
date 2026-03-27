@@ -1,0 +1,27 @@
+[Unit]
+Description=Backtesting Engine watchdog bring-up unit
+After=backtesting-engine-broker-gateway.service backtesting-engine-guardian.service backtesting-engine-opsd.service
+Wants=backtesting-engine-broker-gateway.service backtesting-engine-guardian.service backtesting-engine-opsd.service
+Requires=backtesting-engine-broker-gateway.service backtesting-engine-guardian.service backtesting-engine-opsd.service
+PartOf=backtesting-engine-stack.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/ntm_Dev/Backtesting_Engine
+EnvironmentFile=%h/.config/backtesting-engine/runtime-stack.env
+RuntimeDirectory=backtesting-engine
+StateDirectory=backtesting-engine
+LogsDirectory=backtesting-engine
+ExecStartPre=/usr/bin/env python3 -m infra.runtime_stack healthcheck --service watchdog --artifact-dir %S/backtesting-engine/watchdog
+ExecStart=/usr/bin/env python3 -m infra.runtime_stack oneshot --service watchdog --artifact-dir %S/backtesting-engine/watchdog
+ExecStopPost=/usr/bin/env python3 -m infra.runtime_stack shutdown --service watchdog --artifact-dir %S/backtesting-engine/watchdog
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=240
+TimeoutStopSec=120
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=backtesting-engine-stack.target

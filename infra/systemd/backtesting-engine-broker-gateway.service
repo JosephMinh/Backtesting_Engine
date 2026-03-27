@@ -1,0 +1,26 @@
+[Unit]
+Description=Backtesting Engine broker-gateway bring-up unit
+After=network-online.target
+Wants=network-online.target
+PartOf=backtesting-engine-stack.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/ntm_Dev/Backtesting_Engine
+EnvironmentFile=%h/.config/backtesting-engine/runtime-stack.env
+RuntimeDirectory=backtesting-engine
+StateDirectory=backtesting-engine
+LogsDirectory=backtesting-engine
+ExecStartPre=/usr/bin/env python3 -m infra.runtime_stack healthcheck --service broker-gateway --artifact-dir %S/backtesting-engine/broker-gateway
+ExecStart=/usr/bin/env python3 -m infra.runtime_stack oneshot --service broker-gateway --artifact-dir %S/backtesting-engine/broker-gateway
+ExecStopPost=/usr/bin/env python3 -m infra.runtime_stack shutdown --service broker-gateway --artifact-dir %S/backtesting-engine/broker-gateway
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+TimeoutStopSec=60
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=backtesting-engine-stack.target

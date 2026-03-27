@@ -1,0 +1,7 @@
+[Unit]
+Description=Backtesting Engine one-host non-economic bring-up target
+After=network-online.target postgresql.service
+Wants=backtesting-engine-broker-gateway.service backtesting-engine-guardian.service backtesting-engine-opsd.service backtesting-engine-watchdog.service
+
+[Install]
+WantedBy=multi-user.target

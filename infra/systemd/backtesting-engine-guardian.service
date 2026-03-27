@@ -1,0 +1,27 @@
+[Unit]
+Description=Backtesting Engine guardian bring-up unit
+After=network-online.target backtesting-engine-broker-gateway.service
+Wants=backtesting-engine-broker-gateway.service
+Requires=backtesting-engine-broker-gateway.service
+PartOf=backtesting-engine-stack.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/ntm_Dev/Backtesting_Engine
+EnvironmentFile=%h/.config/backtesting-engine/runtime-stack.env
+RuntimeDirectory=backtesting-engine
+StateDirectory=backtesting-engine
+LogsDirectory=backtesting-engine
+ExecStartPre=/usr/bin/env python3 -m infra.runtime_stack healthcheck --service guardian --artifact-dir %S/backtesting-engine/guardian
+ExecStart=/usr/bin/env python3 -m infra.runtime_stack oneshot --service guardian --artifact-dir %S/backtesting-engine/guardian
+ExecStopPost=/usr/bin/env python3 -m infra.runtime_stack shutdown --service guardian --artifact-dir %S/backtesting-engine/guardian
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=180
+TimeoutStopSec=90
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=backtesting-engine-stack.target

@@ -1,0 +1,27 @@
+[Unit]
+Description=Backtesting Engine opsd bring-up unit
+After=network-online.target postgresql.service backtesting-engine-broker-gateway.service
+Wants=postgresql.service backtesting-engine-broker-gateway.service
+Requires=backtesting-engine-broker-gateway.service
+PartOf=backtesting-engine-stack.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/ntm_Dev/Backtesting_Engine
+EnvironmentFile=%h/.config/backtesting-engine/runtime-stack.env
+RuntimeDirectory=backtesting-engine
+StateDirectory=backtesting-engine
+LogsDirectory=backtesting-engine
+ExecStartPre=/usr/bin/env python3 -m infra.runtime_stack healthcheck --service opsd --artifact-dir %S/backtesting-engine/opsd
+ExecStart=/usr/bin/env python3 -m infra.runtime_stack oneshot --service opsd --artifact-dir %S/backtesting-engine/opsd
+ExecStopPost=/usr/bin/env python3 -m infra.runtime_stack shutdown --service opsd --artifact-dir %S/backtesting-engine/opsd
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=240
+TimeoutStopSec=120
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=backtesting-engine-stack.target
