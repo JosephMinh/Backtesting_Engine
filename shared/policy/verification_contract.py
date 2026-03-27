@@ -751,6 +751,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="phase_2_validation_and_release_pipeline_gate",
+        title="Phase 2 validation and release-pipeline gate",
+        related_beads=("backtesting_engine-ltc.9.3",),
+        phase_gates=("phase_2",),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH, VerificationClass.PARITY_CERTIFICATION),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="time_discipline_and_session_clocks",
         title="Time discipline, session clocks, and skew policy",
         related_beads=("backtesting_engine-ltc.2.5",),
@@ -775,6 +788,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
             "backtesting_engine-ltc.3.8",
             "backtesting_engine-ltc.3.9",
             "backtesting_engine-ltc.3.10",
+            "backtesting_engine-ltc.3.11",
         ),
         phase_gates=("phase_1", "phase_2"),
         fixture_sources=(

@@ -28,7 +28,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | --- | --- |
 | `phase_0` | mission/posture, guardrails, Phase 0 foundation gate, plane boundaries, lifecycle state machines and compatibility domains |
 | `phase_1` | data/reference pipeline, Phase 1 raw archive/reference gate |
-| `phase_2` | data/reference pipeline, lifecycle state machines and compatibility domains |
+| `phase_2` | data/reference pipeline, Phase 2 validation/release-pipeline gate, lifecycle state machines and compatibility domains |
 | `phase_2_5` | execution-lane vertical slice |
 | `phase_3` | simulation/execution profiles, fast-screening governance |
 | `phase_4` | research governance and selection |
@@ -47,7 +47,8 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Phase 0 foundation and QA gate | `backtesting_engine-ltc.9.1` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Plane boundaries and shared contracts | `backtesting_engine-ltc.2.1` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Phase 1 raw archive and bitemporal reference gate | `backtesting_engine-ltc.9.2` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
-| Data/reference and release pipeline | `backtesting_engine-ltc.3.1`, `3.4`, `3.8`, `3.9` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
+| Phase 2 validation and release-pipeline gate | `backtesting_engine-ltc.9.3` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
+| Data/reference and release pipeline | `backtesting_engine-ltc.3.1`, `3.4`, `3.8`, `3.9`, `3.10`, `3.11` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Execution-lane vertical slice | `backtesting_engine-ltc.1.5`, `4.3` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Simulation and execution profiles | `backtesting_engine-ltc.4.1`, `4.2`, `4.4`, `4.5` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Fast-screening governance | `backtesting_engine-ltc.4.6` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |

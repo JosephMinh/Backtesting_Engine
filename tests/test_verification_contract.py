@@ -182,6 +182,16 @@ class VerificationContractTest(unittest.TestCase):
         self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.REPRODUCIBILITY_STAMPS, profile.retained_artifacts)
 
+    def test_bead_34_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.3.4" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("data_reference_and_release_pipeline", matching[0].surface_id)
+        self.assertEqual(("phase_1", "phase_2"), matching[0].phase_gates)
+
     def test_bead_38_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile
@@ -292,6 +302,80 @@ class VerificationContractTest(unittest.TestCase):
         self.assertIn(VerificationClass.PARITY_CERTIFICATION, profile.golden_path)
         self.assertIn(ArtifactRequirement.DECISION_TRACES, profile.retained_artifacts)
         self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+
+    def test_bead_311_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.3.11" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("data_reference_and_release_pipeline", matching[0].surface_id)
+        self.assertEqual(("phase_1", "phase_2"), matching[0].phase_gates)
+
+    def test_bead_93_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.9.3" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "phase_2_validation_and_release_pipeline_gate",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_2",), matching[0].phase_gates)
+
+    def test_bead_93_profile_declares_phase_2_release_gate_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "phase_2_validation_and_release_pipeline_gate"
+        )
+        self.assertEqual(
+            (
+                VerificationClass.UNIT,
+                VerificationClass.CONTRACT,
+                VerificationClass.PROPERTY,
+            ),
+            profile.local_checks,
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.GOLDEN_SESSION,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.PARITY_CERTIFICATION,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
+    def test_phase_2_gate_supports_release_and_lifecycle_surfaces(self) -> None:
+        phase_two_surface_ids = {
+            profile.surface_id for profile in profiles_by_phase()["phase_2"]
+        }
+        self.assertTrue(
+            {
+                "phase_2_validation_and_release_pipeline_gate",
+                "data_reference_and_release_pipeline",
+                "lifecycle_state_machines_and_compatibility_domains",
+            }.issubset(phase_two_surface_ids)
+        )
 
     def test_bead_41_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
