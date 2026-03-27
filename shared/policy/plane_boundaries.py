@@ -370,6 +370,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="lockbox_policy_and_contamination_handling",
+        module="shared.policy.lockbox_policy",
+        source_path="shared/policy/lockbox_policy.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.5",
+        purpose=(
+            "Bounded lockbox admission, policy-controlled access, and contamination "
+            "incident handling before candidate freeze"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="notebook_quarantine_and_admissible_evidence_boundary",
         module="shared.policy.notebook_quarantine",
         source_path="shared/policy/notebook_quarantine.py",

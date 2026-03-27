@@ -134,6 +134,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("fast_screening_governance", surface_ids)
         self.assertIn("family_preregistration_and_budget_governance", surface_ids)
         self.assertIn("evaluation_hierarchy_and_robustness_protocol", surface_ids)
+        self.assertIn("lockbox_policy_and_contamination_handling", surface_ids)
         self.assertIn("notebook_quarantine_and_admissible_evidence_boundary", surface_ids)
         self.assertIn("selection_hard_gates_with_secondary_ranking", surface_ids)
         self.assertIn("promotable_tuning_protocol_and_research_run_logging", surface_ids)

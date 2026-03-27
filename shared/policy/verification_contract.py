@@ -996,12 +996,31 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="domain_semantics_contract_suites",
+        title="Domain contract suites for policy, schemas, execution profiles, and broker semantics",
+        related_beads=("backtesting_engine-ltc.11.3",),
+        phase_gates=("phase_0", "phase_2", "phase_3", "phase_5", "phase_7", "phase_8"),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.BROKER_SESSION_RECORDING,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(
+            VerificationClass.FAILURE_PATH,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
+    ),
+    _gate_profile(
         surface_id="research_governance_and_selection",
         title="Research governance, budgets, and selection gates",
         related_beads=(
             "backtesting_engine-ltc.6.3",
             "backtesting_engine-ltc.6.1",
             "backtesting_engine-ltc.6.2",
+            "backtesting_engine-ltc.6.4",
             "backtesting_engine-ltc.6.5",
             "backtesting_engine-ltc.6.6",
             "backtesting_engine-ltc.6.7",

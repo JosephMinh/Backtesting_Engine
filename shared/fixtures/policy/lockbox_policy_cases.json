@@ -1,0 +1,282 @@
+{
+  "shared_request_defaults": {
+    "case_id": "happy_path_freeze_candidate",
+    "family_id": "gold_core",
+    "selected_candidate_id": "candidate-gold-core-001",
+    "finalist_candidate_ids": [
+      "candidate-gold-core-001",
+      "candidate-gold-core-002"
+    ],
+    "finalist_cap": 2,
+    "lockbox_run_record": {
+      "research_run_id": "run-lockbox-gold-core-001",
+      "family_id": "gold_core",
+      "subfamily_id": "trend_pullback",
+      "run_purpose": "lockbox",
+      "code_digests": [
+        "sha256:lockbox-code-001"
+      ],
+      "environment_lock_id": "env-lock-gold-core-001",
+      "dataset_release_id": "dataset-release-gold-core-001",
+      "analytic_release_id": "analytic-release-gold-core-001",
+      "data_profile_release_id": "data-profile-release-gold-core-001",
+      "execution_profile_id": "execution-profile-gold-core-001",
+      "parameter_reference_id": "params-gold-core-001",
+      "seeds": [
+        17,
+        29
+      ],
+      "policy_bundle_hash": "policy-bundle-sha256-gold-core-001",
+      "compatibility_matrix_version": "compatibility-matrix-v1",
+      "output_artifact_digests": [
+        "artifact-lockbox-output-001",
+        "artifact-lockbox-output-002"
+      ],
+      "admissibility_class": "risk_policy_admissible",
+      "parent_run_ids": [
+        "run-validation-gold-core-001"
+      ],
+      "lifecycle_state": "recorded",
+      "created_at_utc": "2026-03-27T05:55:00+00:00"
+    },
+    "access_events": [
+      {
+        "access_event_id": "lockbox-access-001",
+        "actor_id": "rainywolf",
+        "access_purpose": "admit_finalists",
+        "finalist_candidate_ids": [
+          "candidate-gold-core-001",
+          "candidate-gold-core-002"
+        ],
+        "approved_control_ids": [
+          "bounded_finalist_count",
+          "lockbox_access_policy"
+        ],
+        "access_log_id": "log-lockbox-access-001",
+        "ranking_surface_accessed": false,
+        "approval_reference_id": "review-lockbox-access-001",
+        "accessed_at_utc": "2026-03-27T05:56:00+00:00"
+      },
+      {
+        "access_event_id": "lockbox-access-002",
+        "actor_id": "rainywolf",
+        "access_purpose": "final_review",
+        "finalist_candidate_ids": [
+          "candidate-gold-core-001",
+          "candidate-gold-core-002"
+        ],
+        "approved_control_ids": [
+          "lockbox_final_review"
+        ],
+        "access_log_id": "log-lockbox-access-002",
+        "ranking_surface_accessed": false,
+        "approval_reference_id": "review-lockbox-final-001",
+        "accessed_at_utc": "2026-03-27T05:57:00+00:00"
+      },
+      {
+        "access_event_id": "lockbox-access-003",
+        "actor_id": "rainywolf",
+        "access_purpose": "freeze_approval",
+        "finalist_candidate_ids": [
+          "candidate-gold-core-001"
+        ],
+        "approved_control_ids": [
+          "candidate_freeze_authorization"
+        ],
+        "access_log_id": "log-lockbox-access-003",
+        "ranking_surface_accessed": false,
+        "approval_reference_id": "review-candidate-freeze-001",
+        "accessed_at_utc": "2026-03-27T05:58:00+00:00"
+      }
+    ],
+    "contamination_incidents": [],
+    "artifact_bundle": {
+      "artifact_manifest_id": "manifest-lockbox-policy-001",
+      "retained_log_ids": [
+        "log-lockbox-policy-001"
+      ],
+      "correlation_ids": [
+        "corr-lockbox-policy-001"
+      ],
+      "expected_actual_diff_ids": [
+        "diff-lockbox-policy-001"
+      ],
+      "operator_reason_bundle": [
+        "lockbox remained bounded and access-controlled"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "happy_path_freeze_candidate",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "decision": "freeze_candidate",
+        "reason_code": "LOCKBOX_POLICY_CONTROLS_SATISFIED",
+        "triggered_rule_ids": [],
+        "contamination_incident_ids": []
+      }
+    },
+    {
+      "case_id": "finalist_cap_exceeded",
+      "overrides": {
+        "case_id": "finalist_cap_exceeded",
+        "finalist_candidate_ids": [
+          "candidate-gold-core-001",
+          "candidate-gold-core-002",
+          "candidate-gold-core-003"
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "LOCKBOX_FINALIST_CAP_EXCEEDED",
+        "triggered_rule_ids": [
+          "LP03"
+        ],
+        "contamination_incident_ids": []
+      }
+    },
+    {
+      "case_id": "ranking_surface_access_contaminates_holdout",
+      "overrides": {
+        "case_id": "ranking_surface_access_contaminates_holdout",
+        "access_events": [
+          {
+            "access_event_id": "lockbox-access-001",
+            "actor_id": "rainywolf",
+            "access_purpose": "admit_finalists",
+            "finalist_candidate_ids": [
+              "candidate-gold-core-001",
+              "candidate-gold-core-002"
+            ],
+            "approved_control_ids": [
+              "bounded_finalist_count",
+              "lockbox_access_policy"
+            ],
+            "access_log_id": "log-lockbox-access-001",
+            "ranking_surface_accessed": true,
+            "approval_reference_id": "review-lockbox-access-001",
+            "accessed_at_utc": "2026-03-27T05:56:00+00:00"
+          },
+          {
+            "access_event_id": "lockbox-access-002",
+            "actor_id": "rainywolf",
+            "access_purpose": "final_review",
+            "finalist_candidate_ids": [
+              "candidate-gold-core-001",
+              "candidate-gold-core-002"
+            ],
+            "approved_control_ids": [
+              "lockbox_final_review"
+            ],
+            "access_log_id": "log-lockbox-access-002",
+            "ranking_surface_accessed": false,
+            "approval_reference_id": "review-lockbox-final-001",
+            "accessed_at_utc": "2026-03-27T05:57:00+00:00"
+          },
+          {
+            "access_event_id": "lockbox-access-003",
+            "actor_id": "rainywolf",
+            "access_purpose": "freeze_approval",
+            "finalist_candidate_ids": [
+              "candidate-gold-core-001"
+            ],
+            "approved_control_ids": [
+              "candidate_freeze_authorization"
+            ],
+            "access_log_id": "log-lockbox-access-003",
+            "ranking_surface_accessed": false,
+            "approval_reference_id": "review-candidate-freeze-001",
+            "accessed_at_utc": "2026-03-27T05:58:00+00:00"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "LOCKBOX_RANKING_SURFACE_ACCESSED",
+        "triggered_rule_ids": [
+          "LP05"
+        ],
+        "contamination_incident_ids": []
+      }
+    },
+    {
+      "case_id": "contamination_requires_restart",
+      "overrides": {
+        "case_id": "contamination_requires_restart",
+        "contamination_incidents": [
+          {
+            "incident_record_id": "lockbox-incident-001",
+            "candidate_id": "candidate-gold-core-001",
+            "reason_code": "LOCKBOX_OUT_OF_POLICY_ACCESS",
+            "incident_log_ids": [
+              "log-lockbox-incident-001"
+            ],
+            "review_reference_ids": [
+              "review-lockbox-incident-001"
+            ],
+            "reviewer_self_attestations": [
+              {
+                "reviewer_id": "rainywolf",
+                "attested_controls": [
+                  "lockbox_contamination_review",
+                  "cycle_restart_required"
+                ],
+                "signed_at_utc": "2026-03-27T06:00:00+00:00"
+              }
+            ],
+            "disposition": "restart_cycle",
+            "explanation": "Out-of-policy lockbox access contaminated the holdout.",
+            "timestamp": "2026-03-27T05:59:00+00:00"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "restart_cycle",
+        "reason_code": "LOCKBOX_CONTAMINATION_RESTART_REQUIRED",
+        "triggered_rule_ids": [
+          "LP06"
+        ],
+        "contamination_incident_ids": [
+          "lockbox-incident-001"
+        ]
+      }
+    },
+    {
+      "case_id": "contamination_missing_review_holds_lane",
+      "overrides": {
+        "case_id": "contamination_missing_review_holds_lane",
+        "contamination_incidents": [
+          {
+            "incident_record_id": "lockbox-incident-002",
+            "candidate_id": "candidate-gold-core-001",
+            "reason_code": "LOCKBOX_CONTAMINATION_REVIEW_PENDING",
+            "incident_log_ids": [
+              "log-lockbox-incident-002"
+            ],
+            "review_reference_ids": [],
+            "reviewer_self_attestations": [],
+            "disposition": "pending_review",
+            "explanation": "Potential contamination has not been resolved yet.",
+            "timestamp": "2026-03-27T06:01:00+00:00"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "LOCKBOX_CONTAMINATION_REVIEW_MISSING",
+        "triggered_rule_ids": [
+          "LP06"
+        ],
+        "contamination_incident_ids": [
+          "lockbox-incident-002"
+        ]
+      }
+    }
+  ]
+}
