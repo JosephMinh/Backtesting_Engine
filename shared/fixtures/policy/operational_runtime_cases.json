@@ -1,0 +1,222 @@
+{
+  "ownership_cases": [
+    {
+      "case_id": "orders_owned_by_broker",
+      "state_surface": "orders",
+      "claimant_module": "broker",
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_STATE_OWNER_CONFIRMED"
+    },
+    {
+      "case_id": "readiness_owned_by_reconciliation",
+      "state_surface": "readiness_state",
+      "claimant_module": "reconciliation",
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_STATE_OWNER_CONFIRMED"
+    },
+    {
+      "case_id": "fills_not_owned_by_risk",
+      "state_surface": "fills",
+      "claimant_module": "risk",
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_STATE_OWNER_MISMATCH"
+    }
+  ],
+  "control_action_cases": [
+    {
+      "case_id": "guardian_authorized_emergency_flatten",
+      "request": {
+        "case_id": "guardian_authorized_emergency_flatten",
+        "action": "emergency_flatten_positions",
+        "requested_by": "guardian",
+        "authorization_token_present": true,
+        "independent_broker_connectivity_verified": true,
+        "high_priority_lane_available": true,
+        "target_deployment_instance_id": "deployment_instance_gold_v1"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_ACTION_AUTHORIZED"
+    },
+    {
+      "case_id": "guardian_emergency_flatten_requires_authorization",
+      "request": {
+        "case_id": "guardian_emergency_flatten_requires_authorization",
+        "action": "emergency_flatten_positions",
+        "requested_by": "guardian",
+        "authorization_token_present": false,
+        "independent_broker_connectivity_verified": true,
+        "high_priority_lane_available": true,
+        "target_deployment_instance_id": "deployment_instance_gold_v1"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_GUARDIAN_AUTH_REQUIRED"
+    },
+    {
+      "case_id": "broker_flatten_requires_high_priority_lane",
+      "request": {
+        "case_id": "broker_flatten_requires_high_priority_lane",
+        "action": "flatten_positions",
+        "requested_by": "broker",
+        "authorization_token_present": false,
+        "independent_broker_connectivity_verified": false,
+        "high_priority_lane_available": false,
+        "target_order_intent_id": "order_intent_gc_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_HIGH_PRIORITY_LANE_REQUIRED"
+    },
+    {
+      "case_id": "watchdog_cannot_flatten_positions",
+      "request": {
+        "case_id": "watchdog_cannot_flatten_positions",
+        "action": "flatten_positions",
+        "requested_by": "watchdog",
+        "authorization_token_present": false,
+        "independent_broker_connectivity_verified": false,
+        "high_priority_lane_available": true,
+        "target_order_intent_id": "order_intent_gc_001"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_ACTION_OWNER_MISMATCH"
+    },
+    {
+      "case_id": "reconciliation_can_publish_session_readiness",
+      "request": {
+        "case_id": "reconciliation_can_publish_session_readiness",
+        "action": "publish_session_readiness_packet",
+        "requested_by": "reconciliation",
+        "authorization_token_present": false,
+        "independent_broker_connectivity_verified": false,
+        "high_priority_lane_available": true,
+        "target_deployment_instance_id": "deployment_instance_gold_v1"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_ACTION_AUTHORIZED"
+    }
+  ],
+  "trace_bundle_cases": [
+    {
+      "case_id": "guardian_emergency_path_is_correlated",
+      "bundle": {
+        "path_kind": "guardian_emergency_flatten",
+        "required_processes": ["opsd", "guardian", "watchdog"],
+        "events": [
+          {
+            "module_id": "reconciliation",
+            "event_type": "session_blocked",
+            "correlation_id": "corr_guardian_001",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 10,
+            "state_surface": "readiness_state",
+            "control_action": "mark_session_not_ready"
+          },
+          {
+            "module_id": "watchdog",
+            "event_type": "supervision_escalated",
+            "correlation_id": "corr_guardian_001",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 11
+          },
+          {
+            "module_id": "guardian",
+            "event_type": "emergency_flatten_executed",
+            "correlation_id": "corr_guardian_001",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 12,
+            "control_action": "emergency_flatten_positions"
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_TRACE_BUNDLE_CORRELATED"
+    },
+    {
+      "case_id": "guardian_emergency_path_requires_single_correlation_id",
+      "bundle": {
+        "path_kind": "guardian_emergency_flatten",
+        "required_processes": ["opsd", "guardian", "watchdog"],
+        "events": [
+          {
+            "module_id": "reconciliation",
+            "event_type": "session_blocked",
+            "correlation_id": "corr_guardian_001",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 10,
+            "state_surface": "readiness_state",
+            "control_action": "mark_session_not_ready"
+          },
+          {
+            "module_id": "watchdog",
+            "event_type": "supervision_escalated",
+            "correlation_id": "corr_guardian_002",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 11
+          },
+          {
+            "module_id": "guardian",
+            "event_type": "emergency_flatten_executed",
+            "correlation_id": "corr_guardian_001",
+            "decision_trace_id": "trace_guardian_001",
+            "artifact_manifest_id": "artifact_manifest_guardian_001",
+            "high_priority_lane": true,
+            "sequence_number": 12,
+            "control_action": "emergency_flatten_positions"
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_TRACE_CORRELATION_MISMATCH"
+    },
+    {
+      "case_id": "guardian_emergency_path_requires_high_priority_lane",
+      "bundle": {
+        "path_kind": "guardian_emergency_flatten",
+        "required_processes": ["opsd", "guardian", "watchdog"],
+        "events": [
+          {
+            "module_id": "reconciliation",
+            "event_type": "session_blocked",
+            "correlation_id": "corr_guardian_003",
+            "decision_trace_id": "trace_guardian_003",
+            "artifact_manifest_id": "artifact_manifest_guardian_003",
+            "high_priority_lane": true,
+            "sequence_number": 10,
+            "state_surface": "readiness_state",
+            "control_action": "mark_session_not_ready"
+          },
+          {
+            "module_id": "watchdog",
+            "event_type": "supervision_escalated",
+            "correlation_id": "corr_guardian_003",
+            "decision_trace_id": "trace_guardian_003",
+            "artifact_manifest_id": "artifact_manifest_guardian_003",
+            "high_priority_lane": true,
+            "sequence_number": 11
+          },
+          {
+            "module_id": "guardian",
+            "event_type": "emergency_flatten_executed",
+            "correlation_id": "corr_guardian_003",
+            "decision_trace_id": "trace_guardian_003",
+            "artifact_manifest_id": "artifact_manifest_guardian_003",
+            "high_priority_lane": false,
+            "sequence_number": 12,
+            "control_action": "emergency_flatten_positions"
+          }
+        ]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "OPERATIONAL_RUNTIME_TRACE_HIGH_PRIORITY_LANE_REQUIRED"
+    }
+  ]
+}

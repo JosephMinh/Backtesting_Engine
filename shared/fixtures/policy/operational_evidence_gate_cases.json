@@ -1,0 +1,384 @@
+{
+  "defaults": {
+    "stage_policy_case_id": "allow_live_with_complete_overnight_evidence",
+    "requested_transition": "shadow_live_to_live_canary",
+    "current_deployment_state": "SHADOW_RUNNING",
+    "operational_evidence": [
+      {
+        "evidence_id": "shadow_ops_gate_v1",
+        "evidence_class": "risk_policy_admissible",
+        "sealed": true,
+        "reconciled": true,
+        "minimum_sample_check_passed": true,
+        "policy_approved": true,
+        "allowed_update_domains": [
+          "execution_assumptions",
+          "operating_envelope_thresholds",
+          "risk_policy_controls"
+        ],
+        "detail": "Shadow-live promotion evidence was sealed, reconciled, sampled, and approved.",
+        "artifact_ids": ["artifact_shadow_ops_gate_v1"]
+      }
+    ],
+    "exit_criteria": [
+      {
+        "criterion_id": "exact_live_data_and_broker_lane_exercised_cleanly",
+        "satisfied": true,
+        "reference_id": "shadow_lane_exercised_cleanly_v1",
+        "detail": "The exact live data and broker lane was exercised cleanly.",
+        "supporting_evidence_ids": ["shadow_ops_gate_v1"]
+      },
+      {
+        "criterion_id": "shadow_reconciliation_and_intent_logging_clean",
+        "satisfied": true,
+        "reference_id": "shadow_reconciliation_clean_v1",
+        "detail": "Shadow reconciliation and intent logging remained clean.",
+        "supporting_evidence_ids": ["shadow_ops_gate_v1"]
+      },
+      {
+        "criterion_id": "no_permission_or_entitlement_issue",
+        "satisfied": true,
+        "reference_id": "shadow_no_permission_issue_v1",
+        "detail": "No permission or entitlement issue remained open.",
+        "supporting_evidence_ids": ["shadow_ops_gate_v1"]
+      },
+      {
+        "criterion_id": "no_contract_conformance_issue",
+        "satisfied": true,
+        "reference_id": "shadow_no_contract_issue_v1",
+        "detail": "No contract-conformance issue remained open.",
+        "supporting_evidence_ids": ["shadow_ops_gate_v1"]
+      },
+      {
+        "criterion_id": "no_session_reset_issue",
+        "satisfied": true,
+        "reference_id": "shadow_no_session_reset_issue_v1",
+        "detail": "No session-reset issue remained open.",
+        "supporting_evidence_ids": ["shadow_ops_gate_v1"]
+      },
+      {
+        "criterion_id": "signed_promotion_packet_to_live_canary",
+        "satisfied": true,
+        "reference_id": "promotion_packet_live_canary_v1",
+        "detail": "A signed promotion packet authorizes live canary.",
+        "supporting_evidence_ids": []
+      },
+      {
+        "criterion_id": "shadow_review_completed",
+        "satisfied": true,
+        "reference_id": "shadow_review_completed_v1",
+        "detail": "Shadow review completed with operator approval.",
+        "supporting_evidence_ids": []
+      }
+    ],
+    "correlation_id": "corr-operational-evidence-gate-default",
+    "operator_reason_bundle": ["operational evidence gate evaluated"]
+  },
+  "cases": [
+    {
+      "case_id": "allow_paper_to_shadow_live_with_admissible_operational_evidence",
+      "payload_overrides": {
+        "stage_policy_case_id": "allow_shadow_live_after_complete_paper_stage",
+        "requested_transition": "paper_to_shadow_live",
+        "current_deployment_state": "PAPER_RUNNING",
+        "operational_evidence": [
+          {
+            "evidence_id": "paper_exit_evidence_v1",
+            "evidence_class": "execution_calibration_admissible",
+            "sealed": true,
+            "reconciled": true,
+            "minimum_sample_check_passed": true,
+            "policy_approved": true,
+            "allowed_update_domains": [
+              "execution_assumptions",
+              "data_quality_expectations",
+              "operating_envelope_thresholds"
+            ],
+            "detail": "Paper exit evidence is admissible for promotion.",
+            "artifact_ids": ["artifact_paper_exit_evidence_v1"]
+          }
+        ],
+        "exit_criteria": [
+          {
+            "criterion_id": "replay_certification_holds",
+            "satisfied": true,
+            "reference_id": "replay_certification_holds_v1",
+            "detail": "Replay certification still holds.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "portability_certification_holds_when_required",
+            "satisfied": true,
+            "reference_id": "portability_certification_holds_v1",
+            "detail": "Portability certification still holds when required.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "native_1oz_validation_holds_when_required",
+            "satisfied": true,
+            "reference_id": "native_1oz_validation_holds_v1",
+            "detail": "Native 1OZ validation still holds when required.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "paper_sample_quality_sufficient",
+            "satisfied": true,
+            "reference_id": "paper_sample_quality_sufficient_v1",
+            "detail": "Paper evidence met minimum sample-quality thresholds.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "no_blocking_reconciliation_discrepancy",
+            "satisfied": true,
+            "reference_id": "no_blocking_reconciliation_discrepancy_v1",
+            "detail": "No blocking reconciliation discrepancy remained.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "operating_envelope_behavior_acceptable",
+            "satisfied": true,
+            "reference_id": "operating_envelope_behavior_acceptable_v1",
+            "detail": "Operating-envelope behavior stayed acceptable.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "strategy_health_drift_within_bounds",
+            "satisfied": true,
+            "reference_id": "strategy_health_drift_within_bounds_v1",
+            "detail": "Strategy-health drift stayed within policy bounds.",
+            "supporting_evidence_ids": ["paper_exit_evidence_v1"]
+          },
+          {
+            "criterion_id": "signed_promotion_packet_to_shadow_live",
+            "satisfied": true,
+            "reference_id": "promotion_packet_shadow_live_v1",
+            "detail": "A signed promotion packet authorizes shadow-live.",
+            "supporting_evidence_ids": []
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_EVIDENCE_GATE_PASSED",
+      "expected_promotion_allowed": true,
+      "expected_target_state": "SHADOW_RUNNING"
+    },
+    {
+      "case_id": "block_paper_to_shadow_live_on_diagnostic_only_evidence",
+      "payload_overrides": {
+        "stage_policy_case_id": "allow_shadow_live_after_complete_paper_stage",
+        "requested_transition": "paper_to_shadow_live",
+        "current_deployment_state": "PAPER_RUNNING",
+        "operational_evidence": [
+          {
+            "evidence_id": "paper_diagnostic_note_v1",
+            "evidence_class": "diagnostic_only",
+            "sealed": true,
+            "reconciled": true,
+            "minimum_sample_check_passed": true,
+            "policy_approved": true,
+            "allowed_update_domains": ["execution_assumptions"],
+            "detail": "This evidence is diagnostic only and cannot authorize promotion.",
+            "artifact_ids": ["artifact_paper_diagnostic_note_v1"]
+          }
+        ],
+        "exit_criteria": [
+          {
+            "criterion_id": "replay_certification_holds",
+            "satisfied": true,
+            "reference_id": "replay_certification_holds_v1",
+            "detail": "Replay certification still holds.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "portability_certification_holds_when_required",
+            "satisfied": true,
+            "reference_id": "portability_certification_holds_v1",
+            "detail": "Portability certification still holds when required.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "native_1oz_validation_holds_when_required",
+            "satisfied": true,
+            "reference_id": "native_1oz_validation_holds_v1",
+            "detail": "Native 1OZ validation still holds when required.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "paper_sample_quality_sufficient",
+            "satisfied": true,
+            "reference_id": "paper_sample_quality_sufficient_v1",
+            "detail": "Paper evidence met minimum sample-quality thresholds.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "no_blocking_reconciliation_discrepancy",
+            "satisfied": true,
+            "reference_id": "no_blocking_reconciliation_discrepancy_v1",
+            "detail": "No blocking reconciliation discrepancy remained.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "operating_envelope_behavior_acceptable",
+            "satisfied": true,
+            "reference_id": "operating_envelope_behavior_acceptable_v1",
+            "detail": "Operating-envelope behavior stayed acceptable.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "strategy_health_drift_within_bounds",
+            "satisfied": true,
+            "reference_id": "strategy_health_drift_within_bounds_v1",
+            "detail": "Strategy-health drift stayed within policy bounds.",
+            "supporting_evidence_ids": ["paper_diagnostic_note_v1"]
+          },
+          {
+            "criterion_id": "signed_promotion_packet_to_shadow_live",
+            "satisfied": true,
+            "reference_id": "promotion_packet_shadow_live_v1",
+            "detail": "A signed promotion packet authorizes shadow-live.",
+            "supporting_evidence_ids": []
+          }
+        ]
+      },
+      "expected_status": "blocked",
+      "expected_reason_code": "OPERATIONAL_EVIDENCE_NOT_PROMOTION_ADMISSIBLE",
+      "expected_promotion_allowed": false,
+      "expected_blocked_evidence_id": "paper_diagnostic_note_v1"
+    },
+    {
+      "case_id": "allow_shadow_live_to_live_canary_after_shadow_review",
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_EVIDENCE_GATE_PASSED",
+      "expected_promotion_allowed": true,
+      "expected_target_state": "LIVE_CANARY"
+    },
+    {
+      "case_id": "block_live_canary_to_live_active_without_canary_review",
+      "payload_overrides": {
+        "requested_transition": "live_canary_to_live_active",
+        "current_deployment_state": "LIVE_CANARY",
+        "operational_evidence": [
+          {
+            "evidence_id": "canary_review_evidence_v1",
+            "evidence_class": "execution_calibration_admissible",
+            "sealed": true,
+            "reconciled": true,
+            "minimum_sample_check_passed": true,
+            "policy_approved": true,
+            "allowed_update_domains": [
+              "execution_assumptions",
+              "operating_envelope_thresholds"
+            ],
+            "detail": "Canary review evidence is otherwise admissible.",
+            "artifact_ids": ["artifact_canary_review_evidence_v1"]
+          }
+        ],
+        "exit_criteria": [
+          {
+            "criterion_id": "conservative_canary_constraints_respected",
+            "satisfied": true,
+            "reference_id": "conservative_canary_constraints_respected_v1",
+            "detail": "The conservative canary envelope was respected.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "canary_sample_quality_sufficient",
+            "satisfied": true,
+            "reference_id": "canary_sample_quality_sufficient_v1",
+            "detail": "Canary sampling reached the required quality threshold.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "no_unresolved_canary_incident",
+            "satisfied": true,
+            "reference_id": "no_unresolved_canary_incident_v1",
+            "detail": "No unresolved canary incident remained open.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "canary_review_completed",
+            "satisfied": false,
+            "reference_id": "canary_review_completed_v1",
+            "detail": "The canary review has not been completed yet.",
+            "supporting_evidence_ids": []
+          },
+          {
+            "criterion_id": "signed_promotion_packet_to_live_active",
+            "satisfied": true,
+            "reference_id": "promotion_packet_live_active_v1",
+            "detail": "A signed promotion packet authorizes live active.",
+            "supporting_evidence_ids": []
+          }
+        ]
+      },
+      "expected_status": "blocked",
+      "expected_reason_code": "LIVE_CANARY_EXIT_CRITERIA_INCOMPLETE",
+      "expected_promotion_allowed": false,
+      "expected_failed_criterion": "canary_review_completed"
+    },
+    {
+      "case_id": "allow_live_canary_to_live_active_after_review",
+      "payload_overrides": {
+        "requested_transition": "live_canary_to_live_active",
+        "current_deployment_state": "LIVE_CANARY",
+        "operational_evidence": [
+          {
+            "evidence_id": "canary_review_evidence_v1",
+            "evidence_class": "execution_calibration_admissible",
+            "sealed": true,
+            "reconciled": true,
+            "minimum_sample_check_passed": true,
+            "policy_approved": true,
+            "allowed_update_domains": [
+              "execution_assumptions",
+              "operating_envelope_thresholds"
+            ],
+            "detail": "Canary review evidence is admissible for live active promotion.",
+            "artifact_ids": ["artifact_canary_review_evidence_v1"]
+          }
+        ],
+        "exit_criteria": [
+          {
+            "criterion_id": "conservative_canary_constraints_respected",
+            "satisfied": true,
+            "reference_id": "conservative_canary_constraints_respected_v1",
+            "detail": "The conservative canary envelope was respected.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "canary_sample_quality_sufficient",
+            "satisfied": true,
+            "reference_id": "canary_sample_quality_sufficient_v1",
+            "detail": "Canary sampling reached the required quality threshold.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "no_unresolved_canary_incident",
+            "satisfied": true,
+            "reference_id": "no_unresolved_canary_incident_v1",
+            "detail": "No unresolved canary incident remained open.",
+            "supporting_evidence_ids": ["canary_review_evidence_v1"]
+          },
+          {
+            "criterion_id": "canary_review_completed",
+            "satisfied": true,
+            "reference_id": "canary_review_completed_v1",
+            "detail": "The canary review completed successfully.",
+            "supporting_evidence_ids": []
+          },
+          {
+            "criterion_id": "signed_promotion_packet_to_live_active",
+            "satisfied": true,
+            "reference_id": "promotion_packet_live_active_v1",
+            "detail": "A signed promotion packet authorizes live active.",
+            "supporting_evidence_ids": []
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "OPERATIONAL_EVIDENCE_GATE_PASSED",
+      "expected_promotion_allowed": true,
+      "expected_target_state": "LIVE_ACTIVE"
+    }
+  ]
+}

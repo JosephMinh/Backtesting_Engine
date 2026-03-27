@@ -1,0 +1,152 @@
+{
+  "dependency_cases": [
+    {
+      "case_id": "correction_event_recertifies_readiness",
+      "dependency_surface_kind": "release_certification",
+      "dependency_surface_id": "release_certification_gc_2026q1_v2",
+      "correction_event_overrides": {
+        "correction_event_id": "correction_event_7_5_001",
+        "release_kind": "dataset_release",
+        "release_id": "dataset_release_gold_2026q1_v1",
+        "impact_class": "recert_required",
+        "dependent_updates": [
+          {
+            "surface_kind": "bundle_readiness_record",
+            "surface_id": "bundle_readiness_record_gold_001",
+            "action": "recertify",
+            "reason_bundle": "dataset correction requires readiness recertification"
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "READINESS_DEPENDENCY_PROPAGATED_RECERT_REQUIRED",
+      "expected_propagation_reason_code": "READINESS_DEPENDENCY_PROPAGATED_RECERT_REQUIRED",
+      "expected_resulting_readiness_state": "RECERT_REQUIRED",
+      "expected_live_deployment_action": "none"
+    },
+    {
+      "case_id": "revoked_dependency_without_waiver_forces_live_withdrawal",
+      "dependency_surface_kind": "data_profile_release",
+      "dependency_surface_id": "data_profile_release_gold_2026q1_v1",
+      "dependency_lifecycle_state": "REVOKED",
+      "active_deployment_overrides": {
+        "deployment_instance_id": "deployment_live_gold_001",
+        "lifecycle_state": "LIVE_ACTIVE"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "READINESS_DEPENDENCY_WITHDRAWAL_REQUIRED",
+      "expected_propagation_reason_code": "READINESS_DEPENDENCY_PROPAGATED_SUSPECT",
+      "expected_resulting_readiness_state": "SUSPECT",
+      "expected_live_deployment_action": "withdraw_required"
+    },
+    {
+      "case_id": "revoked_dependency_with_reviewed_waiver_can_continue",
+      "dependency_surface_kind": "data_profile_release",
+      "dependency_surface_id": "data_profile_release_gold_2026q1_v1",
+      "dependency_lifecycle_state": "REVOKED",
+      "active_deployment_overrides": {
+        "deployment_instance_id": "deployment_live_gold_002",
+        "lifecycle_state": "LIVE_ACTIVE"
+      },
+      "reviewed_waiver_id": "waiver_live_dependency_revocation_001",
+      "expected_status": "pass",
+      "expected_reason_code": "READINESS_DEPENDENCY_WAIVER_APPLIED",
+      "expected_propagation_reason_code": "READINESS_DEPENDENCY_PROPAGATED_SUSPECT",
+      "expected_resulting_readiness_state": "SUSPECT",
+      "expected_live_deployment_action": "continue_with_reviewed_waiver"
+    },
+    {
+      "case_id": "superseding_correction_revokes_readiness",
+      "dependency_surface_kind": "release_certification",
+      "dependency_surface_id": "release_certification_gc_2026q1_v3",
+      "correction_event_overrides": {
+        "correction_event_id": "correction_event_7_5_002",
+        "release_kind": "analytic_release",
+        "release_id": "analytic_release_gold_2026q1_v1",
+        "impact_class": "suspect",
+        "dependent_updates": [
+          {
+            "surface_kind": "bundle_readiness_record",
+            "surface_id": "bundle_readiness_record_gold_001",
+            "action": "supersede",
+            "reason_bundle": "superseding certification invalidates the prior readiness"
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "READINESS_DEPENDENCY_PROPAGATED_REVOKED",
+      "expected_propagation_reason_code": "READINESS_DEPENDENCY_PROPAGATED_REVOKED",
+      "expected_resulting_readiness_state": "REVOKED",
+      "expected_live_deployment_action": "none"
+    },
+    {
+      "case_id": "quarantined_dependency_marks_recert_required",
+      "dependency_surface_kind": "data_profile_release",
+      "dependency_surface_id": "data_profile_release_gold_2026q1_v1",
+      "dependency_lifecycle_state": "QUARANTINED",
+      "readiness_overrides": {
+        "lifecycle_state": "PAPER_PASSED"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "READINESS_DEPENDENCY_PROPAGATED_RECERT_REQUIRED",
+      "expected_propagation_reason_code": "READINESS_DEPENDENCY_PROPAGATED_RECERT_REQUIRED",
+      "expected_resulting_readiness_state": "RECERT_REQUIRED",
+      "expected_live_deployment_action": "none"
+    }
+  ],
+  "withdrawal_review_cases": [
+    {
+      "case_id": "guardian_withdrawal_review_recovers_to_recert_required",
+      "trigger_source": "guardian",
+      "operator_action_id": "operator_action_guardian_001",
+      "incident_reference_id": "incident_live_001",
+      "withdrawn_at_utc": "2026-03-27T00:00:00+00:00",
+      "review_completed_at_utc": "2026-03-27T12:00:00+00:00",
+      "review_decision_state": "RECERT_REQUIRED",
+      "review_rationale": "guardian withdrawal exposed dependency instability that requires recertification",
+      "expected_status": "pass",
+      "expected_reason_code": "EMERGENCY_WITHDRAWAL_REVIEW_COMPLETED",
+      "expected_resulting_readiness_state": "RECERT_REQUIRED",
+      "expected_reviewed_within_sla": true
+    },
+    {
+      "case_id": "kill_switch_withdrawal_without_review_becomes_suspect",
+      "trigger_source": "kill_switch",
+      "operator_action_id": "operator_action_killswitch_001",
+      "incident_reference_id": "incident_live_002",
+      "withdrawn_at_utc": "2026-03-27T00:00:00+00:00",
+      "expected_status": "violation",
+      "expected_reason_code": "EMERGENCY_WITHDRAWAL_REVIEW_MISSING",
+      "expected_resulting_readiness_state": "SUSPECT",
+      "expected_reviewed_within_sla": false
+    },
+    {
+      "case_id": "opsd_withdrawal_review_after_deadline_is_overdue",
+      "trigger_source": "opsd",
+      "operator_action_id": "operator_action_opsd_001",
+      "incident_reference_id": "incident_live_003",
+      "withdrawn_at_utc": "2026-03-27T00:00:00+00:00",
+      "review_completed_at_utc": "2026-03-28T06:00:00+00:00",
+      "review_decision_state": "LIVE_ELIGIBLE",
+      "review_rationale": "opsd withdrawal was precautionary, but review missed the 24-hour deadline",
+      "expected_status": "violation",
+      "expected_reason_code": "EMERGENCY_WITHDRAWAL_REVIEW_OVERDUE",
+      "expected_resulting_readiness_state": "LIVE_ELIGIBLE",
+      "expected_reviewed_within_sla": false
+    },
+    {
+      "case_id": "guardian_withdrawal_review_can_revoke_readiness",
+      "trigger_source": "guardian",
+      "operator_action_id": "operator_action_guardian_002",
+      "incident_reference_id": "incident_live_004",
+      "withdrawn_at_utc": "2026-03-27T00:00:00+00:00",
+      "review_completed_at_utc": "2026-03-27T08:00:00+00:00",
+      "review_decision_state": "REVOKED",
+      "review_rationale": "guardian withdrawal confirmed that the readiness record can no longer be trusted",
+      "expected_status": "pass",
+      "expected_reason_code": "EMERGENCY_WITHDRAWAL_REVIEW_COMPLETED",
+      "expected_resulting_readiness_state": "REVOKED",
+      "expected_reviewed_within_sla": true
+    }
+  ]
+}

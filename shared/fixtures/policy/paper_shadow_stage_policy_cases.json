@@ -1,0 +1,331 @@
+{
+  "defaults": {
+    "candidate_bundle_id": "candidate_bundle_gold_20260327",
+    "requested_lane": "live",
+    "paper_pass_evidence_id": "paper_pass_evidence_v2",
+    "shadow_pass_evidence_id": "shadow_pass_evidence_v2",
+    "market_data_entitlement_check_id": "entitlement_check_live_20260327",
+    "paper_objectives": [
+      {
+        "objective_id": "live_market_data_behavior",
+        "objective_group": "runtime",
+        "satisfied": true,
+        "reference_id": "paper_live_market_data_behavior_v1",
+        "detail": "Live market-data behavior remained stable on the paper lane.",
+        "artifact_ids": ["artifact_paper_live_market_data_behavior_v1"]
+      },
+      {
+        "objective_id": "live_bar_construction",
+        "objective_group": "runtime",
+        "satisfied": true,
+        "reference_id": "paper_live_bar_construction_v1",
+        "detail": "Live bar construction matched the approved profile.",
+        "artifact_ids": ["artifact_paper_live_bar_construction_v1"]
+      },
+      {
+        "objective_id": "operational_timing",
+        "objective_group": "runtime",
+        "satisfied": true,
+        "reference_id": "paper_operational_timing_v1",
+        "detail": "Operational timing stayed inside the paper runtime envelope.",
+        "artifact_ids": ["artifact_paper_operational_timing_v1"]
+      },
+      {
+        "objective_id": "broker_api_behavior",
+        "objective_group": "broker",
+        "satisfied": true,
+        "reference_id": "paper_broker_api_behavior_v1",
+        "detail": "Broker API behavior was coherent on the paper route.",
+        "artifact_ids": ["artifact_paper_broker_api_behavior_v1"]
+      },
+      {
+        "objective_id": "real_reconciliation_flow",
+        "objective_group": "broker",
+        "satisfied": true,
+        "reference_id": "paper_reconciliation_flow_v1",
+        "detail": "Real reconciliation flow stayed clean during paper trading.",
+        "artifact_ids": ["artifact_paper_reconciliation_flow_v1"]
+      },
+      {
+        "objective_id": "execution_profile_realism",
+        "objective_group": "evidence",
+        "satisfied": true,
+        "reference_id": "paper_execution_profile_realism_v1",
+        "detail": "Execution-profile realism matched the approved expectations.",
+        "artifact_ids": ["artifact_paper_execution_profile_realism_v1"]
+      },
+      {
+        "objective_id": "databento_ibkr_bar_parity",
+        "objective_group": "evidence",
+        "satisfied": true,
+        "reference_id": "paper_bar_parity_v1",
+        "detail": "Databento-to-IBKR bar parity stayed inside tolerance.",
+        "artifact_ids": ["artifact_paper_bar_parity_v1"]
+      },
+      {
+        "objective_id": "strategy_health_drift",
+        "objective_group": "readiness",
+        "satisfied": true,
+        "reference_id": "paper_strategy_health_drift_v1",
+        "detail": "Strategy-health drift remained within acceptable bounds.",
+        "artifact_ids": ["artifact_paper_strategy_health_drift_v1"]
+      },
+      {
+        "objective_id": "data_quality_behavior",
+        "objective_group": "readiness",
+        "satisfied": true,
+        "reference_id": "paper_data_quality_behavior_v1",
+        "detail": "Data-quality behavior remained acceptable during paper trading.",
+        "artifact_ids": ["artifact_paper_data_quality_behavior_v1"]
+      },
+      {
+        "objective_id": "operating_envelope_realism",
+        "objective_group": "readiness",
+        "satisfied": true,
+        "reference_id": "paper_operating_envelope_realism_v1",
+        "detail": "Operating-envelope realism matched the declared profile.",
+        "artifact_ids": ["artifact_paper_operating_envelope_realism_v1"]
+      },
+      {
+        "objective_id": "account_fit_live_like_conditions",
+        "objective_group": "readiness",
+        "satisfied": true,
+        "reference_id": "paper_account_fit_live_like_conditions_v1",
+        "detail": "Account fit passed under live-like paper conditions.",
+        "artifact_ids": ["artifact_paper_account_fit_live_like_conditions_v1"]
+      }
+    ],
+    "shadow_live_objectives": [
+      {
+        "objective_id": "production_account_entitlements",
+        "objective_group": "broker",
+        "satisfied": true,
+        "reference_id": "shadow_production_account_entitlements_v1",
+        "detail": "Production account entitlements were verified on the live lane.",
+        "artifact_ids": ["artifact_shadow_production_account_entitlements_v1"]
+      },
+      {
+        "objective_id": "contract_conformance_live_lane",
+        "objective_group": "broker",
+        "satisfied": true,
+        "reference_id": "shadow_contract_conformance_live_lane_v1",
+        "detail": "Contract conformance checks passed on the live lane.",
+        "artifact_ids": ["artifact_shadow_contract_conformance_live_lane_v1"]
+      },
+      {
+        "objective_id": "session_reset_and_reconnect_behavior",
+        "objective_group": "runtime",
+        "satisfied": true,
+        "reference_id": "shadow_session_reset_and_reconnect_behavior_v1",
+        "detail": "Session reset and reconnect behavior completed cleanly.",
+        "artifact_ids": ["artifact_shadow_session_reset_and_reconnect_behavior_v1"]
+      },
+      {
+        "objective_id": "real_operator_controls",
+        "objective_group": "readiness",
+        "satisfied": true,
+        "reference_id": "shadow_real_operator_controls_v1",
+        "detail": "Operator controls behaved as expected on the shadow-live lane.",
+        "artifact_ids": ["artifact_shadow_real_operator_controls_v1"]
+      },
+      {
+        "objective_id": "suppressed_order_mutation_sink",
+        "objective_group": "broker",
+        "satisfied": true,
+        "reference_id": "shadow_suppressed_order_mutation_sink_v1",
+        "detail": "Suppressed order mutation flow stayed non-economic.",
+        "artifact_ids": ["artifact_shadow_suppressed_order_mutation_sink_v1"]
+      },
+      {
+        "objective_id": "clean_reconciliation_and_intent_logging",
+        "objective_group": "evidence",
+        "satisfied": true,
+        "reference_id": "shadow_clean_reconciliation_and_intent_logging_v1",
+        "detail": "Shadow-live reconciliation and intent logging stayed clean.",
+        "artifact_ids": ["artifact_shadow_clean_reconciliation_and_intent_logging_v1"]
+      }
+    ],
+    "overnight_candidate_class": "none",
+    "overnight_evidence_records": [],
+    "correlation_id": "corr-paper-shadow-stage-policy-default",
+    "operator_reason_bundle": ["paper-shadow stage policy evaluated"]
+  },
+  "cases": [
+    {
+      "case_id": "allow_shadow_live_after_complete_paper_stage",
+      "payload_overrides": {
+        "requested_lane": "shadow_live",
+        "shadow_pass_evidence_id": null,
+        "market_data_entitlement_check_id": null,
+        "shadow_live_objectives": []
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PAPER_STAGE_COMPLETED_FOR_SHADOW_LIVE",
+      "expected_requested_lane_permitted": true,
+      "expected_live_activation_permitted": false,
+      "expected_paper_stage_complete": true,
+      "expected_shadow_stage_complete": false,
+      "expected_overnight_evidence_complete": true
+    },
+    {
+      "case_id": "block_live_on_failed_paper_reconciliation",
+      "objective_mutations": {
+        "paper_objectives": {
+          "real_reconciliation_flow": {
+            "satisfied": false,
+            "detail": "Reconciliation discrepancy remained unresolved during paper trading."
+          }
+        }
+      },
+      "expected_status": "blocked",
+      "expected_reason_code": "PAPER_STAGE_OBJECTIVES_INCOMPLETE",
+      "expected_requested_lane_permitted": false,
+      "expected_live_activation_permitted": false,
+      "expected_paper_stage_complete": false,
+      "expected_shadow_stage_complete": true,
+      "expected_overnight_evidence_complete": true,
+      "expected_diff_subject": "paper.real_reconciliation_flow"
+    },
+    {
+      "case_id": "block_live_on_failed_shadow_reconciliation",
+      "objective_mutations": {
+        "shadow_live_objectives": {
+          "clean_reconciliation_and_intent_logging": {
+            "satisfied": false,
+            "detail": "Intent logging diverged from reconciliation records on the shadow-live lane."
+          }
+        }
+      },
+      "expected_status": "blocked",
+      "expected_reason_code": "SHADOW_LIVE_STAGE_OBJECTIVES_INCOMPLETE",
+      "expected_requested_lane_permitted": false,
+      "expected_live_activation_permitted": false,
+      "expected_paper_stage_complete": true,
+      "expected_shadow_stage_complete": false,
+      "expected_overnight_evidence_complete": true,
+      "expected_diff_subject": "shadow_live.clean_reconciliation_and_intent_logging"
+    },
+    {
+      "case_id": "allow_live_with_complete_overnight_evidence",
+      "payload_overrides": {
+        "overnight_candidate_class": "strict",
+        "overnight_evidence_records": [
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_paper_hold_v1"],
+            "diagnostic": "Paper overnight hold scenario passed."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_paper_exit_v1"],
+            "diagnostic": "Paper overnight exit scenario passed."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "restart_while_holding",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_paper_restart_v1"],
+            "diagnostic": "Paper restart-while-holding scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_shadow_hold_v1"],
+            "diagnostic": "Shadow-live overnight hold scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_shadow_exit_v1"],
+            "diagnostic": "Shadow-live overnight exit scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "restart_while_holding",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_shadow_restart_v1"],
+            "diagnostic": "Shadow-live restart-while-holding scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "broker_disconnect",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_global_broker_disconnect_v1"],
+            "diagnostic": "Global broker-disconnect overnight scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "data_degradation",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_global_data_degradation_v1"],
+            "diagnostic": "Global data-degradation overnight scenario passed."
+          }
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "PAPER_AND_SHADOW_STAGE_REQUIREMENTS_SATISFIED",
+      "expected_requested_lane_permitted": true,
+      "expected_live_activation_permitted": true,
+      "expected_paper_stage_complete": true,
+      "expected_shadow_stage_complete": true,
+      "expected_overnight_evidence_complete": true
+    },
+    {
+      "case_id": "block_live_without_required_overnight_evidence",
+      "payload_overrides": {
+        "overnight_candidate_class": "strict",
+        "overnight_evidence_records": [
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_paper_hold_v1"],
+            "diagnostic": "Paper overnight hold scenario passed."
+          },
+          {
+            "lane": "paper",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_paper_exit_v1"],
+            "diagnostic": "Paper overnight exit scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_hold",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_shadow_hold_v1"],
+            "diagnostic": "Shadow-live overnight hold scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "overnight_exit",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_shadow_exit_v1"],
+            "diagnostic": "Shadow-live overnight exit scenario passed."
+          },
+          {
+            "lane": "shadow_live",
+            "scenario_type": "broker_disconnect",
+            "passed": true,
+            "artifact_ids": ["artifact_overnight_global_broker_disconnect_v1"],
+            "diagnostic": "Global broker-disconnect overnight scenario passed."
+          }
+        ]
+      },
+      "expected_status": "blocked",
+      "expected_reason_code": "OVERNIGHT_EVIDENCE_INCOMPLETE",
+      "expected_requested_lane_permitted": false,
+      "expected_live_activation_permitted": false,
+      "expected_paper_stage_complete": true,
+      "expected_shadow_stage_complete": true,
+      "expected_overnight_evidence_complete": false,
+      "expected_missing_overnight_scenario": "data_degradation"
+    }
+  ]
+}
