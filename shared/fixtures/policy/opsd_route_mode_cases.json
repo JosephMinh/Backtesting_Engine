@@ -1,0 +1,49 @@
+{
+  "scenario_cases": [
+    {
+      "scenario": "paper-route-reroutes-submit",
+      "expected_route_mode": "paper",
+      "expected_outcome": "routed_to_paper",
+      "expected_reason_code": "PAPER_ROUTE_EXECUTION_REHEARSAL",
+      "expected_route_target": "paper_adapter",
+      "expected_economic_mutation_permitted": false,
+      "expected_duplicate_prevented": false
+    },
+    {
+      "scenario": "shadow-live-suppresses-submit",
+      "expected_route_mode": "shadow_live",
+      "expected_outcome": "suppressed",
+      "expected_reason_code": "SHADOW_LIVE_SUPPRESSION_REQUIRED",
+      "expected_route_target": "shadow_suppression_sink",
+      "expected_economic_mutation_permitted": false,
+      "expected_duplicate_prevented": false
+    },
+    {
+      "scenario": "paper-route-falls-back-to-suppression",
+      "expected_route_mode": "paper",
+      "expected_outcome": "suppressed",
+      "expected_reason_code": "PAPER_ROUTE_FALLBACK_TO_SUPPRESSION",
+      "expected_route_target": "shadow_suppression_sink",
+      "expected_economic_mutation_permitted": false,
+      "expected_duplicate_prevented": false
+    },
+    {
+      "scenario": "shadow-live-duplicate-dedupes",
+      "expected_route_mode": "shadow_live",
+      "expected_outcome": "suppressed",
+      "expected_reason_code": "SHADOW_LIVE_DUPLICATE_SUPPRESSION_REPLAY",
+      "expected_route_target": "shadow_suppression_sink",
+      "expected_economic_mutation_permitted": false,
+      "expected_duplicate_prevented": true
+    },
+    {
+      "scenario": "live-adjacent-readiness-blocked",
+      "expected_route_mode": "live_adjacent_rehearsal",
+      "expected_outcome": "blocked",
+      "expected_reason_code": "READINESS_NOT_GREEN_FOR_NON_ECONOMIC_REHEARSAL",
+      "expected_route_target": "none",
+      "expected_economic_mutation_permitted": false,
+      "expected_duplicate_prevented": false
+    }
+  ]
+}
