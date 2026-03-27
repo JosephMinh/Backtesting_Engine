@@ -1,12 +1,15 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use backtesting_engine_kernels::{default_fixture_path, load_fixture_cases, run_fixture_case};
+use backtesting_engine_kernels::{
+    default_fixture_path, load_fixture_cases, render_smoke_report_json, run_fixture_case,
+};
 
 fn main() -> ExitCode {
     let mut case_id = String::from("gold_momentum_promotable");
     let mut fixture_path = default_fixture_path();
     let mut output_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/kernel-smoke");
+    let mut emit_json = false;
 
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -32,6 +35,7 @@ fn main() -> ExitCode {
                 };
                 output_dir = PathBuf::from(value);
             }
+            "--json" => emit_json = true,
             other => {
                 eprintln!("unexpected argument: {other}");
                 return ExitCode::FAILURE;
@@ -58,6 +62,15 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+
+    if emit_json {
+        print!("{}", render_smoke_report_json(&report));
+        return if report.succeeded() {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::FAILURE
+        };
+    }
 
     println!("Gold momentum kernel smoke summary");
     println!("case_id: {}", report.case_id);

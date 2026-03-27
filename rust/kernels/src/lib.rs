@@ -26,5 +26,5 @@ pub use gold_momentum::{
 };
 pub use replay::{
     FixtureDecision, FixtureLoadError, ReplayFixtureCase, SmokeDiff, SmokeLogRecord, SmokeReport,
-    default_fixture_path, load_fixture_cases, run_fixture_case,
+    default_fixture_path, load_fixture_cases, render_smoke_report_json, run_fixture_case,
 };

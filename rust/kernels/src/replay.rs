@@ -187,6 +187,170 @@ pub fn run_fixture_case(
     })
 }
 
+pub fn render_smoke_report_json(report: &SmokeReport) -> String {
+    let mut output = String::new();
+    output.push_str("{\n");
+    push_json_line(
+        &mut output,
+        1,
+        "entry_path",
+        "rust.bin.gold_momentum_smoke",
+        true,
+    );
+    push_json_line(&mut output, 1, "case_id", &report.case_id, true);
+    push_json_line(
+        &mut output,
+        1,
+        "identity_digest",
+        &report.identity_digest,
+        true,
+    );
+    output.push_str("  \"identity\": {\n");
+    push_json_line(
+        &mut output,
+        2,
+        "strategy_family_id",
+        report.artifact_binding.identity.strategy_family_id,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "rust_crate",
+        report.artifact_binding.identity.rust_crate,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "python_binding_module",
+        report.artifact_binding.identity.python_binding_module,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "kernel_abi_version",
+        report.artifact_binding.identity.kernel_abi_version,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "state_serialization_version",
+        report.artifact_binding.identity.state_serialization_version,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "semantic_version",
+        report.artifact_binding.identity.semantic_version,
+        true,
+    );
+    push_json_line(
+        &mut output,
+        2,
+        "canonical_digest",
+        &report.identity_digest,
+        false,
+    );
+    output.push_str("  },\n");
+    push_json_line(
+        &mut output,
+        1,
+        "candidate_bundle",
+        report.artifact_binding.candidate_bundle.relative_path(),
+        true,
+    );
+    push_json_line(
+        &mut output,
+        1,
+        "resolved_context_bundle",
+        report
+            .artifact_binding
+            .resolved_context_bundle
+            .relative_path(),
+        true,
+    );
+    push_json_line(
+        &mut output,
+        1,
+        "signal_kernel",
+        report.artifact_binding.signal_kernel.relative_path(),
+        true,
+    );
+    output.push_str("  \"actual\": [\n");
+    for (index, decision) in report.actual.iter().enumerate() {
+        output.push_str("    {");
+        let _ = write!(
+            output,
+            "\"sequence_number\": {}, \"disposition\": \"{}\", \"score_ticks\": {}",
+            decision.sequence_number,
+            decision.disposition.as_str(),
+            decision.score_ticks,
+        );
+        output.push('}');
+        if index + 1 != report.actual.len() {
+            output.push(',');
+        }
+        output.push('\n');
+    }
+    output.push_str("  ],\n");
+    output.push_str("  \"diffs\": [\n");
+    for (index, diff) in report.diffs.iter().enumerate() {
+        output.push_str("    {");
+        let _ = write!(
+            output,
+            "\"sequence_number\": {}, \"expected_disposition\": \"{}\", \"actual_disposition\": {}, \"expected_score_ticks\": {}, \"actual_score_ticks\": {}",
+            diff.sequence_number,
+            diff.expected_disposition.as_str(),
+            diff.actual_disposition
+                .map(|item| format!("\"{}\"", item.as_str()))
+                .unwrap_or_else(|| "null".to_owned()),
+            diff.expected_score_ticks,
+            diff.actual_score_ticks
+                .map(|item| item.to_string())
+                .unwrap_or_else(|| "null".to_owned()),
+        );
+        output.push('}');
+        if index + 1 != report.diffs.len() {
+            output.push(',');
+        }
+        output.push('\n');
+    }
+    output.push_str("  ],\n");
+    output.push_str("  \"log_records\": [\n");
+    for (index, record) in report.log_records.iter().enumerate() {
+        output.push_str("    {");
+        let _ = write!(
+            output,
+            "\"level\": \"{}\", \"event\": \"{}\", \"message\": \"{}\"",
+            record.level,
+            record.event,
+            escape_json(&record.message),
+        );
+        output.push('}');
+        if index + 1 != report.log_records.len() {
+            output.push(',');
+        }
+        output.push('\n');
+    }
+    output.push_str("  ],\n");
+    match &report.mismatch_artifact_path {
+        Some(path) => push_json_line(
+            &mut output,
+            1,
+            "mismatch_artifact_path",
+            &path.display().to_string(),
+            false,
+        ),
+        None => output.push_str("  \"mismatch_artifact_path\": null\n"),
+    }
+    output.push_str("}\n");
+    output
+}
+
 fn parse_case_block(block: &str) -> Result<ReplayFixtureCase, FixtureLoadError> {
     let mut case_id = None;
     let mut lookback_bars = None;
@@ -451,6 +615,10 @@ fn push_json_line(
         output.push(',');
     }
     output.push('\n');
+}
+
+fn escape_json(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 #[cfg(test)]
