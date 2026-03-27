@@ -114,6 +114,14 @@ pub struct RuntimeRiskLimits {
     pub max_position_contracts: i64,
     pub max_concurrent_order_intents: usize,
     pub degraded_data_stale_quote_bps: u32,
+    pub max_behavior_drift_bps: u32,
+    pub max_fill_slippage_drift_bps: u32,
+    pub severe_behavior_drift_bps: u32,
+    pub severe_fill_slippage_drift_bps: u32,
+    pub max_data_quality_drift_bps: u32,
+    pub severe_data_quality_drift_bps: u32,
+    pub min_operating_envelope_fit_bps: u32,
+    pub hard_stop_operating_envelope_fit_bps: u32,
     pub daily_loss_lockout_usd_cents: i64,
     pub max_drawdown_usd_cents: i64,
     pub max_initial_margin_requirement_usd_cents: i64,
@@ -153,6 +161,18 @@ pub struct WarmupSnapshot {
     pub state_seed_loaded: bool,
 }
 
+/// Strategy-health drift inputs consumed by the runtime risk lane.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct StrategyHealthSnapshot {
+    pub behavior_drift_bps: u32,
+    pub fill_slippage_drift_bps: u32,
+    pub data_quality_drift_bps: u32,
+    pub operating_envelope_fit_bps: u32,
+    pub recalibration_required: bool,
+    pub reference_window_id: String,
+    pub reason_code: String,
+}
+
 /// Session-conditioned envelope overlay consumed by the runtime risk lane.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct OperatingEnvelopeSnapshot {
@@ -181,6 +201,7 @@ pub struct RuntimeRiskRequest {
     pub exposure: RuntimeExposureSnapshot,
     pub market_data: MarketDataHealthSnapshot,
     pub warmup: WarmupSnapshot,
+    pub strategy_health: StrategyHealthSnapshot,
     pub envelope: OperatingEnvelopeSnapshot,
 }
 
@@ -359,6 +380,38 @@ fn render_request(request: &RuntimeRiskRequest) -> String {
             request.limits.degraded_data_stale_quote_bps
         ),
         format!(
+            "max_behavior_drift_bps={}",
+            request.limits.max_behavior_drift_bps
+        ),
+        format!(
+            "max_fill_slippage_drift_bps={}",
+            request.limits.max_fill_slippage_drift_bps
+        ),
+        format!(
+            "severe_behavior_drift_bps={}",
+            request.limits.severe_behavior_drift_bps
+        ),
+        format!(
+            "severe_fill_slippage_drift_bps={}",
+            request.limits.severe_fill_slippage_drift_bps
+        ),
+        format!(
+            "max_data_quality_drift_bps={}",
+            request.limits.max_data_quality_drift_bps
+        ),
+        format!(
+            "severe_data_quality_drift_bps={}",
+            request.limits.severe_data_quality_drift_bps
+        ),
+        format!(
+            "min_operating_envelope_fit_bps={}",
+            request.limits.min_operating_envelope_fit_bps
+        ),
+        format!(
+            "hard_stop_operating_envelope_fit_bps={}",
+            request.limits.hard_stop_operating_envelope_fit_bps
+        ),
+        format!(
             "daily_loss_lockout_usd_cents={}",
             request.limits.daily_loss_lockout_usd_cents
         ),
@@ -437,6 +490,34 @@ fn render_request(request: &RuntimeRiskRequest) -> String {
             request.warmup.history_minutes_observed
         ),
         format!("state_seed_loaded={}", request.warmup.state_seed_loaded),
+        format!(
+            "behavior_drift_bps={}",
+            request.strategy_health.behavior_drift_bps
+        ),
+        format!(
+            "fill_slippage_drift_bps={}",
+            request.strategy_health.fill_slippage_drift_bps
+        ),
+        format!(
+            "data_quality_drift_bps={}",
+            request.strategy_health.data_quality_drift_bps
+        ),
+        format!(
+            "operating_envelope_fit_bps={}",
+            request.strategy_health.operating_envelope_fit_bps
+        ),
+        format!(
+            "recalibration_required={}",
+            request.strategy_health.recalibration_required
+        ),
+        format!(
+            "strategy_health_reference_window_id={}",
+            request.strategy_health.reference_window_id
+        ),
+        format!(
+            "strategy_health_reason_code={}",
+            request.strategy_health.reason_code
+        ),
         format!("session_class={}", request.envelope.session_class),
         format!("envelope_reason_code={}", request.envelope.reason_code),
         format!(
@@ -713,6 +794,253 @@ fn envelope_control(
     )
 }
 
+fn strategy_behavior_drift_control(
+    request: &RuntimeRiskRequest,
+    current_abs_position: i64,
+) -> RiskControlDecision {
+    let health = &request.strategy_health;
+    let limits = &request.limits;
+    let behavior_exceeded = health.behavior_drift_bps > limits.max_behavior_drift_bps;
+    let slippage_exceeded =
+        health.fill_slippage_drift_bps > limits.max_fill_slippage_drift_bps;
+    let severe = health.behavior_drift_bps > limits.severe_behavior_drift_bps
+        || health.fill_slippage_drift_bps > limits.severe_fill_slippage_drift_bps;
+    let context = BTreeMap::from([
+        (
+            "behavior_drift_bps".to_string(),
+            health.behavior_drift_bps.to_string(),
+        ),
+        (
+            "max_behavior_drift_bps".to_string(),
+            limits.max_behavior_drift_bps.to_string(),
+        ),
+        (
+            "severe_behavior_drift_bps".to_string(),
+            limits.severe_behavior_drift_bps.to_string(),
+        ),
+        (
+            "fill_slippage_drift_bps".to_string(),
+            health.fill_slippage_drift_bps.to_string(),
+        ),
+        (
+            "max_fill_slippage_drift_bps".to_string(),
+            limits.max_fill_slippage_drift_bps.to_string(),
+        ),
+        (
+            "severe_fill_slippage_drift_bps".to_string(),
+            limits.severe_fill_slippage_drift_bps.to_string(),
+        ),
+        (
+            "reference_window_id".to_string(),
+            health.reference_window_id.clone(),
+        ),
+        ("reason_code".to_string(), health.reason_code.clone()),
+    ]);
+
+    if severe {
+        let (action, entry_mode, reason_code, diagnostic) = if current_abs_position > 0 {
+            (
+                RiskAction::ExitOnly,
+                EntryMode::ExitOnly,
+                "STRATEGY_HEALTH_BEHAVIOR_DRIFT_EXIT_ONLY",
+                "Strategy behavior drift exceeded the severe threshold while exposure was open, so the runtime moved to exit-only until recalibration.",
+            )
+        } else {
+            (
+                RiskAction::Restrict,
+                EntryMode::NoNewEntries,
+                "STRATEGY_HEALTH_BEHAVIOR_DRIFT_RESTRICT",
+                "Strategy behavior drift exceeded the severe threshold, so new risk was suppressed until recalibration.",
+            )
+        };
+        return fail_control(
+            "strategy_behavior_drift",
+            "Strategy behavior drift monitor",
+            action,
+            entry_mode,
+            reason_code,
+            diagnostic,
+            context,
+        );
+    }
+
+    if behavior_exceeded || slippage_exceeded {
+        return fail_control(
+            "strategy_behavior_drift",
+            "Strategy behavior drift monitor",
+            RiskAction::Restrict,
+            EntryMode::NoNewEntries,
+            "STRATEGY_HEALTH_BEHAVIOR_DRIFT_RESTRICT",
+            "Strategy behavior drift exceeded the approved threshold and the runtime suppressed new risk pending review.",
+            context,
+        );
+    }
+
+    pass_control(
+        "strategy_behavior_drift",
+        "Strategy behavior drift monitor",
+        "Behavior drift and fill slippage stayed within the approved runtime thresholds.",
+        context,
+    )
+}
+
+fn strategy_data_quality_control(request: &RuntimeRiskRequest) -> RiskControlDecision {
+    let health = &request.strategy_health;
+    let limits = &request.limits;
+    let context = BTreeMap::from([
+        (
+            "data_quality_drift_bps".to_string(),
+            health.data_quality_drift_bps.to_string(),
+        ),
+        (
+            "max_data_quality_drift_bps".to_string(),
+            limits.max_data_quality_drift_bps.to_string(),
+        ),
+        (
+            "severe_data_quality_drift_bps".to_string(),
+            limits.severe_data_quality_drift_bps.to_string(),
+        ),
+        (
+            "reference_window_id".to_string(),
+            health.reference_window_id.clone(),
+        ),
+        ("reason_code".to_string(), health.reason_code.clone()),
+    ]);
+
+    if health.data_quality_drift_bps > limits.severe_data_quality_drift_bps {
+        return fail_control(
+            "strategy_data_quality_drift",
+            "Strategy data-quality drift monitor",
+            RiskAction::Halt,
+            EntryMode::NoNewEntries,
+            "STRATEGY_HEALTH_DATA_QUALITY_HALT",
+            "Strategy-health data quality drift exceeded the severe threshold and the runtime halted new trading decisions until operator review.",
+            context,
+        );
+    }
+
+    if health.data_quality_drift_bps > limits.max_data_quality_drift_bps {
+        return fail_control(
+            "strategy_data_quality_drift",
+            "Strategy data-quality drift monitor",
+            RiskAction::Restrict,
+            EntryMode::NoNewEntries,
+            "STRATEGY_HEALTH_DATA_QUALITY_RESTRICT",
+            "Strategy-health data quality drift exceeded the approved threshold and the runtime restricted new risk pending review.",
+            context,
+        );
+    }
+
+    pass_control(
+        "strategy_data_quality_drift",
+        "Strategy data-quality drift monitor",
+        "Strategy-health data quality remained within the approved runtime drift thresholds.",
+        context,
+    )
+}
+
+fn operating_envelope_fit_control(
+    request: &RuntimeRiskRequest,
+    current_abs_position: i64,
+) -> RiskControlDecision {
+    let health = &request.strategy_health;
+    let limits = &request.limits;
+    let context = BTreeMap::from([
+        (
+            "operating_envelope_fit_bps".to_string(),
+            health.operating_envelope_fit_bps.to_string(),
+        ),
+        (
+            "min_operating_envelope_fit_bps".to_string(),
+            limits.min_operating_envelope_fit_bps.to_string(),
+        ),
+        (
+            "hard_stop_operating_envelope_fit_bps".to_string(),
+            limits.hard_stop_operating_envelope_fit_bps.to_string(),
+        ),
+        (
+            "recalibration_required".to_string(),
+            health.recalibration_required.to_string(),
+        ),
+        (
+            "reference_window_id".to_string(),
+            health.reference_window_id.clone(),
+        ),
+        ("reason_code".to_string(), health.reason_code.clone()),
+        (
+            "required_operating_posture".to_string(),
+            request.envelope.required_operating_posture.clone(),
+        ),
+        (
+            "current_operating_posture".to_string(),
+            request.operating_posture.clone(),
+        ),
+    ]);
+
+    if health.operating_envelope_fit_bps <= limits.hard_stop_operating_envelope_fit_bps {
+        let (action, entry_mode, reason_code, diagnostic) = if current_abs_position > 0 {
+            (
+                RiskAction::Flatten,
+                EntryMode::ForcedFlatten,
+                "STRATEGY_HEALTH_OPERATING_ENVELOPE_FLATTEN",
+                "Operating-envelope fit fell below the hard-stop threshold while exposure was open, so the runtime must flatten immediately.",
+            )
+        } else {
+            (
+                RiskAction::Restrict,
+                EntryMode::NoNewEntries,
+                "STRATEGY_HEALTH_OPERATING_ENVELOPE_RESTRICT",
+                "Operating-envelope fit fell below the hard-stop threshold, so the runtime suppressed new entries until recalibration.",
+            )
+        };
+        return fail_control(
+            "strategy_operating_envelope_fit",
+            "Strategy operating-envelope fit monitor",
+            action,
+            entry_mode,
+            reason_code,
+            diagnostic,
+            context,
+        );
+    }
+
+    if health.recalibration_required
+        || health.operating_envelope_fit_bps < limits.min_operating_envelope_fit_bps
+    {
+        let (action, entry_mode) = if current_abs_position > 0 {
+            (RiskAction::ExitOnly, EntryMode::ExitOnly)
+        } else {
+            (RiskAction::Restrict, EntryMode::NoNewEntries)
+        };
+        let reason_code = if health.recalibration_required {
+            "STRATEGY_HEALTH_RECALIBRATION_REQUIRED"
+        } else {
+            "STRATEGY_HEALTH_OPERATING_ENVELOPE_RESTRICT"
+        };
+        let diagnostic = if health.recalibration_required {
+            "The strategy-health lane requested recalibration before new risk can be added."
+        } else {
+            "Operating-envelope fit fell below the approved threshold, so the runtime restricted new risk pending review."
+        };
+        return fail_control(
+            "strategy_operating_envelope_fit",
+            "Strategy operating-envelope fit monitor",
+            action,
+            entry_mode,
+            reason_code,
+            diagnostic,
+            context,
+        );
+    }
+
+    pass_control(
+        "strategy_operating_envelope_fit",
+        "Strategy operating-envelope fit monitor",
+        "Operating-envelope fit remained inside the approved runtime threshold and no recalibration was required.",
+        context,
+    )
+}
+
 /// Evaluates runtime trading eligibility and baseline risk controls.
 pub fn evaluate_runtime_risk(request: &RuntimeRiskRequest) -> RuntimeRiskReport {
     let mut issues = Vec::new();
@@ -730,6 +1058,38 @@ pub fn evaluate_runtime_risk(request: &RuntimeRiskRequest) -> RuntimeRiskReport 
     }
     if request.limits.max_concurrent_order_intents == 0 {
         issues.push("max_concurrent_order_intents");
+    }
+    if request.limits.max_behavior_drift_bps == 0 {
+        issues.push("max_behavior_drift_bps");
+    }
+    if request.limits.max_fill_slippage_drift_bps == 0 {
+        issues.push("max_fill_slippage_drift_bps");
+    }
+    if request.limits.severe_behavior_drift_bps < request.limits.max_behavior_drift_bps {
+        issues.push("severe_behavior_drift_bps");
+    }
+    if request.limits.severe_fill_slippage_drift_bps
+        < request.limits.max_fill_slippage_drift_bps
+    {
+        issues.push("severe_fill_slippage_drift_bps");
+    }
+    if request.limits.max_data_quality_drift_bps == 0 {
+        issues.push("max_data_quality_drift_bps");
+    }
+    if request.limits.severe_data_quality_drift_bps
+        < request.limits.max_data_quality_drift_bps
+    {
+        issues.push("severe_data_quality_drift_bps");
+    }
+    if request.limits.min_operating_envelope_fit_bps == 0
+        || request.limits.min_operating_envelope_fit_bps > 10_000
+    {
+        issues.push("min_operating_envelope_fit_bps");
+    }
+    if request.limits.hard_stop_operating_envelope_fit_bps
+        > request.limits.min_operating_envelope_fit_bps
+    {
+        issues.push("hard_stop_operating_envelope_fit_bps");
     }
     if request.limits.max_initial_margin_requirement_usd_cents <= 0 {
         issues.push("max_initial_margin_requirement_usd_cents");
@@ -755,6 +1115,15 @@ pub fn evaluate_runtime_risk(request: &RuntimeRiskRequest) -> RuntimeRiskReport 
     }
     if request.limits.required_overnight_posture.trim().is_empty() {
         issues.push("required_overnight_posture");
+    }
+    if request.strategy_health.operating_envelope_fit_bps > 10_000 {
+        issues.push("strategy_health.operating_envelope_fit_bps");
+    }
+    if request.strategy_health.reference_window_id.trim().is_empty() {
+        issues.push("strategy_health.reference_window_id");
+    }
+    if request.strategy_health.reason_code.trim().is_empty() {
+        issues.push("strategy_health.reason_code");
     }
     if !issues.is_empty() {
         return invalid_report(request, issues);
@@ -946,6 +1315,18 @@ pub fn evaluate_runtime_risk(request: &RuntimeRiskRequest) -> RuntimeRiskReport 
             ]),
         )
     });
+
+    decisions.push(strategy_behavior_drift_control(
+        request,
+        current_abs_position,
+    ));
+
+    decisions.push(strategy_data_quality_control(request));
+
+    decisions.push(operating_envelope_fit_control(
+        request,
+        current_abs_position,
+    ));
 
     decisions.push(
         if request.exposure.realized_loss_usd_cents >= request.limits.daily_loss_lockout_usd_cents {
@@ -1333,6 +1714,14 @@ fn base_request() -> RuntimeRiskRequest {
             max_position_contracts: 3,
             max_concurrent_order_intents: 2,
             degraded_data_stale_quote_bps: 50,
+            max_behavior_drift_bps: 180,
+            max_fill_slippage_drift_bps: 120,
+            severe_behavior_drift_bps: 320,
+            severe_fill_slippage_drift_bps: 220,
+            max_data_quality_drift_bps: 140,
+            severe_data_quality_drift_bps: 260,
+            min_operating_envelope_fit_bps: 9_000,
+            hard_stop_operating_envelope_fit_bps: 7_000,
             daily_loss_lockout_usd_cents: 50_000,
             max_drawdown_usd_cents: 120_000,
             max_initial_margin_requirement_usd_cents: 150_000,
@@ -1361,6 +1750,15 @@ fn base_request() -> RuntimeRiskRequest {
             history_bars_observed: 120,
             history_minutes_observed: 90,
             state_seed_loaded: true,
+        },
+        strategy_health: StrategyHealthSnapshot {
+            behavior_drift_bps: 40,
+            fill_slippage_drift_bps: 35,
+            data_quality_drift_bps: 20,
+            operating_envelope_fit_bps: 9_800,
+            recalibration_required: false,
+            reference_window_id: "strategy-health-window-2026-03-18T13:30Z".to_string(),
+            reason_code: "STRATEGY_HEALTH_GREEN".to_string(),
         },
         envelope: OperatingEnvelopeSnapshot {
             session_class: "regular_comex".to_string(),
@@ -1453,6 +1851,53 @@ pub fn sample_runtime_risk_request(name: &str) -> Option<RuntimeRiskRequest> {
             ];
             request.envelope.size_multiplier_bps = 5_000;
             request.envelope.max_trade_count_multiplier_bps = 5_000;
+            Some(request)
+        }
+        "behavior-drift-restrict" => {
+            request.request_id = "runtime-risk-behavior-drift".to_string();
+            request.strategy_health.behavior_drift_bps = 240;
+            request.strategy_health.fill_slippage_drift_bps = 150;
+            request.strategy_health.reason_code = "STRATEGY_HEALTH_BEHAVIOR_DRIFT".to_string();
+            Some(request)
+        }
+        "behavior-drift-exit-only" => {
+            request.request_id = "runtime-risk-behavior-drift-severe".to_string();
+            request.exposure.current_position_contracts = 1;
+            request.exposure.projected_position_contracts = 1;
+            request.strategy_health.behavior_drift_bps = 360;
+            request.strategy_health.fill_slippage_drift_bps = 260;
+            request.strategy_health.reason_code = "STRATEGY_HEALTH_BEHAVIOR_DRIFT".to_string();
+            Some(request)
+        }
+        "data-quality-halt" => {
+            request.request_id = "runtime-risk-data-quality-drift".to_string();
+            request.strategy_health.data_quality_drift_bps = 320;
+            request.strategy_health.reason_code =
+                "STRATEGY_HEALTH_DATA_QUALITY_DRIFT".to_string();
+            Some(request)
+        }
+        "operating-envelope-fit-restrict" => {
+            request.request_id = "runtime-risk-envelope-fit".to_string();
+            request.strategy_health.operating_envelope_fit_bps = 8_300;
+            request.strategy_health.reason_code =
+                "STRATEGY_HEALTH_OPERATING_ENVELOPE_DRIFT".to_string();
+            Some(request)
+        }
+        "operating-envelope-fit-flatten" => {
+            request.request_id = "runtime-risk-envelope-fit-hard-stop".to_string();
+            request.exposure.current_position_contracts = 1;
+            request.exposure.projected_position_contracts = 1;
+            request.strategy_health.operating_envelope_fit_bps = 6_400;
+            request.strategy_health.recalibration_required = true;
+            request.strategy_health.reason_code =
+                "STRATEGY_HEALTH_OPERATING_ENVELOPE_DRIFT".to_string();
+            Some(request)
+        }
+        "recalibration-required-restrict" => {
+            request.request_id = "runtime-risk-recalibration".to_string();
+            request.strategy_health.recalibration_required = true;
+            request.strategy_health.reason_code =
+                "STRATEGY_HEALTH_RECALIBRATION_REVIEW".to_string();
             Some(request)
         }
         _ => None,
@@ -1573,5 +2018,93 @@ mod tests {
         assert_eq!("OPERATING_ENVELOPE_RESTRICTED", report.reason_code);
         assert_eq!(2, report.effective_max_position_contracts);
         assert_eq!(1, report.effective_max_concurrent_order_intents);
+    }
+
+    #[test]
+    fn moderate_behavior_drift_restricts_new_entries() {
+        let request = sample_runtime_risk_request("behavior-drift-restrict")
+            .expect("behavior drift scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::Restricted, report.status);
+        assert_eq!(RiskAction::Restrict, report.action);
+        assert_eq!(EntryMode::NoNewEntries, report.entry_mode);
+        assert_eq!("STRATEGY_HEALTH_BEHAVIOR_DRIFT_RESTRICT", report.reason_code);
+        assert!(
+            report
+                .triggered_control_ids
+                .contains(&"strategy_behavior_drift".to_string())
+        );
+    }
+
+    #[test]
+    fn severe_behavior_drift_switches_open_exposure_to_exit_only() {
+        let request = sample_runtime_risk_request("behavior-drift-exit-only")
+            .expect("severe behavior drift scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::ExitOnly, report.status);
+        assert_eq!(RiskAction::ExitOnly, report.action);
+        assert_eq!(EntryMode::ExitOnly, report.entry_mode);
+        assert_eq!(
+            "STRATEGY_HEALTH_BEHAVIOR_DRIFT_EXIT_ONLY",
+            report.reason_code
+        );
+    }
+
+    #[test]
+    fn severe_data_quality_drift_halts_runtime() {
+        let request = sample_runtime_risk_request("data-quality-halt")
+            .expect("data-quality drift scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::Halted, report.status);
+        assert_eq!(RiskAction::Halt, report.action);
+        assert_eq!(EntryMode::NoNewEntries, report.entry_mode);
+        assert_eq!("STRATEGY_HEALTH_DATA_QUALITY_HALT", report.reason_code);
+        assert!(!report.trading_eligible);
+    }
+
+    #[test]
+    fn low_operating_envelope_fit_restricts_new_risk() {
+        let request = sample_runtime_risk_request("operating-envelope-fit-restrict")
+            .expect("operating-envelope fit scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::Restricted, report.status);
+        assert_eq!(RiskAction::Restrict, report.action);
+        assert_eq!(EntryMode::NoNewEntries, report.entry_mode);
+        assert_eq!(
+            "STRATEGY_HEALTH_OPERATING_ENVELOPE_RESTRICT",
+            report.reason_code
+        );
+    }
+
+    #[test]
+    fn hard_stop_operating_envelope_fit_flattens_open_exposure() {
+        let request = sample_runtime_risk_request("operating-envelope-fit-flatten")
+            .expect("hard-stop operating-envelope fit scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::Flatten, report.status);
+        assert_eq!(RiskAction::Flatten, report.action);
+        assert_eq!(EntryMode::ForcedFlatten, report.entry_mode);
+        assert_eq!(
+            "STRATEGY_HEALTH_OPERATING_ENVELOPE_FLATTEN",
+            report.reason_code
+        );
+        assert!(report.require_flatten);
+    }
+
+    #[test]
+    fn recalibration_requirement_blocks_new_risk_even_without_low_fit() {
+        let request = sample_runtime_risk_request("recalibration-required-restrict")
+            .expect("recalibration scenario exists");
+        let report = evaluate_runtime_risk(&request);
+
+        assert_eq!(EligibilityStatus::Restricted, report.status);
+        assert_eq!(RiskAction::Restrict, report.action);
+        assert_eq!(EntryMode::NoNewEntries, report.entry_mode);
+        assert_eq!("STRATEGY_HEALTH_RECALIBRATION_REQUIRED", report.reason_code);
     }
 }
