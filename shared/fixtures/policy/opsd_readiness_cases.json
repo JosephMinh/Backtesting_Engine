@@ -1,0 +1,29 @@
+{
+  "scenario_cases": [
+    {
+      "scenario": "green-readiness-pass",
+      "expected_status": "green",
+      "expected_reason_code": "READINESS_READY_TO_ACTIVATE"
+    },
+    {
+      "scenario": "clock-stale-blocked",
+      "expected_status": "blocked",
+      "expected_reason_code": "READINESS_PROVIDER_STALE"
+    },
+    {
+      "scenario": "broker-state-blocked",
+      "expected_status": "blocked",
+      "expected_reason_code": "READINESS_PROVIDER_BLOCKED"
+    },
+    {
+      "scenario": "reconciliation-review-required",
+      "expected_status": "suspect",
+      "expected_reason_code": "READINESS_PROVIDER_REVIEW_REQUIRED"
+    },
+    {
+      "scenario": "missing-secret-provider-invalid",
+      "expected_status": "invalid",
+      "expected_reason_code": "READINESS_REQUIRED_PROVIDER_MISSING"
+    }
+  ]
+}

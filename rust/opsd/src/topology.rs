@@ -40,6 +40,7 @@ impl OpsdModule {
 pub enum RuntimeStateSurface {
     NormalizedMarketState,
     BundleDecisionState,
+    CompiledSessionTopology,
     TradingEligibilityState,
     ExposureState,
     Orders,
@@ -47,6 +48,8 @@ pub enum RuntimeStateSurface {
     Fills,
     OrderIntentMappings,
     BrokerSessionState,
+    AccountingLedgerState,
+    SessionCloseArtifacts,
     ReadinessState,
     ReconciliationState,
     SnapshotStorage,
@@ -59,6 +62,7 @@ impl RuntimeStateSurface {
         match self {
             Self::NormalizedMarketState => "normalized_market_state",
             Self::BundleDecisionState => "bundle_decision_state",
+            Self::CompiledSessionTopology => "compiled_session_topology",
             Self::TradingEligibilityState => "trading_eligibility_state",
             Self::ExposureState => "exposure_state",
             Self::Orders => "orders",
@@ -66,6 +70,8 @@ impl RuntimeStateSurface {
             Self::Fills => "fills",
             Self::OrderIntentMappings => "order_intent_mappings",
             Self::BrokerSessionState => "broker_session_state",
+            Self::AccountingLedgerState => "accounting_ledger_state",
+            Self::SessionCloseArtifacts => "session_close_artifacts",
             Self::ReadinessState => "readiness_state",
             Self::ReconciliationState => "reconciliation_state",
             Self::SnapshotStorage => "snapshot_storage",
@@ -145,6 +151,7 @@ pub const OPSD_MODULES: &[OpsdModule] = &[
 pub const ALL_STATE_SURFACES: &[RuntimeStateSurface] = &[
     RuntimeStateSurface::NormalizedMarketState,
     RuntimeStateSurface::BundleDecisionState,
+    RuntimeStateSurface::CompiledSessionTopology,
     RuntimeStateSurface::TradingEligibilityState,
     RuntimeStateSurface::ExposureState,
     RuntimeStateSurface::Orders,
@@ -152,6 +159,8 @@ pub const ALL_STATE_SURFACES: &[RuntimeStateSurface] = &[
     RuntimeStateSurface::Fills,
     RuntimeStateSurface::OrderIntentMappings,
     RuntimeStateSurface::BrokerSessionState,
+    RuntimeStateSurface::AccountingLedgerState,
+    RuntimeStateSurface::SessionCloseArtifacts,
     RuntimeStateSurface::ReadinessState,
     RuntimeStateSurface::ReconciliationState,
     RuntimeStateSurface::SnapshotStorage,
@@ -249,10 +258,13 @@ pub const OPSD_MODULE_BOUNDARIES: &[ModuleBoundary] = &[
         module: OpsdModule::Reconciliation,
         title: "opsd.reconciliation",
         responsibilities: &[
-            "Own readiness state and authoritative reconciliation status.",
-            "Publish next-session readiness decisions after runtime and broker checks reconcile.",
+            "Own compiled session topology, the internal accounting ledger, session-close artifacts, readiness state, and authoritative reconciliation status.",
+            "Publish next-session readiness decisions after runtime, schedule, ledger, and broker checks reconcile.",
         ],
         owned_state_surfaces: &[
+            RuntimeStateSurface::CompiledSessionTopology,
+            RuntimeStateSurface::AccountingLedgerState,
+            RuntimeStateSurface::SessionCloseArtifacts,
             RuntimeStateSurface::ReadinessState,
             RuntimeStateSurface::ReconciliationState,
         ],
@@ -290,6 +302,7 @@ pub const fn state_owner(surface: RuntimeStateSurface) -> OpsdModule {
     match surface {
         RuntimeStateSurface::NormalizedMarketState => OpsdModule::MarketData,
         RuntimeStateSurface::BundleDecisionState => OpsdModule::StrategyRunner,
+        RuntimeStateSurface::CompiledSessionTopology => OpsdModule::Reconciliation,
         RuntimeStateSurface::TradingEligibilityState | RuntimeStateSurface::ExposureState => {
             OpsdModule::Risk
         }
@@ -298,9 +311,10 @@ pub const fn state_owner(surface: RuntimeStateSurface) -> OpsdModule {
         | RuntimeStateSurface::Fills
         | RuntimeStateSurface::OrderIntentMappings
         | RuntimeStateSurface::BrokerSessionState => OpsdModule::Broker,
-        RuntimeStateSurface::ReadinessState | RuntimeStateSurface::ReconciliationState => {
-            OpsdModule::Reconciliation
-        }
+        RuntimeStateSurface::AccountingLedgerState
+        | RuntimeStateSurface::SessionCloseArtifacts
+        | RuntimeStateSurface::ReadinessState
+        | RuntimeStateSurface::ReconciliationState => OpsdModule::Reconciliation,
         RuntimeStateSurface::SnapshotStorage | RuntimeStateSurface::AppendOnlyJournal => {
             OpsdModule::StateStore
         }
@@ -385,8 +399,21 @@ mod tests {
             RuntimeStateSurface::Fills,
             RuntimeStateSurface::OrderIntentMappings,
             RuntimeStateSurface::BrokerSessionState,
+            RuntimeStateSurface::CompiledSessionTopology,
+            RuntimeStateSurface::AccountingLedgerState,
+            RuntimeStateSurface::SessionCloseArtifacts,
         ] {
-            assert_eq!(OpsdModule::Broker, state_owner(surface));
+            let expected = if matches!(
+                surface,
+                RuntimeStateSurface::CompiledSessionTopology
+                    | RuntimeStateSurface::AccountingLedgerState
+                    | RuntimeStateSurface::SessionCloseArtifacts
+            ) {
+                OpsdModule::Reconciliation
+            } else {
+                OpsdModule::Broker
+            };
+            assert_eq!(expected, state_owner(surface));
         }
     }
 }
