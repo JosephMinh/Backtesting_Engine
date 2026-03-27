@@ -340,6 +340,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="family_preregistration_and_budget_governance",
+        module="shared.policy.family_preregistration",
+        source_path="shared/policy/family_preregistration.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.1-8.2",
+        purpose=(
+            "Strategy-family preregistration, canonical continuation-budget decisions, "
+            "and deep-budget viability guards"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="strategy_contracts_and_canonical_signal_kernel",
         module="shared.policy.strategy_contract",
         source_path="shared/policy/strategy_contract.py",

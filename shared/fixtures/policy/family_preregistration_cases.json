@@ -1,0 +1,341 @@
+{
+  "shared_preregistration_defaults": {
+    "registration_id": "family_prereg_gold_breakout_v1",
+    "family_id": "gold_breakout",
+    "subfamily_id": "comex_open_drive",
+    "economic_thesis": "Opening range displacement after overnight compression persists into the liquid COMEX session.",
+    "lane_assumptions": [
+      "Signals are evaluated on completed bars only.",
+      "The intended execution lane is 1OZ COMEX, not MGC."
+    ],
+    "target_session_class": "regular_comex",
+    "intended_execution_style": "passive_limit_entry_with_protective_stop",
+    "intended_holding_period": "intraday_flat_by_session_close",
+    "research_symbol": "MGC",
+    "expected_execution_symbol": "1OZ",
+    "execution_symbol_tradability_hypothesis": "Research alpha found on MGC remains economically viable once proven portable to 1OZ with native execution checks.",
+    "failure_criteria": [
+      "After-cost expectancy turns negative across the certified validation split.",
+      "Session-conditioned drawdown exceeds the preregistered downside tolerance."
+    ],
+    "preliminary_parameter_ranges": [
+      {
+        "parameter_id": "opening_range_minutes",
+        "lower_bound": 5.0,
+        "upper_bound": 30.0,
+        "rationale": "Constrain the opening range to realistic intraday discovery windows."
+      },
+      {
+        "parameter_id": "breakout_buffer_bps",
+        "lower_bound": 0.5,
+        "upper_bound": 8.0,
+        "rationale": "Allow only small entry buffers consistent with liquid gold futures."
+      }
+    ],
+    "primary_evaluation_metrics": [
+      "after_cost_sharpe",
+      "passive_gold_excess_return",
+      "max_drawdown_fraction"
+    ],
+    "budget_limits": {
+      "historical_data_spend_limit_usd": 250.0,
+      "compute_spend_limit_usd": 400.0,
+      "tuning_trial_limit": 40,
+      "operator_review_hours_limit": 8.0,
+      "exploratory_budget_limit_usd": 1500.0,
+      "continuation_budget_limit_usd": 5000.0,
+      "deep_budget_requires_viability": true
+    },
+    "created_at_utc": "2026-03-27T03:45:00+00:00",
+    "schema_version": 1
+  },
+  "preregistration_cases": [
+    {
+      "case_id": "well_formed_preregistration_passes",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "decision": "register",
+        "reason_code": "FAMILY_PREREGISTRATION_VALID",
+        "triggered_check_ids": []
+      }
+    },
+    {
+      "case_id": "missing_lane_assumptions_is_invalid",
+      "overrides": {
+        "lane_assumptions": []
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "reject",
+        "reason_code": "FAMILY_PREREGISTRATION_MISSING_REQUIRED_FIELDS",
+        "triggered_check_ids": [
+          "required_metadata"
+        ]
+      }
+    },
+    {
+      "case_id": "parameter_ranges_must_be_bounded",
+      "overrides": {
+        "preliminary_parameter_ranges": [
+          {
+            "parameter_id": "opening_range_minutes",
+            "lower_bound": 30.0,
+            "upper_bound": 5.0,
+            "rationale": "Invalid inverted bounds."
+          }
+        ]
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "reject",
+        "reason_code": "FAMILY_PREREGISTRATION_PARAMETER_RANGES_INVALID",
+        "triggered_check_ids": [
+          "parameter_ranges"
+        ]
+      }
+    },
+    {
+      "case_id": "continuation_cap_cannot_undercut_exploratory_cap",
+      "overrides": {
+        "budget_limits": {
+          "historical_data_spend_limit_usd": 250.0,
+          "compute_spend_limit_usd": 400.0,
+          "tuning_trial_limit": 40,
+          "operator_review_hours_limit": 8.0,
+          "exploratory_budget_limit_usd": 1500.0,
+          "continuation_budget_limit_usd": 1000.0,
+          "deep_budget_requires_viability": true
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "reject",
+        "reason_code": "FAMILY_PREREGISTRATION_BUDGET_LIMITS_INVALID",
+        "triggered_check_ids": [
+          "budget_limits"
+        ]
+      }
+    }
+  ],
+  "shared_budget_request_defaults": {
+    "case_id": "deep_budget_with_viability",
+    "preregistration": {
+      "registration_id": "family_prereg_gold_breakout_v1",
+      "family_id": "gold_breakout",
+      "subfamily_id": "comex_open_drive",
+      "economic_thesis": "Opening range displacement after overnight compression persists into the liquid COMEX session.",
+      "lane_assumptions": [
+        "Signals are evaluated on completed bars only.",
+        "The intended execution lane is 1OZ COMEX, not MGC."
+      ],
+      "target_session_class": "regular_comex",
+      "intended_execution_style": "passive_limit_entry_with_protective_stop",
+      "intended_holding_period": "intraday_flat_by_session_close",
+      "research_symbol": "MGC",
+      "expected_execution_symbol": "1OZ",
+      "execution_symbol_tradability_hypothesis": "Research alpha found on MGC remains economically viable once proven portable to 1OZ with native execution checks.",
+      "failure_criteria": [
+        "After-cost expectancy turns negative across the certified validation split.",
+        "Session-conditioned drawdown exceeds the preregistered downside tolerance."
+      ],
+      "preliminary_parameter_ranges": [
+        {
+          "parameter_id": "opening_range_minutes",
+          "lower_bound": 5.0,
+          "upper_bound": 30.0,
+          "rationale": "Constrain the opening range to realistic intraday discovery windows."
+        },
+        {
+          "parameter_id": "breakout_buffer_bps",
+          "lower_bound": 0.5,
+          "upper_bound": 8.0,
+          "rationale": "Allow only small entry buffers consistent with liquid gold futures."
+        }
+      ],
+      "primary_evaluation_metrics": [
+        "after_cost_sharpe",
+        "passive_gold_excess_return",
+        "max_drawdown_fraction"
+      ],
+      "budget_limits": {
+        "historical_data_spend_limit_usd": 250.0,
+        "compute_spend_limit_usd": 400.0,
+        "tuning_trial_limit": 40,
+        "operator_review_hours_limit": 8.0,
+        "exploratory_budget_limit_usd": 1500.0,
+        "continuation_budget_limit_usd": 5000.0,
+        "deep_budget_requires_viability": true
+      },
+      "created_at_utc": "2026-03-27T03:45:00+00:00",
+      "schema_version": 1
+    },
+    "decision_record": {
+      "decision_record_id": "family_decision_gold_breakout_001",
+      "family_id": "gold_breakout",
+      "decision_timestamp_utc": "2026-03-27T03:50:00+00:00",
+      "decision_type": "continue",
+      "evidence_references": [
+        "research_run_gold_breakout_001",
+        "research_run_gold_breakout_002"
+      ],
+      "budget_consumed_usd": 950.0,
+      "next_budget_authorized_usd": 2500.0,
+      "reviewer_self_attestations": [
+        {
+          "reviewer_id": "operator_self",
+          "attested_controls": [
+            "budget_review",
+            "evidence_review"
+          ],
+          "signed_at_utc": "2026-03-27T03:49:00+00:00"
+        }
+      ],
+      "reason_bundle": [
+        "evidence_quality_green",
+        "economics_within_budget",
+        "continuation_budget_requires_execution_lane_viability"
+      ],
+      "revisit_at_utc": null,
+      "lifecycle_state": "active"
+    },
+    "evidence_summary": {
+      "evidence_reference_ids": [
+        "research_run_gold_breakout_001",
+        "research_run_gold_breakout_002"
+      ],
+      "quality_findings": [
+        "Walk-forward validation remained positive after costs.",
+        "Session-conditioned drawdown stayed inside exploratory tolerance."
+      ],
+      "economics_findings": [
+        "Historical data and compute spend remained below exploratory cap.",
+        "Operator review hours stayed within the preregistered review budget."
+      ],
+      "metric_references": [
+        "after_cost_sharpe",
+        "passive_gold_excess_return"
+      ]
+    },
+    "viability_reference": {
+      "gate_type": "execution_symbol_first_viability_screen",
+      "report_id": "viability_screen_1oz_001",
+      "execution_symbol": "1OZ",
+      "viability_passed": true,
+      "deep_promotable_budget_allowed": true,
+      "reason_code": "EXECUTION_SYMBOL_VIABILITY_DEEP_BUDGET_ALLOWED"
+    },
+    "evaluated_at_utc": "2026-03-27T04:00:00+00:00",
+    "schema_version": 1
+  },
+  "budget_cases": [
+    {
+      "case_id": "exploratory_continue_authorized_without_viability",
+      "overrides": {
+        "decision_record": {
+          "next_budget_authorized_usd": 1200.0
+        },
+        "viability_reference": null
+      },
+      "expected": {
+        "status": "pass",
+        "decision": "authorize",
+        "reason_code": "FAMILY_CONTINUATION_AUTHORIZED",
+        "triggered_check_ids": [],
+        "deep_budget_requested": false,
+        "viability_gate_required": false,
+        "viability_gate_passed": true
+      }
+    },
+    {
+      "case_id": "deep_budget_requires_passed_viability",
+      "overrides": {
+        "viability_reference": null
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "reject",
+        "reason_code": "FAMILY_CONTINUATION_DEEP_BUDGET_VIABILITY_MISSING",
+        "triggered_check_ids": [
+          "deep_budget_viability_guardrail"
+        ],
+        "deep_budget_requested": true,
+        "viability_gate_required": true,
+        "viability_gate_passed": false
+      }
+    },
+    {
+      "case_id": "deep_budget_with_passed_viability_authorizes",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "decision": "authorize",
+        "reason_code": "FAMILY_CONTINUATION_AUTHORIZED",
+        "triggered_check_ids": [],
+        "deep_budget_requested": true,
+        "viability_gate_required": true,
+        "viability_gate_passed": true
+      }
+    },
+    {
+      "case_id": "mismatched_evidence_summary_is_invalid",
+      "overrides": {
+        "evidence_summary": {
+          "evidence_reference_ids": [
+            "research_run_gold_breakout_003"
+          ]
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "reject",
+        "reason_code": "FAMILY_CONTINUATION_DECISION_RECORD_MISMATCH",
+        "triggered_check_ids": [
+          "canonical_decision_record_alignment"
+        ],
+        "deep_budget_requested": true,
+        "viability_gate_required": true,
+        "viability_gate_passed": true
+      }
+    },
+    {
+      "case_id": "budget_above_registered_cap_is_rejected",
+      "overrides": {
+        "decision_record": {
+          "next_budget_authorized_usd": 6000.0
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "reject",
+        "reason_code": "FAMILY_CONTINUATION_BUDGET_EXCEEDS_REGISTERED_CAP",
+        "triggered_check_ids": [
+          "registered_budget_cap"
+        ],
+        "deep_budget_requested": true,
+        "viability_gate_required": true,
+        "viability_gate_passed": true
+      }
+    },
+    {
+      "case_id": "pause_decision_holds_without_rejecting",
+      "overrides": {
+        "decision_record": {
+          "decision_type": "pause",
+          "next_budget_authorized_usd": 1200.0,
+          "revisit_at_utc": "2026-04-03T03:50:00+00:00"
+        },
+        "viability_reference": null
+      },
+      "expected": {
+        "status": "pass",
+        "decision": "hold",
+        "reason_code": "FAMILY_CONTINUATION_PAUSED",
+        "triggered_check_ids": [],
+        "deep_budget_requested": false,
+        "viability_gate_required": false,
+        "viability_gate_passed": true
+      }
+    }
+  ]
+}
