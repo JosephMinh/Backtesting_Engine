@@ -552,6 +552,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="runtime_recovery_degradation_and_restore_governance",
+        module="shared.policy.runtime_recovery",
+        source_path="shared/policy/runtime_recovery.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.11",
+        purpose=(
+            "Recovery-fence, graceful-shutdown, degradation, ledger-close, and "
+            "restore-drill contracts for safe runtime resume and next-session eligibility"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="solo_governance_workflows",
         module="shared.policy.solo_governance",
         source_path="shared/policy/solo_governance.py",

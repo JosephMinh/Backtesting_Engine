@@ -146,6 +146,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("fully_loaded_economics", surface_ids)
         self.assertIn("absolute_dollar_viability_and_benchmark_gate", surface_ids)
         self.assertIn("strict_overnight_candidate_class", surface_ids)
+        self.assertIn("runtime_recovery_degradation_and_restore_governance", surface_ids)
         self.assertIn("solo_governance_workflows", surface_ids)
 
     def test_shared_contract_surfaces_compile(self):

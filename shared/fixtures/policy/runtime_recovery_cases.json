@@ -1,0 +1,409 @@
+{
+  "recovery_fence_cases": [
+    {
+      "case_id": "allow_recovery_fence_after_material_reconnect",
+      "payload": {
+        "recovery_run_id": "recovery_run_live_20260327_001",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "trigger_event_id": "watchdog_restart_20260327_001",
+        "entered_recovering_state": true,
+        "no_new_entries_asserted": true,
+        "broker_mutations_blocked": true,
+        "broker_positions_reconciled": true,
+        "open_orders_reconciled": true,
+        "order_intent_mappings_repaired": true,
+        "ambiguity_detected": false,
+        "ambiguity_disposition": "none",
+        "snapshot_artifact_id": "snapshot_live_20260327_001",
+        "journal_replay_artifact_id": "journal_replay_live_20260327_001",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_001",
+        "warmup_source": "operational_evidence",
+        "warmup_artifact_id": "warmup_trace_live_20260327_001",
+        "session_reset_or_material_reconnect": true,
+        "fresh_session_packet": {
+          "session_readiness_packet_id": "session_packet_gold_live_20260327",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "session_id": "2026-03-27_COMEX_GLOBEX",
+          "valid_from_utc": "2026-03-27T22:00:00+00:00",
+          "valid_to_utc": "2026-03-28T21:00:00+00:00",
+          "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+          "fee_check_id": "fee_check_live_20260327",
+          "margin_check_id": "margin_check_live_20260327",
+          "entitlement_check_id": "entitlement_check_live_20260327",
+          "contract_conformance_check_id": "contract_conformance_live_20260327",
+          "backup_freshness_check_id": "backup_check_live_20260327",
+          "restore_drill_check_id": "restore_drill_check_live_20260327",
+          "clock_health_check_id": "clock_health_live_20260327",
+          "secret_health_check_id": "ops_health_live_20260327",
+          "unresolved_discrepancy_status": "clear",
+          "operating_envelope_check_id": "operating_envelope_live_20260327",
+          "session_eligibility_check_id": "session_eligibility_live_20260327",
+          "session_status": "green",
+          "blocked_check_ids": [],
+          "decision_trace_hash": "session_trace_sha256_027"
+        },
+        "correlation_id": "corr-recovery-live-20260327-001",
+        "operator_reason_bundle": [
+          "watchdog restart entered recovering and replayed the latest verified snapshot"
+        ],
+        "signed_recovery_hash": "recovery_hash_live_20260327_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "RECOVERY_FENCE_RECOVERING_AND_GOVERNED"
+    },
+    {
+      "case_id": "reject_recovery_fence_without_new_entry_block",
+      "payload": {
+        "recovery_run_id": "recovery_run_live_20260327_002",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "trigger_event_id": "opsd_restart_20260327_002",
+        "entered_recovering_state": true,
+        "no_new_entries_asserted": false,
+        "broker_mutations_blocked": true,
+        "broker_positions_reconciled": true,
+        "open_orders_reconciled": true,
+        "order_intent_mappings_repaired": true,
+        "ambiguity_detected": false,
+        "ambiguity_disposition": "none",
+        "snapshot_artifact_id": "snapshot_live_20260327_002",
+        "journal_replay_artifact_id": "journal_replay_live_20260327_002",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_002",
+        "warmup_source": "dataset_release",
+        "warmup_artifact_id": "dataset_release_gold_2026q1_v1",
+        "session_reset_or_material_reconnect": false,
+        "fresh_session_packet": null,
+        "correlation_id": "corr-recovery-live-20260327-002",
+        "operator_reason_bundle": [
+          "restart attempted to resume entries before asserting the recovery fence"
+        ],
+        "signed_recovery_hash": "recovery_hash_live_20260327_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "RECOVERY_FENCE_NO_NEW_ENTRIES_REQUIRED"
+    },
+    {
+      "case_id": "reject_recovery_fence_with_ambiguous_resume",
+      "payload": {
+        "recovery_run_id": "recovery_run_live_20260327_003",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "trigger_event_id": "broker_reconnect_20260327_003",
+        "entered_recovering_state": true,
+        "no_new_entries_asserted": true,
+        "broker_mutations_blocked": true,
+        "broker_positions_reconciled": true,
+        "open_orders_reconciled": true,
+        "order_intent_mappings_repaired": true,
+        "ambiguity_detected": true,
+        "ambiguity_disposition": "none",
+        "snapshot_artifact_id": "snapshot_live_20260327_003",
+        "journal_replay_artifact_id": "journal_replay_live_20260327_003",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_003",
+        "warmup_source": "operational_evidence",
+        "warmup_artifact_id": "warmup_trace_live_20260327_003",
+        "session_reset_or_material_reconnect": false,
+        "fresh_session_packet": null,
+        "correlation_id": "corr-recovery-live-20260327-003",
+        "operator_reason_bundle": [
+          "order-intent replay remained ambiguous after reconnect"
+        ],
+        "signed_recovery_hash": "recovery_hash_live_20260327_003"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "RECOVERY_FENCE_AMBIGUOUS_STATE_REQUIRES_SAFE_DISPOSITION"
+    },
+    {
+      "case_id": "reject_recovery_fence_without_fresh_session_packet_after_reset",
+      "payload": {
+        "recovery_run_id": "recovery_run_live_20260327_004",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "trigger_event_id": "daily_reset_20260327_004",
+        "entered_recovering_state": true,
+        "no_new_entries_asserted": true,
+        "broker_mutations_blocked": true,
+        "broker_positions_reconciled": true,
+        "open_orders_reconciled": true,
+        "order_intent_mappings_repaired": true,
+        "ambiguity_detected": false,
+        "ambiguity_disposition": "none",
+        "snapshot_artifact_id": "snapshot_live_20260327_004",
+        "journal_replay_artifact_id": "journal_replay_live_20260327_004",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_004",
+        "warmup_source": "operational_evidence",
+        "warmup_artifact_id": "warmup_trace_live_20260327_004",
+        "session_reset_or_material_reconnect": true,
+        "fresh_session_packet": null,
+        "correlation_id": "corr-recovery-live-20260327-004",
+        "operator_reason_bundle": [
+          "daily reset occurred but no fresh session packet was issued"
+        ],
+        "signed_recovery_hash": "recovery_hash_live_20260327_004"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "RECOVERY_FENCE_SESSION_PACKET_REQUIRED_AFTER_RESET"
+    }
+  ],
+  "graceful_shutdown_cases": [
+    {
+      "case_id": "allow_graceful_shutdown_with_restart_artifacts",
+      "payload": {
+        "shutdown_record_id": "shutdown_record_live_20260327_001",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "stop_new_entries_asserted": true,
+        "drain_policy": "cancel",
+        "final_snapshot_artifact_id": "final_snapshot_live_20260327_001",
+        "journal_barrier_id": "journal_barrier_live_20260327_001",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_101",
+        "shutdown_reason": "maintenance_restart",
+        "restart_ready": true,
+        "correlation_id": "corr-shutdown-live-20260327-001",
+        "operator_reason_bundle": [
+          "runtime stopped entries and persisted restart-safe artifacts"
+        ],
+        "signed_shutdown_hash": "shutdown_hash_live_20260327_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "GRACEFUL_SHUTDOWN_PERSISTED_FOR_RESTART"
+    },
+    {
+      "case_id": "reject_graceful_shutdown_without_restart_artifacts",
+      "payload": {
+        "shutdown_record_id": "shutdown_record_live_20260327_002",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "stop_new_entries_asserted": true,
+        "drain_policy": "drain",
+        "final_snapshot_artifact_id": "final_snapshot_live_20260327_002",
+        "journal_barrier_id": "journal_barrier_live_20260327_002",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_102",
+        "shutdown_reason": "operator_restart",
+        "restart_ready": false,
+        "correlation_id": "corr-shutdown-live-20260327-002",
+        "operator_reason_bundle": [
+          "restart readiness was claimed before artifact verification completed"
+        ],
+        "signed_shutdown_hash": "shutdown_hash_live_20260327_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "GRACEFUL_SHUTDOWN_RESTART_ARTIFACTS_REQUIRED"
+    }
+  ],
+  "degradation_cases": [
+    {
+      "case_id": "allow_restrict_posture_for_stale_quotes",
+      "payload": {
+        "assessment_id": "degradation_live_20260327_001",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-27_COMEX_GLOBEX",
+        "market_data_fresh": false,
+        "stale_quote_rate_bps": 72,
+        "bar_parity_healthy": true,
+        "connection_healthy": true,
+        "clock_synced": true,
+        "broker_latency_ms": 450,
+        "policy_engine_healthy": true,
+        "intraday_mismatch_above_tolerance": false,
+        "proposed_action": "restrict",
+        "new_entries_blocked": false,
+        "correlation_id": "corr-degradation-live-20260327-001",
+        "operator_reason_bundle": [
+          "stale-quote rate forced a restrict posture pending fresher data"
+        ],
+        "signed_assessment_hash": "degradation_hash_live_20260327_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "DEGRADATION_ACTION_MATCHES_SIGNAL_SEVERITY"
+    },
+    {
+      "case_id": "reject_degradation_mismatch_without_exit_only",
+      "payload": {
+        "assessment_id": "degradation_live_20260327_002",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-27_COMEX_GLOBEX",
+        "market_data_fresh": true,
+        "stale_quote_rate_bps": 5,
+        "bar_parity_healthy": true,
+        "connection_healthy": true,
+        "clock_synced": true,
+        "broker_latency_ms": 200,
+        "policy_engine_healthy": true,
+        "intraday_mismatch_above_tolerance": true,
+        "proposed_action": "restrict",
+        "new_entries_blocked": false,
+        "correlation_id": "corr-degradation-live-20260327-002",
+        "operator_reason_bundle": [
+          "intraday mismatch exceeded tolerance but posture was left too weak"
+        ],
+        "signed_assessment_hash": "degradation_hash_live_20260327_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "DEGRADATION_MISMATCH_REQUIRES_STRONG_ACTION"
+    },
+    {
+      "case_id": "reject_degradation_allow_under_moderate_drift",
+      "payload": {
+        "assessment_id": "degradation_live_20260327_003",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "session_id": "2026-03-27_COMEX_GLOBEX",
+        "market_data_fresh": true,
+        "stale_quote_rate_bps": 61,
+        "bar_parity_healthy": false,
+        "connection_healthy": true,
+        "clock_synced": true,
+        "broker_latency_ms": 850,
+        "policy_engine_healthy": true,
+        "intraday_mismatch_above_tolerance": false,
+        "proposed_action": "allow",
+        "new_entries_blocked": false,
+        "correlation_id": "corr-degradation-live-20260327-003",
+        "operator_reason_bundle": [
+          "parity and stale-quote drift incorrectly left the system in allow posture"
+        ],
+        "signed_assessment_hash": "degradation_hash_live_20260327_003"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "DEGRADATION_MODERATE_SIGNAL_REQUIRES_RESTRICTION"
+    }
+  ],
+  "ledger_close_cases": [
+    {
+      "case_id": "allow_ledger_close_with_reviewed_waiver",
+      "payload": {
+        "ledger_close_id": "ledger_close_live_20260327_001",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "ledger_close_date": "2026-03-27",
+        "authoritative_statement_set_id": "ibkr_statement_set_20260327_001",
+        "as_booked_pnl": 482.25,
+        "as_reconciled_pnl": 479.75,
+        "discrepancy_summary_ids": ["commission_rounding_20260327_001"],
+        "discrepancy_above_tolerance": true,
+        "reviewed_or_waived": true,
+        "review_or_waiver_id": "waiver_live_ledger_20260327_001",
+        "next_session_eligibility": "eligible",
+        "cash_movements_reconciled": true,
+        "commissions_reconciled": true,
+        "margin_reconciled": true,
+        "correlation_id": "corr-ledger-close-live-20260327-001",
+        "operator_reason_bundle": [
+          "authoritative statement discrepancy was reviewed and waived before next session"
+        ],
+        "signed_ledger_hash": "ledger_hash_live_20260327_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "LEDGER_CLOSE_ELIGIBILITY_GOVERNED"
+    },
+    {
+      "case_id": "reject_ledger_close_with_unreviewed_tolerance_breach",
+      "payload": {
+        "ledger_close_id": "ledger_close_live_20260327_002",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "ledger_close_date": "2026-03-27",
+        "authoritative_statement_set_id": "ibkr_statement_set_20260327_002",
+        "as_booked_pnl": 482.25,
+        "as_reconciled_pnl": 410.00,
+        "discrepancy_summary_ids": ["statement_gap_20260327_002"],
+        "discrepancy_above_tolerance": true,
+        "reviewed_or_waived": false,
+        "review_or_waiver_id": null,
+        "next_session_eligibility": "eligible",
+        "cash_movements_reconciled": true,
+        "commissions_reconciled": true,
+        "margin_reconciled": true,
+        "correlation_id": "corr-ledger-close-live-20260327-002",
+        "operator_reason_bundle": [
+          "next session was left eligible before the discrepancy was reviewed"
+        ],
+        "signed_ledger_hash": "ledger_hash_live_20260327_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "LEDGER_CLOSE_REVIEW_OR_WAIVER_REQUIRED"
+    }
+  ],
+  "restore_drill_cases": [
+    {
+      "case_id": "allow_restore_drill_with_clean_reconciliation",
+      "payload": {
+        "restore_drill_id": "restore_drill_live_20260327_001",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "backup_artifact_id": "backup_checkpoint_live_20260327_001",
+        "snapshot_artifact_id": "snapshot_live_20260327_101",
+        "journal_barrier_id": "journal_barrier_live_20260327_101",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_201",
+        "off_host_recoverable": true,
+        "digest_chain_verified": true,
+        "restored_to_clean_host": true,
+        "entered_recovering_state": true,
+        "broker_reconciliation_clean": true,
+        "reviewed_waiver_id": null,
+        "rpo_target_minutes": 30,
+        "achieved_rpo_minutes": 12,
+        "rto_target_minutes": 60,
+        "achieved_rto_minutes": 41,
+        "dashboard_visible": true,
+        "correlation_id": "corr-restore-live-20260327-001",
+        "operator_reason_bundle": [
+          "restore drill rebuilt to a clean host and re-entered recovering within target"
+        ],
+        "signed_restore_hash": "restore_hash_live_20260327_001"
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "RESTORE_DRILL_RECOVERABLE_AND_GOVERNED"
+    },
+    {
+      "case_id": "reject_restore_drill_without_off_host_recovery",
+      "payload": {
+        "restore_drill_id": "restore_drill_live_20260327_002",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "backup_artifact_id": "backup_checkpoint_live_20260327_002",
+        "snapshot_artifact_id": "snapshot_live_20260327_102",
+        "journal_barrier_id": "journal_barrier_live_20260327_102",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_202",
+        "off_host_recoverable": false,
+        "digest_chain_verified": true,
+        "restored_to_clean_host": true,
+        "entered_recovering_state": true,
+        "broker_reconciliation_clean": true,
+        "reviewed_waiver_id": null,
+        "rpo_target_minutes": 30,
+        "achieved_rpo_minutes": 10,
+        "rto_target_minutes": 60,
+        "achieved_rto_minutes": 39,
+        "dashboard_visible": true,
+        "correlation_id": "corr-restore-live-20260327-002",
+        "operator_reason_bundle": [
+          "restore drill relied on same-host backup material"
+        ],
+        "signed_restore_hash": "restore_hash_live_20260327_002"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "RESTORE_DRILL_OFF_HOST_RECOVERY_REQUIRED"
+    },
+    {
+      "case_id": "reject_restore_drill_with_dirty_reconciliation_and_no_waiver",
+      "payload": {
+        "restore_drill_id": "restore_drill_live_20260327_003",
+        "deployment_instance_id": "deployment_gold_live_v1",
+        "backup_artifact_id": "backup_checkpoint_live_20260327_003",
+        "snapshot_artifact_id": "snapshot_live_20260327_103",
+        "journal_barrier_id": "journal_barrier_live_20260327_103",
+        "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_203",
+        "off_host_recoverable": true,
+        "digest_chain_verified": true,
+        "restored_to_clean_host": true,
+        "entered_recovering_state": true,
+        "broker_reconciliation_clean": false,
+        "reviewed_waiver_id": null,
+        "rpo_target_minutes": 30,
+        "achieved_rpo_minutes": 14,
+        "rto_target_minutes": 60,
+        "achieved_rto_minutes": 48,
+        "dashboard_visible": true,
+        "correlation_id": "corr-restore-live-20260327-003",
+        "operator_reason_bundle": [
+          "restore drill ended with a dirty broker reconciliation and no waiver"
+        ],
+        "signed_restore_hash": "restore_hash_live_20260327_003"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "RESTORE_DRILL_RECONCILIATION_REVIEW_REQUIRED"
+    }
+  ]
+}
