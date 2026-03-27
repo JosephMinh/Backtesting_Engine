@@ -133,6 +133,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("execution_symbol_portability_and_native_validation", surface_ids)
         self.assertIn("fast_screening_governance", surface_ids)
         self.assertIn("family_preregistration_and_budget_governance", surface_ids)
+        self.assertIn("notebook_quarantine_and_admissible_evidence_boundary", surface_ids)
         self.assertIn("strategy_contracts_and_canonical_signal_kernel", surface_ids)
         self.assertIn("baseline_risk_controls_and_waiver_defaults", surface_ids)
         self.assertIn("operating_envelope_and_session_conditioned_risk_profiles", surface_ids)

@@ -1,0 +1,235 @@
+{
+  "cases": [
+    {
+      "case_id": "selection_bundle_quarantines_notebook_context",
+      "request": {
+        "evaluation_id": "nbq-001",
+        "family_id": "gold_breakout",
+        "evidence_sources": [
+          {
+            "source_id": "notebook-summary",
+            "source_kind": "notebook_output",
+            "usage": "selection",
+            "counts_toward_gate": false,
+            "canonical_reference_id": "notebooks/gold_breakout.ipynb"
+          },
+          {
+            "source_id": "run-001",
+            "source_kind": "reproducible_batch_run",
+            "usage": "selection",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "run-001",
+            "reference_artifact_id": "research_run",
+            "research_run_id": "run-001",
+            "research_admissibility_class": "execution_calibration_admissible"
+          }
+        ]
+      },
+      "expected": {
+        "status": "pass",
+        "selection_admissible": true,
+        "promotion_admissible": false,
+        "quarantined_source_ids": [
+          "notebook-summary"
+        ],
+        "admissible_source_ids": [
+          "run-001"
+        ],
+        "rejected_source_ids": [],
+        "covered_decision_record_ids": [],
+        "missing_decision_record_ids": [],
+        "failing_reason_codes": []
+      }
+    },
+    {
+      "case_id": "notebook_only_selection_evidence_rejected",
+      "request": {
+        "evaluation_id": "nbq-002",
+        "family_id": "gold_breakout",
+        "evidence_sources": [
+          {
+            "source_id": "notebook-only",
+            "source_kind": "notebook_output",
+            "usage": "selection",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "notebooks/gold_breakout.ipynb"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "selection_admissible": false,
+        "promotion_admissible": false,
+        "quarantined_source_ids": [
+          "notebook-only"
+        ],
+        "admissible_source_ids": [],
+        "rejected_source_ids": [
+          "notebook-only"
+        ],
+        "covered_decision_record_ids": [],
+        "missing_decision_record_ids": [],
+        "failing_reason_codes": [
+          "NOTEBOOK_QUARANTINE_MISSING_ADMISSIBLE_GATE_EVIDENCE",
+          "NOTEBOOK_QUARANTINE_DISALLOWED_GATE_SOURCE"
+        ]
+      }
+    },
+    {
+      "case_id": "diagnostic_batch_run_cannot_count_toward_gate",
+      "request": {
+        "evaluation_id": "nbq-003",
+        "family_id": "gold_breakout",
+        "evidence_sources": [
+          {
+            "source_id": "run-diag",
+            "source_kind": "reproducible_batch_run",
+            "usage": "selection",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "run-diag",
+            "reference_artifact_id": "research_run",
+            "research_run_id": "run-diag",
+            "research_admissibility_class": "diagnostic_only"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "selection_admissible": false,
+        "promotion_admissible": false,
+        "quarantined_source_ids": [],
+        "admissible_source_ids": [],
+        "rejected_source_ids": [
+          "run-diag"
+        ],
+        "covered_decision_record_ids": [],
+        "missing_decision_record_ids": [],
+        "failing_reason_codes": [
+          "NOTEBOOK_QUARANTINE_MISSING_ADMISSIBLE_GATE_EVIDENCE",
+          "NOTEBOOK_QUARANTINE_BATCH_RUN_NOT_GATE_ADMISSIBLE"
+        ]
+      }
+    },
+    {
+      "case_id": "policy_report_with_decision_record_supports_promotion",
+      "request": {
+        "evaluation_id": "nbq-004",
+        "family_id": "gold_breakout",
+        "required_decision_record_ids": [
+          "decision-001"
+        ],
+        "evidence_sources": [
+          {
+            "source_id": "decision-report",
+            "source_kind": "policy_evaluated_report",
+            "usage": "promotion",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "decision-001",
+            "reference_artifact_id": "family_decision_record",
+            "family_decision_record_id": "decision-001"
+          },
+          {
+            "source_id": "notebook-explainer",
+            "source_kind": "notebook_output",
+            "usage": "promotion",
+            "counts_toward_gate": false,
+            "canonical_reference_id": "notebooks/gold_breakout.ipynb"
+          }
+        ]
+      },
+      "expected": {
+        "status": "pass",
+        "selection_admissible": false,
+        "promotion_admissible": true,
+        "quarantined_source_ids": [
+          "notebook-explainer"
+        ],
+        "admissible_source_ids": [
+          "decision-report"
+        ],
+        "rejected_source_ids": [],
+        "covered_decision_record_ids": [
+          "decision-001"
+        ],
+        "missing_decision_record_ids": [],
+        "failing_reason_codes": []
+      }
+    },
+    {
+      "case_id": "notebook_derived_policy_report_is_rejected",
+      "request": {
+        "evaluation_id": "nbq-005",
+        "family_id": "gold_breakout",
+        "evidence_sources": [
+          {
+            "source_id": "policy-report",
+            "source_kind": "policy_evaluated_report",
+            "usage": "promotion",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "decision-002",
+            "reference_artifact_id": "family_decision_record",
+            "family_decision_record_id": "decision-002",
+            "produced_by_notebook": true
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "selection_admissible": false,
+        "promotion_admissible": false,
+        "quarantined_source_ids": [
+          "policy-report"
+        ],
+        "admissible_source_ids": [],
+        "rejected_source_ids": [
+          "policy-report"
+        ],
+        "covered_decision_record_ids": [
+          "decision-002"
+        ],
+        "missing_decision_record_ids": [],
+        "failing_reason_codes": [
+          "NOTEBOOK_QUARANTINE_MISSING_ADMISSIBLE_GATE_EVIDENCE",
+          "NOTEBOOK_QUARANTINE_NOTEBOOK_DERIVATION_FORBIDDEN"
+        ]
+      }
+    },
+    {
+      "case_id": "required_decision_record_must_be_covered",
+      "request": {
+        "evaluation_id": "nbq-006",
+        "family_id": "gold_breakout",
+        "required_decision_record_ids": [
+          "decision-required"
+        ],
+        "evidence_sources": [
+          {
+            "source_id": "release-001",
+            "source_kind": "certified_release",
+            "usage": "promotion",
+            "counts_toward_gate": true,
+            "canonical_reference_id": "dataset_release_v1",
+            "reference_artifact_id": "dataset_release"
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "selection_admissible": false,
+        "promotion_admissible": true,
+        "quarantined_source_ids": [],
+        "admissible_source_ids": [
+          "release-001"
+        ],
+        "rejected_source_ids": [],
+        "covered_decision_record_ids": [],
+        "missing_decision_record_ids": [
+          "decision-required"
+        ],
+        "failing_reason_codes": [
+          "NOTEBOOK_QUARANTINE_MISSING_REQUIRED_DECISION_RECORD"
+        ]
+      }
+    }
+  ]
+}

@@ -829,6 +829,45 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
 
+    def test_bead_65_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.6.5" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("research_governance_and_selection", matching[0].surface_id)
+        self.assertEqual(("phase_4", "phase_5"), matching[0].phase_gates)
+
+    def test_bead_65_uses_research_governance_verification_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "research_governance_and_selection"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual((VerificationClass.GOLDEN_PATH,), profile.golden_path)
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(
+            ArtifactRequirement.STRUCTURED_LOGS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
     def test_bead_57_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile

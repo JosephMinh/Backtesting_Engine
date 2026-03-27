@@ -355,6 +355,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="notebook_quarantine_and_admissible_evidence_boundary",
+        module="shared.policy.notebook_quarantine",
+        source_path="shared/policy/notebook_quarantine.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.6",
+        purpose=(
+            "Notebook quarantine, admissible evidence classification, and leakage "
+            "prevention for selection and promotion gates"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="strategy_contracts_and_canonical_signal_kernel",
         module="shared.policy.strategy_contract",
         source_path="shared/policy/strategy_contract.py",

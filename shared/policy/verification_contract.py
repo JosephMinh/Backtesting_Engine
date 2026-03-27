@@ -1001,6 +1001,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         related_beads=(
             "backtesting_engine-ltc.6.1",
             "backtesting_engine-ltc.6.2",
+            "backtesting_engine-ltc.6.5",
             "backtesting_engine-ltc.6.6",
             "backtesting_engine-ltc.6.7",
         ),
