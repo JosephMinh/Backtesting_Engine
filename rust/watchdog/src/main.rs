@@ -3,15 +3,16 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use backtesting_engine_watchdog::{
-    evaluate_clock_health, execute_migration, sample_activation_preflight_inputs,
-    sample_clock_health_observation, sample_migration_request, sample_restore_request,
-    sample_secret_health_observation, verify_restore_execution,
-    write_activation_preflight_artifacts, write_clock_health_artifacts, write_migration_artifacts,
-    write_restore_artifacts, write_secret_health_artifacts,
+    evaluate_clock_health, evaluate_supervision_bundle, execute_migration,
+    sample_activation_preflight_inputs, sample_clock_health_observation, sample_migration_request,
+    sample_restore_request, sample_secret_health_observation, sample_supervision_bundle,
+    verify_restore_execution, write_activation_preflight_artifacts, write_clock_health_artifacts,
+    write_migration_artifacts, write_restore_artifacts, write_secret_health_artifacts,
+    write_supervision_artifacts,
 };
 
 fn usage() -> &'static str {
-    "usage: cargo run -p backtesting-engine-watchdog -- <restore-drill|execute-migration|clock-health|secret-health|activation-preflight> <scenario> --artifact-dir <dir>"
+    "usage: cargo run -p backtesting-engine-watchdog -- <restore-drill|execute-migration|clock-health|secret-health|activation-preflight|supervision-drill> <scenario> --artifact-dir <dir>"
 }
 
 fn parse_artifact_dir(args: &[String]) -> Result<PathBuf, String> {
@@ -117,6 +118,25 @@ fn run(args: &[String]) -> Result<(), String> {
             println!("failed_check_count={}", summary.failed_check_ids.len());
             println!("warning_check_count={}", summary.warning_check_ids.len());
             println!("operator_summary={}", summary.operator_summary);
+            Ok(())
+        }
+        ("supervision-drill", scenario) => {
+            let bundle = sample_supervision_bundle(scenario)
+                .ok_or_else(|| format!("unknown supervision-drill scenario: {scenario}"))?;
+            let report = evaluate_supervision_bundle(&bundle);
+            write_supervision_artifacts(&artifact_dir, &bundle, &report)
+                .map_err(|err| format!("failed to write supervision artifacts: {err}"))?;
+            println!("command=supervision-drill");
+            println!("scenario={scenario}");
+            println!("artifact_dir={}", artifact_dir.display());
+            println!("state={}", report.state.as_str());
+            println!("reason_code={}", report.reason_code);
+            println!("restarted_target_count={}", report.restarted_targets.len());
+            println!(
+                "quarantined_target_count={}",
+                report.quarantined_targets.len()
+            );
+            println!("operator_summary={}", report.operator_summary);
             Ok(())
         }
         _ => Err(usage().to_string()),
