@@ -99,6 +99,7 @@ class RustRuntimeFailureDrillsSmokeTest(unittest.TestCase):
             "blocked",
             readiness_block["output_fields"]["blocked_status"],
         )
+        self.assertNotIn("clock-check-001", readiness_block["retained_artifact_ids"])
 
         duplicate_control = report_map["opsd_duplicate_order_control_dedupes_and_withdraws"]
         self.assertEqual(
@@ -109,6 +110,10 @@ class RustRuntimeFailureDrillsSmokeTest(unittest.TestCase):
             "true",
             duplicate_control["output_fields"]["duplicate_callback_deduplicated"],
         )
+        self.assertNotIn(
+            "paper-gold-1:120:broker:flat:cancel_open_orders",
+            duplicate_control["retained_artifact_ids"],
+        )
 
         reconciliation_block = report_map[
             "opsd_authoritative_reconciliation_blocks_next_session"
@@ -116,6 +121,10 @@ class RustRuntimeFailureDrillsSmokeTest(unittest.TestCase):
         self.assertEqual("blocked", reconciliation_block["output_fields"]["next_session_eligibility"])
         self.assertIn(
             "authoritative-ledger-close-0001",
+            reconciliation_block["retained_artifact_ids"],
+        )
+        self.assertNotIn(
+            "statement-set-2026-03-18",
             reconciliation_block["retained_artifact_ids"],
         )
 

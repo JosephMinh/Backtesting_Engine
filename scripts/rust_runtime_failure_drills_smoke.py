@@ -146,10 +146,16 @@ def _list_artifacts(root: Path) -> list[str]:
     )
 
 
-def _semantic_ids(parsed: dict[str, str]) -> list[str]:
+def _retained_artifact_tokens(parsed: dict[str, str]) -> list[str]:
     values: list[str] = []
     for key, raw_value in parsed.items():
         if not raw_value:
+            continue
+        if not (
+            "artifact" in key
+            or key.endswith("manifest_id")
+            or key.endswith("manifest_ids")
+        ):
             continue
         if key.endswith("_id") or key.endswith("_ids"):
             parts = [item.strip() for item in raw_value.split(",") if item.strip()]
@@ -196,7 +202,7 @@ def _execute_case(
         {
             str(case_dir / "stdout.txt"),
             *(_list_artifacts(command_artifact_dir)),
-            *(_semantic_ids(actual)),
+            *(_retained_artifact_tokens(actual)),
         }
     )
     summary_key = str(case.get("summary_key", ""))
