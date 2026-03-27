@@ -1,0 +1,54 @@
+{
+  "scenario_cases": [
+    {
+      "scenario": "green-verified-restart",
+      "expected": {
+        "shutdown_status": "restart_ready",
+        "safe_restart_ready": "true",
+        "recovery_status": "resume_tradeable",
+        "allow_new_entries": "true",
+        "exit_only": "false",
+        "warmup_source": "snapshot_seed"
+      }
+    },
+    {
+      "scenario": "warmup-journal-hold",
+      "expected": {
+        "shutdown_status": "restart_ready",
+        "recovery_status": "recovering",
+        "allow_new_entries": "false",
+        "exit_only": "false",
+        "warmup_source": "journal_replay",
+        "recovery_reason_code": "RECOVERY_LOCAL_STATE_RESTORE_REQUIRED"
+      }
+    },
+    {
+      "scenario": "restart-while-holding-exit-only",
+      "expected": {
+        "shutdown_status": "restart_ready",
+        "recovery_status": "resume_exit_only",
+        "allow_new_entries": "false",
+        "exit_only": "true",
+        "recovery_reason_code": "RECOVERY_RESTART_WHILE_HOLDING_EXIT_ONLY"
+      }
+    },
+    {
+      "scenario": "daily-reset-readiness-blocked",
+      "expected": {
+        "shutdown_status": "restart_ready",
+        "recovery_status": "recovering",
+        "allow_new_entries": "false",
+        "recovery_reason_code": "RECOVERY_DAILY_RESET_PENDING"
+      }
+    },
+    {
+      "scenario": "ambiguous-journal-halt",
+      "expected": {
+        "shutdown_status": "restart_ready",
+        "recovery_status": "halted",
+        "allow_new_entries": "false",
+        "recovery_reason_code": "RECOVERY_AMBIGUITY_JOURNAL_GAP"
+      }
+    }
+  ]
+}
