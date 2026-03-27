@@ -1,0 +1,112 @@
+{
+  "defaults": {
+    "continuation_review_id": "continuation_review_gold_v1",
+    "continuation_review_approved": true,
+    "residual_limitations_register_id": "residual_limitations_register_v1",
+    "residual_limitations_digest": "sha256:residual_limitations_gold_v1",
+    "requested_rule_ids": [
+      "second_broker",
+      "live_premium_feed",
+      "kubernetes_orchestration",
+      "depth_driven_live_alpha",
+      "multiple_active_live_bundles"
+    ],
+    "review_artifact_id": "artifact_continuation_review_gold_v1",
+    "operator_notes": [
+      "Deferred anti-scope items stay deferred until continuation review approves them.",
+      "Every approved post-v1 upgrade must remain evidence-backed rather than roadmap-default."
+    ],
+    "rule_evidence": [
+      {
+        "rule_id": "second_broker",
+        "evidence_ids": [
+          "artifact_broker_bottleneck_v1"
+        ],
+        "satisfied_requirement_ids": [
+          "broker_bottleneck_proven"
+        ],
+        "trigger_summary": "Live broker latency and operational friction prove the first broker lane is the bottleneck.",
+        "approval_scope": "Allow a second live broker lane only after continuation review."
+      },
+      {
+        "rule_id": "live_premium_feed",
+        "evidence_ids": [
+          "artifact_feed_insufficiency_v1"
+        ],
+        "satisfied_requirement_ids": [
+          "feed_insufficiency_proven"
+        ],
+        "trigger_summary": "Parity and live diagnostics show the existing feed is insufficient.",
+        "approval_scope": "Allow a second live market-data feed only after continuation review."
+      },
+      {
+        "rule_id": "kubernetes_orchestration",
+        "evidence_ids": [
+          "artifact_one_host_slo_failure_v1"
+        ],
+        "satisfied_requirement_ids": [
+          "one_host_slo_failure_proven"
+        ],
+        "trigger_summary": "One-host topology fails live SLOs for infrastructure reasons.",
+        "approval_scope": "Allow multi-host infrastructure only after continuation review."
+      },
+      {
+        "rule_id": "depth_driven_live_alpha",
+        "evidence_ids": [
+          "artifact_live_stack_redesign_v1"
+        ],
+        "satisfied_requirement_ids": [
+          "live_stack_redesign_approved"
+        ],
+        "trigger_summary": "The live stack redesign needed for depth-aware or sub-minute strategies is explicitly approved.",
+        "approval_scope": "Allow sub-minute or depth-aware strategies only after continuation review."
+      },
+      {
+        "rule_id": "multiple_active_live_bundles",
+        "evidence_ids": [
+          "artifact_single_bundle_stability_v1",
+          "artifact_economic_justification_v1"
+        ],
+        "satisfied_requirement_ids": [
+          "single_bundle_stability_proven",
+          "economic_justification_proven"
+        ],
+        "trigger_summary": "One-bundle live operation is stable and economically justified for controlled expansion.",
+        "approval_scope": "Allow multiple active live bundles only after continuation review."
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "approve_all_post_v1_expansion_rules",
+      "expected": {
+        "status": "pass",
+        "reason_code": "EXPANSION_RULES_APPROVED"
+      }
+    },
+    {
+      "case_id": "block_without_continuation_review",
+      "payload_overrides": {
+        "continuation_review_approved": false
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "EXPANSION_RULES_REQUIRE_MEASURED_EVIDENCE"
+      }
+    },
+    {
+      "case_id": "block_multiple_bundles_without_economic_justification",
+      "evidence_mutations": {
+        "multiple_active_live_bundles": {
+          "satisfied_requirement_ids": [
+            "single_bundle_stability_proven"
+          ]
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "EXPANSION_RULES_REQUIRE_MEASURED_EVIDENCE"
+      }
+    }
+  ]
+}

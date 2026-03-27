@@ -36,7 +36,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | `phase_6` | candidate freeze and certification, strategy contracts and canonical signal kernels, lifecycle state machines and compatibility domains |
 | `phase_7` | paper runtime and operational evidence, operational runtime supervision and deterministic state ownership, baseline risk controls and waiver defaults, operating-envelope and session-conditioned risk profiles, lifecycle state machines and compatibility domains |
 | `phase_8` | live-readiness and resilience, lifecycle state machines and compatibility domains |
-| `phase_9` | program closure and continuation |
+| `phase_9` | Phase 9 continuation-review and scope-governance gate, program closure and continuation |
 
 ## Critical Surface Matrix
 
@@ -48,6 +48,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Plane boundaries and shared contracts | `backtesting_engine-ltc.2.1` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Phase 1 raw archive and bitemporal reference gate | `backtesting_engine-ltc.9.2` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Phase 2 validation and release-pipeline gate | `backtesting_engine-ltc.9.3` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
+| Phase 9 continuation-review and scope-governance gate | `backtesting_engine-ltc.9.11` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Data/reference and release pipeline | `backtesting_engine-ltc.3.1`, `3.4`, `3.8`, `3.9`, `3.10`, `3.11` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Execution-lane vertical slice | `backtesting_engine-ltc.1.5`, `4.3`, `11.9` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Operational runtime supervision and deterministic state ownership | `backtesting_engine-ltc.7.9` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
@@ -68,7 +69,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Paper runtime and operational evidence | `backtesting_engine-ltc.7.7`, `7.8`, `7.10`, `backtesting_engine-tox` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path`, `replay_certification` |
 | Operator observability and response targets | `backtesting_engine-ltc.8.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Live-readiness and resilience | `backtesting_engine-ltc.8.1`, `8.3`, `8.5`, `backtesting_engine-w81` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path`, `replay_certification` |
-| Program closure and continuation | `backtesting_engine-ltc.10.1`, `10.2`, `10.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Program closure and continuation | `backtesting_engine-ltc.10.1`, `10.2`, `10.3`, `10.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 
 ## Required Retained Artifacts
 

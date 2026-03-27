@@ -764,6 +764,22 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="phase_9_continuation_review_and_scope_governance_gate",
+        title="Phase 9 continuation-review and scope-governance gate",
+        related_beads=("backtesting_engine-ltc.9.11",),
+        phase_gates=("phase_9",),
+        fixture_sources=(
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.BROKER_SESSION_RECORDING,
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+        ),
+        golden_path=(
+            VerificationClass.GOLDEN_PATH,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="time_discipline_and_session_clocks",
         title="Time discipline, session clocks, and skew policy",
         related_beads=("backtesting_engine-ltc.2.5",),
@@ -1130,6 +1146,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         related_beads=(
             "backtesting_engine-ltc.10.1",
             "backtesting_engine-ltc.10.2",
+            "backtesting_engine-ltc.10.3",
             "backtesting_engine-ltc.10.4",
         ),
         phase_gates=("phase_9",),
