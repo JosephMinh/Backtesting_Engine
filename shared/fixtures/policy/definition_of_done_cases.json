@@ -1,0 +1,221 @@
+{
+  "defaults": {
+    "satisfied_phase_gates": [
+      "phase_0",
+      "phase_1",
+      "phase_2",
+      "phase_2_5",
+      "phase_3",
+      "phase_4",
+      "phase_5",
+      "phase_6",
+      "phase_7",
+      "phase_8",
+      "phase_9"
+    ],
+    "downstream_of_phase_and_resilience_graph": true,
+    "final_candidate_outcome": "live_canary_approved",
+    "review_artifact_id": "definition_of_done_review_bundle",
+    "operator_notes": [
+      "Definition-of-done review uses retained artifacts only."
+    ],
+    "checklist_evidence": [
+      {
+        "item_id": "certified_release_publication",
+        "summary": "Certified releases govern data and analytic publication.",
+        "local_check_artifact_ids": ["done_local_certified_release_publication"],
+        "golden_path_artifact_ids": ["done_golden_certified_release_publication"],
+        "failure_path_artifact_ids": ["done_failure_certified_release_publication"],
+        "structured_log_ids": ["done_log_certified_release_publication"],
+        "artifact_bundle_ids": ["done_bundle_certified_release_publication"]
+      },
+      {
+        "item_id": "point_in_time_enforcement",
+        "summary": "Observation cutoffs and resolved-context bundles enforce point-in-time behavior.",
+        "local_check_artifact_ids": ["done_local_point_in_time_enforcement"],
+        "golden_path_artifact_ids": ["done_golden_point_in_time_enforcement"],
+        "failure_path_artifact_ids": ["done_failure_point_in_time_enforcement"],
+        "structured_log_ids": ["done_log_point_in_time_enforcement"],
+        "artifact_bundle_ids": ["done_bundle_point_in_time_enforcement"]
+      },
+      {
+        "item_id": "research_funnel_auditability",
+        "summary": "Research runs and family decisions remain queryable and auditable.",
+        "local_check_artifact_ids": ["done_local_research_funnel_auditability"],
+        "golden_path_artifact_ids": ["done_golden_research_funnel_auditability"],
+        "failure_path_artifact_ids": ["done_failure_research_funnel_auditability"],
+        "structured_log_ids": ["done_log_research_funnel_auditability"],
+        "artifact_bundle_ids": ["done_bundle_research_funnel_auditability"]
+      },
+      {
+        "item_id": "execution_lane_viability_decision",
+        "summary": "The 1OZ execution-lane viability gate is passed or a pivot is documented.",
+        "local_check_artifact_ids": ["done_local_execution_lane_viability_decision"],
+        "golden_path_artifact_ids": ["done_golden_execution_lane_viability_decision"],
+        "failure_path_artifact_ids": ["done_failure_execution_lane_viability_decision"],
+        "structured_log_ids": ["done_log_execution_lane_viability_decision"],
+        "artifact_bundle_ids": ["done_bundle_execution_lane_viability_decision"]
+      },
+      {
+        "item_id": "family_protocol_without_adhoc_evidence",
+        "summary": "A strategy family can move through the protocol without ad-hoc evidence.",
+        "local_check_artifact_ids": ["done_local_family_protocol_without_adhoc_evidence"],
+        "golden_path_artifact_ids": ["done_golden_family_protocol_without_adhoc_evidence"],
+        "failure_path_artifact_ids": ["done_failure_family_protocol_without_adhoc_evidence"],
+        "structured_log_ids": ["done_log_family_protocol_without_adhoc_evidence"],
+        "artifact_bundle_ids": ["done_bundle_family_protocol_without_adhoc_evidence"]
+      },
+      {
+        "item_id": "frozen_candidate_immutability_and_binding",
+        "summary": "Frozen candidates remain immutable and bind only through readiness and promotion packets.",
+        "local_check_artifact_ids": ["done_local_frozen_candidate_immutability_and_binding"],
+        "golden_path_artifact_ids": ["done_golden_frozen_candidate_immutability_and_binding"],
+        "failure_path_artifact_ids": ["done_failure_frozen_candidate_immutability_and_binding"],
+        "structured_log_ids": ["done_log_frozen_candidate_immutability_and_binding"],
+        "artifact_bundle_ids": ["done_bundle_frozen_candidate_immutability_and_binding"]
+      },
+      {
+        "item_id": "portability_and_tradability_certified",
+        "summary": "Portability and tradability are studied instead of assumed.",
+        "local_check_artifact_ids": ["done_local_portability_and_tradability_certified"],
+        "golden_path_artifact_ids": ["done_golden_portability_and_tradability_certified"],
+        "failure_path_artifact_ids": ["done_failure_portability_and_tradability_certified"],
+        "structured_log_ids": ["done_log_portability_and_tradability_certified"],
+        "artifact_bundle_ids": ["done_bundle_portability_and_tradability_certified"]
+      },
+      {
+        "item_id": "native_1oz_validation_requirement",
+        "summary": "Native 1OZ validation is required once enough history exists.",
+        "local_check_artifact_ids": ["done_local_native_1oz_validation_requirement"],
+        "golden_path_artifact_ids": ["done_golden_native_1oz_validation_requirement"],
+        "failure_path_artifact_ids": ["done_failure_native_1oz_validation_requirement"],
+        "structured_log_ids": ["done_log_native_1oz_validation_requirement"],
+        "artifact_bundle_ids": ["done_bundle_native_1oz_validation_requirement"]
+      },
+      {
+        "item_id": "research_live_parity_certified",
+        "summary": "Research/live parity is certified through deterministic replay and the shared signal kernel.",
+        "local_check_artifact_ids": ["done_local_research_live_parity_certified"],
+        "golden_path_artifact_ids": ["done_golden_research_live_parity_certified"],
+        "failure_path_artifact_ids": ["done_failure_research_live_parity_certified"],
+        "structured_log_ids": ["done_log_research_live_parity_certified"],
+        "artifact_bundle_ids": ["done_bundle_research_live_parity_certified"]
+      },
+      {
+        "item_id": "paper_and_shadow_live_end_to_end",
+        "summary": "Paper and shadow-live deployments run end to end with reconciliation and evidence capture.",
+        "local_check_artifact_ids": ["done_local_paper_and_shadow_live_end_to_end"],
+        "golden_path_artifact_ids": ["done_golden_paper_and_shadow_live_end_to_end"],
+        "failure_path_artifact_ids": ["done_failure_paper_and_shadow_live_end_to_end"],
+        "structured_log_ids": ["done_log_paper_and_shadow_live_end_to_end"],
+        "artifact_bundle_ids": ["done_bundle_paper_and_shadow_live_end_to_end"]
+      },
+      {
+        "item_id": "green_session_readiness_and_conformance",
+        "summary": "Each tradeable session is gated by a green packet and contract-conformance checks.",
+        "local_check_artifact_ids": ["done_local_green_session_readiness_and_conformance"],
+        "golden_path_artifact_ids": ["done_golden_green_session_readiness_and_conformance"],
+        "failure_path_artifact_ids": ["done_failure_green_session_readiness_and_conformance"],
+        "structured_log_ids": ["done_log_green_session_readiness_and_conformance"],
+        "artifact_bundle_ids": ["done_bundle_green_session_readiness_and_conformance"]
+      },
+      {
+        "item_id": "intraday_controls_and_emergency_workflows",
+        "summary": "Intraday controls, reconciliation, kill switch, and emergency workflows function correctly.",
+        "local_check_artifact_ids": ["done_local_intraday_controls_and_emergency_workflows"],
+        "golden_path_artifact_ids": ["done_golden_intraday_controls_and_emergency_workflows"],
+        "failure_path_artifact_ids": ["done_failure_intraday_controls_and_emergency_workflows"],
+        "structured_log_ids": ["done_log_intraday_controls_and_emergency_workflows"],
+        "artifact_bundle_ids": ["done_bundle_intraday_controls_and_emergency_workflows"]
+      },
+      {
+        "item_id": "end_of_day_statement_next_session_gate",
+        "summary": "End-of-day broker statements gate next-session eligibility.",
+        "local_check_artifact_ids": ["done_local_end_of_day_statement_next_session_gate"],
+        "golden_path_artifact_ids": ["done_golden_end_of_day_statement_next_session_gate"],
+        "failure_path_artifact_ids": ["done_failure_end_of_day_statement_next_session_gate"],
+        "structured_log_ids": ["done_log_end_of_day_statement_next_session_gate"],
+        "artifact_bundle_ids": ["done_bundle_end_of_day_statement_next_session_gate"]
+      },
+      {
+        "item_id": "order_idempotency_and_safe_ambiguity",
+        "summary": "Order operations remain idempotent and ambiguous recovery defaults safely.",
+        "local_check_artifact_ids": ["done_local_order_idempotency_and_safe_ambiguity"],
+        "golden_path_artifact_ids": ["done_golden_order_idempotency_and_safe_ambiguity"],
+        "failure_path_artifact_ids": ["done_failure_order_idempotency_and_safe_ambiguity"],
+        "structured_log_ids": ["done_log_order_idempotency_and_safe_ambiguity"],
+        "artifact_bundle_ids": ["done_bundle_order_idempotency_and_safe_ambiguity"]
+      },
+      {
+        "item_id": "backup_restore_and_migration_success",
+        "summary": "Backup, restore, journal verification, and migrations succeed against the live-capable stack.",
+        "local_check_artifact_ids": ["done_local_backup_restore_and_migration_success"],
+        "golden_path_artifact_ids": ["done_golden_backup_restore_and_migration_success"],
+        "failure_path_artifact_ids": ["done_failure_backup_restore_and_migration_success"],
+        "structured_log_ids": ["done_log_backup_restore_and_migration_success"],
+        "artifact_bundle_ids": ["done_bundle_backup_restore_and_migration_success"]
+      },
+      {
+        "item_id": "operational_controls_observable",
+        "summary": "Clocks, secret delivery, break-glass, alerting, and response targets are enforced and observable.",
+        "local_check_artifact_ids": ["done_local_operational_controls_observable"],
+        "golden_path_artifact_ids": ["done_golden_operational_controls_observable"],
+        "failure_path_artifact_ids": ["done_failure_operational_controls_observable"],
+        "structured_log_ids": ["done_log_operational_controls_observable"],
+        "artifact_bundle_ids": ["done_bundle_operational_controls_observable"]
+      },
+      {
+        "item_id": "candidate_rejected_or_live_canary",
+        "summary": "At least one candidate is rejected defensibly or approved for LIVE_CANARY.",
+        "local_check_artifact_ids": ["done_local_candidate_rejected_or_live_canary"],
+        "golden_path_artifact_ids": ["done_golden_candidate_rejected_or_live_canary"],
+        "failure_path_artifact_ids": ["done_failure_candidate_rejected_or_live_canary"],
+        "structured_log_ids": ["done_log_candidate_rejected_or_live_canary"],
+        "artifact_bundle_ids": ["done_bundle_candidate_rejected_or_live_canary"]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "all_done_conditions_satisfied",
+      "expected": {
+        "status": "pass",
+        "reason_code": "DEFINITION_OF_DONE_SATISFIED"
+      }
+    },
+    {
+      "case_id": "missing_failure_path_for_order_idempotency",
+      "evidence_mutations": {
+        "order_idempotency_and_safe_ambiguity": {
+          "failure_path_artifact_ids": []
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "DEFINITION_OF_DONE_NOT_SATISFIED"
+      }
+    },
+    {
+      "case_id": "missing_phase_9_and_invalid_terminal_outcome",
+      "payload_overrides": {
+        "satisfied_phase_gates": [
+          "phase_0",
+          "phase_1",
+          "phase_2",
+          "phase_2_5",
+          "phase_3",
+          "phase_4",
+          "phase_5",
+          "phase_6",
+          "phase_7",
+          "phase_8"
+        ],
+        "final_candidate_outcome": "paper_only"
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "DEFINITION_OF_DONE_NOT_SATISFIED"
+      }
+    }
+  ]
+}
