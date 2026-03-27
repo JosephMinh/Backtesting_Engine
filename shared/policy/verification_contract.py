@@ -832,6 +832,19 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="operational_runtime_supervision_and_state_ownership",
+        title="Operational runtime supervision and deterministic state ownership",
+        related_beads=("backtesting_engine-ltc.7.9",),
+        phase_gates=("phase_2_5", "phase_7"),
+        fixture_sources=(
+            FixtureSource.BROKER_SESSION_RECORDING,
+            FixtureSource.GOLDEN_SESSION,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH, VerificationClass.OPERATIONAL_REHEARSAL),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="simulation_and_execution_profiles",
         title="Simulation semantics, fidelity calibration, and execution calibration",
         related_beads=(
@@ -878,6 +891,22 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         surface_id="baseline_risk_controls_and_waiver_defaults",
         title="Baseline risk controls and waiver defaults",
         related_beads=("backtesting_engine-ltc.5.2",),
+        phase_gates=("phase_5", "phase_7"),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(
+            VerificationClass.GOLDEN_PATH,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
+        surface_id="operating_envelope_and_session_conditioned_risk_profiles",
+        title="Operating-envelope and session-conditioned risk profiles",
+        related_beads=("backtesting_engine-ltc.5.3",),
         phase_gates=("phase_5", "phase_7"),
         fixture_sources=(
             FixtureSource.PLAN_SEEDED_FIXTURE,

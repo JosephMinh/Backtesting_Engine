@@ -372,6 +372,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="operating_envelope_and_session_conditioned_risk_profiles",
+        module="shared.policy.operating_envelope",
+        source_path="shared/policy/operating_envelope.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.4-7.5",
+        purpose=(
+            "Green/yellow/red operating-envelope bands and session-conditioned posture "
+            "overlays for runtime and session-readiness gating"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="fully_loaded_economics",
         module="shared.policy.fully_loaded_economics",
         source_path="shared/policy/fully_loaded_economics.py",

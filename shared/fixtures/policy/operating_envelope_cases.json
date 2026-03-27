@@ -1,0 +1,557 @@
+{
+  "shared_request_defaults": {
+    "case_id": "shared_operating_envelope_request",
+    "operating_envelope_profile": {
+      "profile_id": "gold_momentum_operating_envelope_v1",
+      "strategy_family_id": "gold_momentum",
+      "product_profile_id": "oneoz_comex_v1",
+      "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+      "execution_symbol": "1OZ",
+      "default_operating_posture": "intraday_flat_default",
+      "signal_score_drift_relevant": true,
+      "dimensions": [
+        {
+          "dimension_id": "spread_regime",
+          "title": "Spread regime",
+          "value_kind": "numeric",
+          "unit": "ticks",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Observed spread remains inside the promotable green envelope.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 1.5
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "size_reduction"
+              ],
+              "diagnostic": "Spread widened into the caution band, so size must be reduced.",
+              "remediation": "Reduce size until the spread returns to the green band.",
+              "minimum_value": 1.5,
+              "maximum_value": 3.0
+            },
+            {
+              "band": "red",
+              "actions": [
+                "entry_suppression"
+              ],
+              "diagnostic": "Spread widened beyond the operating envelope.",
+              "remediation": "Suppress new entries until spread conditions normalize.",
+              "minimum_value": 3.0
+            }
+          ]
+        },
+        {
+          "dimension_id": "stale_quote_rate",
+          "title": "Stale quote rate",
+          "value_kind": "numeric",
+          "unit": "fraction",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Quote freshness is inside the green band.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 0.01
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "passive_entry_suppression"
+              ],
+              "diagnostic": "Quote staleness is elevated, so aggressive passive entries are suppressed.",
+              "remediation": "Wait for quote freshness to recover before adding passive entries.",
+              "minimum_value": 0.01,
+              "maximum_value": 0.03
+            },
+            {
+              "band": "red",
+              "actions": [
+                "entry_suppression"
+              ],
+              "diagnostic": "Quote staleness is too high for safe entry decisions.",
+              "remediation": "Block new entries until fresh quotes return.",
+              "minimum_value": 0.03
+            }
+          ]
+        },
+        {
+          "dimension_id": "live_bar_parity_degradation",
+          "title": "Live bar-parity degradation",
+          "value_kind": "numeric",
+          "unit": "fraction",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Bar parity remains inside the green tolerance.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 0.1
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "lower_max_trades"
+              ],
+              "diagnostic": "Bar parity drift entered the caution band.",
+              "remediation": "Lower trade frequency while parity is monitored.",
+              "minimum_value": 0.1,
+              "maximum_value": 0.25
+            },
+            {
+              "band": "red",
+              "actions": [
+                "exit_only"
+              ],
+              "diagnostic": "Live bar parity drift is too severe for new risk.",
+              "remediation": "Move to exit-only mode until bar parity is restored.",
+              "minimum_value": 0.25
+            }
+          ]
+        },
+        {
+          "dimension_id": "realized_volatility_bucket",
+          "title": "Realized volatility bucket",
+          "value_kind": "numeric",
+          "unit": "normalized_sigma",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Volatility is inside the green operating bucket.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 1.0
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "size_reduction"
+              ],
+              "diagnostic": "Volatility expanded into the caution band.",
+              "remediation": "Reduce size until realized volatility cools.",
+              "minimum_value": 1.0,
+              "maximum_value": 1.75
+            },
+            {
+              "band": "red",
+              "actions": [
+                "no_new_overnight_carry"
+              ],
+              "diagnostic": "Volatility is high enough to prohibit new overnight carry.",
+              "remediation": "Avoid new overnight carry until volatility returns to an acceptable band.",
+              "minimum_value": 1.75
+            }
+          ]
+        },
+        {
+          "dimension_id": "session_or_event_class",
+          "title": "Session or event class",
+          "value_kind": "categorical",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "The current session class is the standard green operating regime.",
+              "remediation": "No remediation required.",
+              "categorical_values": [
+                "regular_comex"
+              ]
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "lower_max_trades"
+              ],
+              "diagnostic": "The current session or event class is cautionary.",
+              "remediation": "Lower trade frequency until the session class normalizes.",
+              "categorical_values": [
+                "overnight",
+                "macro_event"
+              ]
+            },
+            {
+              "band": "red",
+              "actions": [
+                "entry_suppression"
+              ],
+              "diagnostic": "The current session or event class is outside the normal operating regime.",
+              "remediation": "Suppress new entries for this session class.",
+              "categorical_values": [
+                "maintenance_adjacent",
+                "degraded_data"
+              ]
+            }
+          ]
+        },
+        {
+          "dimension_id": "freshness_watermark_lag",
+          "title": "Freshness watermark lag",
+          "value_kind": "numeric",
+          "unit": "seconds",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Freshness lag remains inside the green band.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 5.0
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "passive_entry_suppression"
+              ],
+              "diagnostic": "Freshness lag entered the caution band.",
+              "remediation": "Suppress passive entries until freshness lag recovers.",
+              "minimum_value": 5.0,
+              "maximum_value": 15.0
+            },
+            {
+              "band": "red",
+              "actions": [
+                "exit_only"
+              ],
+              "diagnostic": "Freshness lag is too high for new entries.",
+              "remediation": "Use exit-only mode until lag recovers.",
+              "minimum_value": 15.0
+            }
+          ]
+        },
+        {
+          "dimension_id": "broker_round_trip_latency",
+          "title": "Broker round-trip latency",
+          "value_kind": "numeric",
+          "unit": "milliseconds",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Broker latency remains inside the green band.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 150.0
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "lower_max_trades"
+              ],
+              "diagnostic": "Broker latency is elevated and trade cadence must be lowered.",
+              "remediation": "Lower max trades while latency remains elevated.",
+              "minimum_value": 150.0,
+              "maximum_value": 350.0
+            },
+            {
+              "band": "red",
+              "actions": [
+                "forced_flatten"
+              ],
+              "diagnostic": "Broker latency exceeded the red-band threshold.",
+              "remediation": "Force flatten and restore broker health before resuming.",
+              "minimum_value": 350.0
+            }
+          ]
+        },
+        {
+          "dimension_id": "signal_score_drift",
+          "title": "Signal-score drift",
+          "value_kind": "numeric",
+          "unit": "fraction",
+          "bands": [
+            {
+              "band": "green",
+              "actions": [],
+              "diagnostic": "Signal-score drift remains inside the green band.",
+              "remediation": "No remediation required.",
+              "minimum_value": 0.0,
+              "maximum_value": 0.05
+            },
+            {
+              "band": "yellow",
+              "actions": [
+                "entry_suppression"
+              ],
+              "diagnostic": "Signal-score drift entered the caution band.",
+              "remediation": "Suppress new entries while score drift is investigated.",
+              "minimum_value": 0.05,
+              "maximum_value": 0.1
+            },
+            {
+              "band": "red",
+              "actions": [
+                "forced_flatten"
+              ],
+              "diagnostic": "Signal-score drift exceeded the red-band threshold.",
+              "remediation": "Force flatten and recalibrate signal-score monitoring.",
+              "minimum_value": 0.1
+            }
+          ]
+        }
+      ]
+    },
+    "session_conditioned_risk_profile": {
+      "profile_id": "gold_momentum_session_risk_v1",
+      "operating_envelope_profile_id": "gold_momentum_operating_envelope_v1",
+      "rules": [
+        {
+          "session_class": "regular_comex",
+          "band": "green",
+          "actions": [],
+          "size_multiplier": 1.0,
+          "max_trade_count_multiplier": 1.0,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Regular COMEX session stays in the default posture.",
+          "remediation": "No remediation required."
+        },
+        {
+          "session_class": "overnight",
+          "band": "yellow",
+          "actions": [
+            "size_reduction"
+          ],
+          "size_multiplier": 0.5,
+          "max_trade_count_multiplier": 0.5,
+          "required_operating_posture": "overnight_strict",
+          "overnight_carry_allowed": true,
+          "diagnostic": "Overnight risk posture is stricter than regular COMEX.",
+          "remediation": "Use the strict overnight posture and reduced size."
+        },
+        {
+          "session_class": "maintenance_adjacent",
+          "band": "red",
+          "actions": [
+            "exit_only"
+          ],
+          "size_multiplier": 0.0,
+          "max_trade_count_multiplier": 0.0,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Maintenance-adjacent windows only permit risk reduction.",
+          "remediation": "Move to exit-only mode through the restart-adjacent window."
+        },
+        {
+          "session_class": "macro_event",
+          "band": "yellow",
+          "actions": [
+            "passive_entry_suppression",
+            "lower_max_trades",
+            "no_new_overnight_carry"
+          ],
+          "size_multiplier": 0.5,
+          "max_trade_count_multiplier": 0.5,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Macro-event windows require passive-only and lower-frequency posture.",
+          "remediation": "Suppress passive entries, lower max trades, and avoid new overnight carry."
+        },
+        {
+          "session_class": "degraded_data",
+          "band": "red",
+          "actions": [
+            "entry_suppression",
+            "no_new_overnight_carry"
+          ],
+          "size_multiplier": 0.0,
+          "max_trade_count_multiplier": 0.0,
+          "required_operating_posture": "intraday_flat_default",
+          "overnight_carry_allowed": false,
+          "diagnostic": "Degraded-data periods suppress new entries and overnight carry.",
+          "remediation": "Block new entries until data quality returns to normal."
+        }
+      ]
+    },
+    "observed_values": {
+      "spread_regime": 1.0,
+      "stale_quote_rate": 0.005,
+      "live_bar_parity_degradation": 0.05,
+      "realized_volatility_bucket": 0.9,
+      "session_or_event_class": "regular_comex",
+      "freshness_watermark_lag": 2.0,
+      "broker_round_trip_latency": 90.0,
+      "signal_score_drift": 0.02
+    },
+    "current_session_class": "regular_comex",
+    "current_operating_posture": "intraday_flat_default",
+    "schema_version": 1
+  },
+  "evaluation_cases": [
+    {
+      "case_id": "green_regular_session_allows_normal_posture",
+      "overrides": {},
+      "expected": {
+        "status": "green",
+        "reason_code": "OPERATING_ENVELOPE_GREEN",
+        "triggered_dimension_ids": [],
+        "triggered_actions": [],
+        "effective_size_multiplier": 1.0,
+        "effective_max_trade_count_multiplier": 1.0,
+        "resulting_entry_mode": "normal",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "green"
+      }
+    },
+    {
+      "case_id": "spread_yellow_band_reduces_size",
+      "overrides": {
+        "observed_values": {
+          "spread_regime": 2.2
+        }
+      },
+      "expected": {
+        "status": "yellow",
+        "reason_code": "OPERATING_ENVELOPE_SPREAD_REGIME_YELLOW",
+        "triggered_dimension_ids": [
+          "spread_regime"
+        ],
+        "triggered_actions": [
+          "size_reduction"
+        ],
+        "effective_size_multiplier": 0.5,
+        "effective_max_trade_count_multiplier": 1.0,
+        "resulting_entry_mode": "normal",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "green"
+      }
+    },
+    {
+      "case_id": "overnight_profile_requires_strict_posture",
+      "overrides": {
+        "observed_values": {
+          "session_or_event_class": "overnight"
+        },
+        "current_session_class": "overnight"
+      },
+      "expected": {
+        "status": "yellow",
+        "reason_code": "SESSION_RISK_PROFILE_OVERNIGHT_YELLOW",
+        "triggered_dimension_ids": [
+          "session_or_event_class"
+        ],
+        "triggered_actions": [
+          "lower_max_trades",
+          "size_reduction"
+        ],
+        "effective_size_multiplier": 0.5,
+        "effective_max_trade_count_multiplier": 0.5,
+        "resulting_entry_mode": "normal",
+        "required_operating_posture": "overnight_strict",
+        "overnight_carry_allowed": true,
+        "session_band": "yellow"
+      }
+    },
+    {
+      "case_id": "macro_event_profile_becomes_passive_only",
+      "overrides": {
+        "observed_values": {
+          "session_or_event_class": "macro_event"
+        },
+        "current_session_class": "macro_event"
+      },
+      "expected": {
+        "status": "yellow",
+        "reason_code": "SESSION_RISK_PROFILE_MACRO_EVENT_YELLOW",
+        "triggered_dimension_ids": [
+          "session_or_event_class"
+        ],
+        "triggered_actions": [
+          "lower_max_trades",
+          "no_new_overnight_carry",
+          "passive_entry_suppression"
+        ],
+        "effective_size_multiplier": 0.5,
+        "effective_max_trade_count_multiplier": 0.5,
+        "resulting_entry_mode": "passive_only",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "yellow"
+      }
+    },
+    {
+      "case_id": "maintenance_window_forces_exit_only",
+      "overrides": {
+        "observed_values": {
+          "session_or_event_class": "maintenance_adjacent"
+        },
+        "current_session_class": "maintenance_adjacent"
+      },
+      "expected": {
+        "status": "red",
+        "reason_code": "SESSION_RISK_PROFILE_MAINTENANCE_ADJACENT_RED",
+        "triggered_dimension_ids": [
+          "session_or_event_class"
+        ],
+        "triggered_actions": [
+          "entry_suppression",
+          "exit_only"
+        ],
+        "effective_size_multiplier": 0.0,
+        "effective_max_trade_count_multiplier": 0.0,
+        "resulting_entry_mode": "exit_only",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "red"
+      }
+    },
+    {
+      "case_id": "degraded_data_blocks_new_entries",
+      "overrides": {
+        "observed_values": {
+          "session_or_event_class": "degraded_data"
+        },
+        "current_session_class": "degraded_data"
+      },
+      "expected": {
+        "status": "red",
+        "reason_code": "SESSION_RISK_PROFILE_DEGRADED_DATA_RED",
+        "triggered_dimension_ids": [
+          "session_or_event_class"
+        ],
+        "triggered_actions": [
+          "no_new_overnight_carry",
+          "entry_suppression"
+        ],
+        "effective_size_multiplier": 0.0,
+        "effective_max_trade_count_multiplier": 0.0,
+        "resulting_entry_mode": "no_new_entries",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "red"
+      }
+    },
+    {
+      "case_id": "latency_red_band_forces_flatten",
+      "overrides": {
+        "observed_values": {
+          "broker_round_trip_latency": 480.0
+        }
+      },
+      "expected": {
+        "status": "red",
+        "reason_code": "OPERATING_ENVELOPE_BROKER_ROUND_TRIP_LATENCY_RED",
+        "triggered_dimension_ids": [
+          "broker_round_trip_latency"
+        ],
+        "triggered_actions": [
+          "forced_flatten"
+        ],
+        "effective_size_multiplier": 0.0,
+        "effective_max_trade_count_multiplier": 0.0,
+        "resulting_entry_mode": "forced_flatten",
+        "required_operating_posture": "intraday_flat_default",
+        "overnight_carry_allowed": false,
+        "session_band": "green"
+      }
+    }
+  ]
+}

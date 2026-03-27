@@ -29,12 +29,12 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | `phase_0` | mission/posture, guardrails, Phase 0 foundation gate, plane boundaries, lifecycle state machines and compatibility domains |
 | `phase_1` | data/reference pipeline, Phase 1 raw archive/reference gate |
 | `phase_2` | data/reference pipeline, Phase 2 validation/release-pipeline gate, lifecycle state machines and compatibility domains |
-| `phase_2_5` | execution-lane vertical slice |
+| `phase_2_5` | execution-lane vertical slice, operational runtime supervision and deterministic state ownership |
 | `phase_3` | simulation/execution profiles, fast-screening governance |
 | `phase_4` | research governance and selection |
-| `phase_5` | research governance and selection, strategy contracts and canonical signal kernels, baseline risk controls and waiver defaults, fully loaded economics |
+| `phase_5` | research governance and selection, strategy contracts and canonical signal kernels, baseline risk controls and waiver defaults, operating-envelope and session-conditioned risk profiles, fully loaded economics |
 | `phase_6` | candidate freeze and certification, strategy contracts and canonical signal kernels, lifecycle state machines and compatibility domains |
-| `phase_7` | paper runtime and operational evidence, baseline risk controls and waiver defaults, lifecycle state machines and compatibility domains |
+| `phase_7` | paper runtime and operational evidence, operational runtime supervision and deterministic state ownership, baseline risk controls and waiver defaults, operating-envelope and session-conditioned risk profiles, lifecycle state machines and compatibility domains |
 | `phase_8` | live-readiness and resilience, lifecycle state machines and compatibility domains |
 | `phase_9` | program closure and continuation |
 
@@ -50,10 +50,12 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Phase 2 validation and release-pipeline gate | `backtesting_engine-ltc.9.3` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Data/reference and release pipeline | `backtesting_engine-ltc.3.1`, `3.4`, `3.8`, `3.9`, `3.10`, `3.11` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Execution-lane vertical slice | `backtesting_engine-ltc.1.5`, `4.3` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Operational runtime supervision and deterministic state ownership | `backtesting_engine-ltc.7.9` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Simulation and execution profiles | `backtesting_engine-ltc.4.1`, `4.2`, `4.4`, `4.5` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Fast-screening governance | `backtesting_engine-ltc.4.6` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Strategy contracts and canonical signal kernels | `backtesting_engine-ltc.5.1` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Baseline risk controls and waiver defaults | `backtesting_engine-ltc.5.2` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Operating-envelope and session-conditioned risk profiles | `backtesting_engine-ltc.5.3` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Fully loaded economics and recurring cost model | `backtesting_engine-ltc.5.5` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Lifecycle state machines and compatibility domains | `backtesting_engine-ltc.8.2` | `unit`, `contract`, `property` | `golden_path` | `failure_path`, `operational_rehearsal` |
 | Structured logging and artifact capture | `backtesting_engine-ltc.11.6` | `unit`, `contract`, `property` | `golden_path`, `replay_certification`, `operational_rehearsal` | `failure_path` |

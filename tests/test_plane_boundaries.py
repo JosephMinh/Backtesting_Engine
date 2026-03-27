@@ -134,6 +134,7 @@ class TestSharedContractCompatibility(unittest.TestCase):
         self.assertIn("fast_screening_governance", surface_ids)
         self.assertIn("strategy_contracts_and_canonical_signal_kernel", surface_ids)
         self.assertIn("baseline_risk_controls_and_waiver_defaults", surface_ids)
+        self.assertIn("operating_envelope_and_session_conditioned_risk_profiles", surface_ids)
         self.assertIn("fully_loaded_economics", surface_ids)
         self.assertIn("solo_governance_workflows", surface_ids)
 
