@@ -6,9 +6,13 @@ export CARGO_TARGET_DIR="$repo_root/target"
 export TMPDIR="$repo_root/target/tmp"
 mkdir -p "$TMPDIR"
 
-artifact_root="${1:-$repo_root/target/tmp/backtesting_engine_guardian_drill_$(date +%Y%m%dT%H%M%S)}"
-
-mkdir -p "$artifact_root"
+artifact_parent="$repo_root/target/tmp"
+if [[ $# -ge 1 ]]; then
+  artifact_root="$1"
+  mkdir -p "$artifact_root"
+else
+  artifact_root="$(mktemp -d "$artifact_parent/backtesting_engine_guardian_drill_XXXXXX")"
+fi
 
 cargo run -p backtesting-engine-guardian -- \
   emergency-drill authorized-flatten \
