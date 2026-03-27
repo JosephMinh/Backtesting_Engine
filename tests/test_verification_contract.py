@@ -839,6 +839,16 @@ class VerificationContractTest(unittest.TestCase):
         self.assertEqual("research_governance_and_selection", matching[0].surface_id)
         self.assertEqual(("phase_4", "phase_5"), matching[0].phase_gates)
 
+    def test_bead_63_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.6.3" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("research_governance_and_selection", matching[0].surface_id)
+        self.assertEqual(("phase_4", "phase_5"), matching[0].phase_gates)
+
     def test_bead_65_uses_research_governance_verification_lanes(self) -> None:
         profile = next(
             profile

@@ -355,6 +355,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="evaluation_hierarchy_and_robustness_protocol",
+        module="shared.policy.evaluation_protocol",
+        source_path="shared/policy/evaluation_protocol.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="8.4-8.5",
+        purpose=(
+            "Explicit screening-through-freeze evaluation hierarchy, walk-forward and "
+            "omission evidence retention, power-analysis gating, and lockbox readiness"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="notebook_quarantine_and_admissible_evidence_boundary",
         module="shared.policy.notebook_quarantine",
         source_path="shared/policy/notebook_quarantine.py",

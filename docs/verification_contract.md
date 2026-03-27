@@ -62,7 +62,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Strict overnight candidate class | `backtesting_engine-ltc.5.7` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Lifecycle state machines and compatibility domains | `backtesting_engine-ltc.8.2` | `unit`, `contract`, `property` | `golden_path` | `failure_path`, `operational_rehearsal` |
 | Structured logging and artifact capture | `backtesting_engine-ltc.11.6` | `unit`, `contract`, `property` | `golden_path`, `replay_certification`, `operational_rehearsal` | `failure_path` |
-| Research governance and selection | `backtesting_engine-ltc.6.1`, `6.2`, `6.5`, `6.6`, `6.7` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
+| Research governance and selection | `backtesting_engine-ltc.6.1`, `6.2`, `6.3`, `6.5`, `6.6`, `6.7` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
 | Candidate freeze and certification | `backtesting_engine-ltc.7.1`, `7.3`, `7.6` | `unit`, `contract`, `property` | `golden_path`, `replay_certification`, `parity_certification` | `failure_path` |
 | Paper runtime and operational evidence | `backtesting_engine-ltc.7.7`, `7.8`, `7.10`, `backtesting_engine-tox` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path`, `replay_certification` |
 | Operator observability and response targets | `backtesting_engine-ltc.8.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |

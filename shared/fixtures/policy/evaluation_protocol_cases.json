@@ -1,0 +1,516 @@
+{
+  "shared_request_defaults": {
+    "case_id": "shared-default",
+    "family_id": "gold-breakout",
+    "subfamily_id": "opening-range-a",
+    "continuation_decision_id": "decision-continue-001",
+    "requested_deep_tuning": true,
+    "schema_version": 1,
+    "operator_reason_bundle": [
+      "screening region survived realistic costs",
+      "validation and stress retained operator-readable diagnostics"
+    ],
+    "stage_records": [
+      {
+        "stage": "screening",
+        "completed": true,
+        "research_run_id": "run-screening-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-screening-001",
+          "retained_log_ids": ["log-screening-001"],
+          "correlation_ids": ["corr-screening-001"],
+          "expected_actual_diff_ids": ["diff-screening-001"],
+          "operator_reason_bundle": ["screening preserved the candidate region"]
+        }
+      },
+      {
+        "stage": "validation",
+        "completed": true,
+        "research_run_id": "run-validation-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-validation-001",
+          "retained_log_ids": ["log-validation-001"],
+          "correlation_ids": ["corr-validation-001"],
+          "expected_actual_diff_ids": ["diff-validation-001"],
+          "operator_reason_bundle": ["validation confirmed promotion-grade behavior"]
+        }
+      },
+      {
+        "stage": "stress",
+        "completed": true,
+        "research_run_id": "run-stress-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-stress-001",
+          "retained_log_ids": ["log-stress-001"],
+          "correlation_ids": ["corr-stress-001"],
+          "expected_actual_diff_ids": ["diff-stress-001"],
+          "operator_reason_bundle": ["stress stayed inside the admissible drawdown envelope"]
+        }
+      },
+      {
+        "stage": "omission",
+        "completed": true,
+        "research_run_id": "run-omission-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-omission-001",
+          "retained_log_ids": ["log-omission-001"],
+          "correlation_ids": ["corr-omission-001"],
+          "expected_actual_diff_ids": ["diff-omission-001"],
+          "operator_reason_bundle": ["omission failures were investigated and retained"]
+        }
+      },
+      {
+        "stage": "lockbox",
+        "completed": true,
+        "research_run_id": "run-lockbox-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-lockbox-001",
+          "retained_log_ids": ["log-lockbox-001"],
+          "correlation_ids": ["corr-lockbox-001"],
+          "expected_actual_diff_ids": ["diff-lockbox-001"],
+          "operator_reason_bundle": ["lockbox access was bounded and logged"]
+        }
+      },
+      {
+        "stage": "candidate_freeze",
+        "completed": true,
+        "research_run_id": "run-freeze-001",
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-freeze-001",
+          "retained_log_ids": ["log-freeze-001"],
+          "correlation_ids": ["corr-freeze-001"],
+          "expected_actual_diff_ids": ["diff-freeze-001"],
+          "operator_reason_bundle": ["freeze pinned the finalist and all dependencies"]
+        }
+      }
+    ],
+    "walk_forward_folds": [
+      {
+        "fold_id": "wf-001",
+        "training_window_id": "train-001",
+        "validation_window_id": "test-001",
+        "parameter_set_id": "params-001",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-wf-001",
+          "retained_log_ids": ["log-wf-001"],
+          "correlation_ids": ["corr-wf-001"],
+          "expected_actual_diff_ids": ["diff-wf-001"],
+          "operator_reason_bundle": ["fold one remained positive after realistic costs"]
+        }
+      },
+      {
+        "fold_id": "wf-002",
+        "training_window_id": "train-002",
+        "validation_window_id": "test-002",
+        "parameter_set_id": "params-001",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-wf-002",
+          "retained_log_ids": ["log-wf-002"],
+          "correlation_ids": ["corr-wf-002"],
+          "expected_actual_diff_ids": ["diff-wf-002"],
+          "operator_reason_bundle": ["fold two preserved the candidate region"]
+        }
+      },
+      {
+        "fold_id": "wf-003",
+        "training_window_id": "train-003",
+        "validation_window_id": "test-003",
+        "parameter_set_id": "params-002",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-wf-003",
+          "retained_log_ids": ["log-wf-003"],
+          "correlation_ids": ["corr-wf-003"],
+          "expected_actual_diff_ids": ["diff-wf-003"],
+          "operator_reason_bundle": ["fold three retained expected-vs-actual diagnostics"]
+        }
+      }
+    ],
+    "parameter_stability_checks": [
+      {
+        "parameter_id": "lookback_minutes",
+        "stability_ratio": 0.14,
+        "allowed_stability_ratio": 0.2,
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-parameter-001",
+          "retained_log_ids": ["log-parameter-001"],
+          "correlation_ids": ["corr-parameter-001"],
+          "expected_actual_diff_ids": ["diff-parameter-001"],
+          "operator_reason_bundle": ["lookback perturbations remained admissible"]
+        }
+      },
+      {
+        "parameter_id": "stop_multiple",
+        "stability_ratio": 0.12,
+        "allowed_stability_ratio": 0.2,
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-parameter-002",
+          "retained_log_ids": ["log-parameter-002"],
+          "correlation_ids": ["corr-parameter-002"],
+          "expected_actual_diff_ids": ["diff-parameter-002"],
+          "operator_reason_bundle": ["stop-multiple perturbations stayed within tolerance"]
+        }
+      }
+    ],
+    "bootstrap_intervals": [
+      {
+        "metric_id": "net_edge_bps",
+        "block_length_bars": 60,
+        "resample_count": 500,
+        "confidence_level": 0.95,
+        "lower_bound": 9.8,
+        "upper_bound": 16.4,
+        "minimum_acceptable_edge": 8.0,
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-bootstrap-001",
+          "retained_log_ids": ["log-bootstrap-001"],
+          "correlation_ids": ["corr-bootstrap-001"],
+          "expected_actual_diff_ids": ["diff-bootstrap-001"],
+          "operator_reason_bundle": ["bootstrap interval stayed above the minimum admissible edge"]
+        }
+      }
+    ],
+    "omission_checks": [
+      {
+        "omission_dimension": "regime",
+        "omitted_slice_id": "fed-macro-weeks",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-omission-regime-001",
+          "retained_log_ids": ["log-omission-regime-001"],
+          "correlation_ids": ["corr-omission-regime-001"],
+          "expected_actual_diff_ids": ["diff-omission-regime-001"],
+          "operator_reason_bundle": ["regime omission stayed within tolerance"]
+        }
+      },
+      {
+        "omission_dimension": "segment",
+        "omitted_slice_id": "q4-2024",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-omission-segment-001",
+          "retained_log_ids": ["log-omission-segment-001"],
+          "correlation_ids": ["corr-omission-segment-001"],
+          "expected_actual_diff_ids": ["diff-omission-segment-001"],
+          "operator_reason_bundle": ["segment omission preserved the edge"]
+        }
+      },
+      {
+        "omission_dimension": "anchor",
+        "omitted_slice_id": "holiday-anchor-001",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-omission-anchor-001",
+          "retained_log_ids": ["log-omission-anchor-001"],
+          "correlation_ids": ["corr-omission-anchor-001"],
+          "expected_actual_diff_ids": ["diff-omission-anchor-001"],
+          "operator_reason_bundle": ["anchor omission stayed explainable"]
+        }
+      },
+      {
+        "omission_dimension": "event_cluster",
+        "omitted_slice_id": "cpi-cluster-001",
+        "passed": true,
+        "artifact_bundle": {
+          "artifact_manifest_id": "manifest-omission-event-001",
+          "retained_log_ids": ["log-omission-event-001"],
+          "correlation_ids": ["corr-omission-event-001"],
+          "expected_actual_diff_ids": ["diff-omission-event-001"],
+          "operator_reason_bundle": ["event-cluster omission did not collapse the candidate"]
+        }
+      }
+    ],
+    "power_analysis": {
+      "metric_id": "net_edge_bps",
+      "estimated_edge_bps": 14.0,
+      "minimum_detectable_edge_bps": 10.0,
+      "power": 0.87,
+      "minimum_required_power": 0.8,
+      "sample_count": 560,
+      "minimum_required_sample_count": 400,
+      "artifact_bundle": {
+        "artifact_manifest_id": "manifest-power-001",
+        "retained_log_ids": ["log-power-001"],
+        "correlation_ids": ["corr-power-001"],
+        "expected_actual_diff_ids": ["diff-power-001"],
+        "operator_reason_bundle": ["the candidate edge is detectable before deeper tuning"]
+      }
+    },
+    "lockbox_evidence": {
+      "finalist_count": 2,
+      "finalist_cap": 3,
+      "access_log_ids": ["log-lockbox-access-001"],
+      "contamination_incident_ids": [],
+      "contamination_review_reference_ids": [],
+      "artifact_bundle": {
+        "artifact_manifest_id": "manifest-lockbox-evidence-001",
+        "retained_log_ids": ["log-lockbox-evidence-001"],
+        "correlation_ids": ["corr-lockbox-evidence-001"],
+        "expected_actual_diff_ids": ["diff-lockbox-evidence-001"],
+        "operator_reason_bundle": ["lockbox lane remained bounded and logged"]
+      }
+    },
+    "candidate_freeze_evidence": {
+      "freeze_ready": true,
+      "frozen_candidate_id": "candidate-freeze-001",
+      "dependency_manifest_id": "dependency-freeze-001",
+      "artifact_bundle": {
+        "artifact_manifest_id": "manifest-candidate-freeze-001",
+        "retained_log_ids": ["log-candidate-freeze-001"],
+        "correlation_ids": ["corr-candidate-freeze-001"],
+        "expected_actual_diff_ids": ["diff-candidate-freeze-001"],
+        "operator_reason_bundle": ["candidate freeze sealed the finalist bundle"]
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "happy_path_freeze_ready",
+      "overrides": {
+        "case_id": "happy_path_freeze_ready"
+      },
+      "expected": {
+        "status": "pass",
+        "decision": "freeze_candidate",
+        "reason_code": "EVALUATION_PROTOCOL_READY",
+        "triggered_check_ids": [],
+        "deep_tuning_allowed": true,
+        "candidate_freeze_ready": true,
+        "omission_dimensions_covered": [
+          "anchor",
+          "event_cluster",
+          "regime",
+          "segment"
+        ]
+      }
+    },
+    {
+      "case_id": "missing_required_omission_dimension",
+      "overrides": {
+        "case_id": "missing_required_omission_dimension",
+        "omission_checks": [
+          {
+            "omission_dimension": "regime",
+            "omitted_slice_id": "fed-macro-weeks",
+            "passed": true,
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-omission-regime-001",
+              "retained_log_ids": ["log-omission-regime-001"],
+              "correlation_ids": ["corr-omission-regime-001"],
+              "expected_actual_diff_ids": ["diff-omission-regime-001"],
+              "operator_reason_bundle": ["regime omission stayed within tolerance"]
+            }
+          },
+          {
+            "omission_dimension": "segment",
+            "omitted_slice_id": "q4-2024",
+            "passed": true,
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-omission-segment-001",
+              "retained_log_ids": ["log-omission-segment-001"],
+              "correlation_ids": ["corr-omission-segment-001"],
+              "expected_actual_diff_ids": ["diff-omission-segment-001"],
+              "operator_reason_bundle": ["segment omission preserved the edge"]
+            }
+          },
+          {
+            "omission_dimension": "anchor",
+            "omitted_slice_id": "holiday-anchor-001",
+            "passed": true,
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-omission-anchor-001",
+              "retained_log_ids": ["log-omission-anchor-001"],
+              "correlation_ids": ["corr-omission-anchor-001"],
+              "expected_actual_diff_ids": ["diff-omission-anchor-001"],
+              "operator_reason_bundle": ["anchor omission stayed explainable"]
+            }
+          }
+        ],
+        "candidate_freeze_evidence": {
+          "freeze_ready": false,
+          "frozen_candidate_id": "",
+          "dependency_manifest_id": "",
+          "artifact_bundle": {
+            "artifact_manifest_id": "manifest-candidate-freeze-blocked-001",
+            "retained_log_ids": ["log-candidate-freeze-blocked-001"],
+            "correlation_ids": ["corr-candidate-freeze-blocked-001"],
+            "expected_actual_diff_ids": ["diff-candidate-freeze-blocked-001"],
+            "operator_reason_bundle": ["candidate freeze is blocked pending omission repair"]
+          }
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "EVALUATION_PROTOCOL_OMISSION_COVERAGE_MISSING",
+        "triggered_check_ids": ["EP06", "EP09"],
+        "deep_tuning_allowed": true,
+        "candidate_freeze_ready": false,
+        "omission_dimensions_covered": [
+          "anchor",
+          "regime",
+          "segment"
+        ]
+      }
+    },
+    {
+      "case_id": "power_analysis_blocks_deep_tuning",
+      "overrides": {
+        "case_id": "power_analysis_blocks_deep_tuning",
+        "power_analysis": {
+          "metric_id": "net_edge_bps",
+          "estimated_edge_bps": 7.0,
+          "minimum_detectable_edge_bps": 10.0,
+          "power": 0.61,
+          "minimum_required_power": 0.8,
+          "sample_count": 240,
+          "minimum_required_sample_count": 400,
+          "artifact_bundle": {
+            "artifact_manifest_id": "manifest-power-insufficient-001",
+            "retained_log_ids": ["log-power-insufficient-001"],
+            "correlation_ids": ["corr-power-insufficient-001"],
+            "expected_actual_diff_ids": ["diff-power-insufficient-001"],
+            "operator_reason_bundle": ["power analysis blocks deeper tuning"]
+          }
+        },
+        "candidate_freeze_evidence": {
+          "freeze_ready": false,
+          "frozen_candidate_id": "",
+          "dependency_manifest_id": "",
+          "artifact_bundle": {
+            "artifact_manifest_id": "manifest-candidate-freeze-blocked-002",
+            "retained_log_ids": ["log-candidate-freeze-blocked-002"],
+            "correlation_ids": ["corr-candidate-freeze-blocked-002"],
+            "expected_actual_diff_ids": ["diff-candidate-freeze-blocked-002"],
+            "operator_reason_bundle": ["candidate freeze is blocked pending power analysis"]
+          }
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "EVALUATION_PROTOCOL_POWER_INSUFFICIENT",
+        "triggered_check_ids": ["EP07", "EP09"],
+        "deep_tuning_allowed": false,
+        "candidate_freeze_ready": false,
+        "omission_dimensions_covered": [
+          "anchor",
+          "event_cluster",
+          "regime",
+          "segment"
+        ]
+      }
+    },
+    {
+      "case_id": "stage_hierarchy_broken",
+      "overrides": {
+        "case_id": "stage_hierarchy_broken",
+        "stage_records": [
+          {
+            "stage": "screening",
+            "completed": true,
+            "research_run_id": "run-screening-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-screening-001",
+              "retained_log_ids": ["log-screening-001"],
+              "correlation_ids": ["corr-screening-001"],
+              "expected_actual_diff_ids": ["diff-screening-001"],
+              "operator_reason_bundle": ["screening preserved the candidate region"]
+            }
+          },
+          {
+            "stage": "validation",
+            "completed": true,
+            "research_run_id": "run-validation-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-validation-001",
+              "retained_log_ids": ["log-validation-001"],
+              "correlation_ids": ["corr-validation-001"],
+              "expected_actual_diff_ids": ["diff-validation-001"],
+              "operator_reason_bundle": ["validation confirmed promotion-grade behavior"]
+            }
+          },
+          {
+            "stage": "omission",
+            "completed": true,
+            "research_run_id": "run-omission-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-omission-001",
+              "retained_log_ids": ["log-omission-001"],
+              "correlation_ids": ["corr-omission-001"],
+              "expected_actual_diff_ids": ["diff-omission-001"],
+              "operator_reason_bundle": ["omission failures were investigated and retained"]
+            }
+          },
+          {
+            "stage": "stress",
+            "completed": true,
+            "research_run_id": "run-stress-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-stress-001",
+              "retained_log_ids": ["log-stress-001"],
+              "correlation_ids": ["corr-stress-001"],
+              "expected_actual_diff_ids": ["diff-stress-001"],
+              "operator_reason_bundle": ["stress stayed inside the admissible drawdown envelope"]
+            }
+          },
+          {
+            "stage": "lockbox",
+            "completed": true,
+            "research_run_id": "run-lockbox-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-lockbox-001",
+              "retained_log_ids": ["log-lockbox-001"],
+              "correlation_ids": ["corr-lockbox-001"],
+              "expected_actual_diff_ids": ["diff-lockbox-001"],
+              "operator_reason_bundle": ["lockbox access was bounded and logged"]
+            }
+          },
+          {
+            "stage": "candidate_freeze",
+            "completed": false,
+            "research_run_id": "run-freeze-001",
+            "artifact_bundle": {
+              "artifact_manifest_id": "manifest-freeze-001",
+              "retained_log_ids": ["log-freeze-001"],
+              "correlation_ids": ["corr-freeze-001"],
+              "expected_actual_diff_ids": ["diff-freeze-001"],
+              "operator_reason_bundle": ["freeze pinned the finalist and all dependencies"]
+            }
+          }
+        ],
+        "candidate_freeze_evidence": {
+          "freeze_ready": false,
+          "frozen_candidate_id": "",
+          "dependency_manifest_id": "",
+          "artifact_bundle": {
+            "artifact_manifest_id": "manifest-candidate-freeze-blocked-003",
+            "retained_log_ids": ["log-candidate-freeze-blocked-003"],
+            "correlation_ids": ["corr-candidate-freeze-blocked-003"],
+            "expected_actual_diff_ids": ["diff-candidate-freeze-blocked-003"],
+            "operator_reason_bundle": ["candidate freeze remains blocked while the stage order is repaired"]
+          }
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "hold",
+        "reason_code": "EVALUATION_PROTOCOL_STAGE_HIERARCHY_BROKEN",
+        "triggered_check_ids": ["EP01", "EP09"],
+        "deep_tuning_allowed": true,
+        "candidate_freeze_ready": false,
+        "omission_dimensions_covered": [
+          "anchor",
+          "event_cluster",
+          "regime",
+          "segment"
+        ]
+      }
+    }
+  ]
+}

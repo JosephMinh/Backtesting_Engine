@@ -999,6 +999,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         surface_id="research_governance_and_selection",
         title="Research governance, budgets, and selection gates",
         related_beads=(
+            "backtesting_engine-ltc.6.3",
             "backtesting_engine-ltc.6.1",
             "backtesting_engine-ltc.6.2",
             "backtesting_engine-ltc.6.5",
