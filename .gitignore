@@ -20,6 +20,7 @@ __pycache__/
 # Build outputs
 dist/
 build/
+target/
 *.exe
 *.dll
 *.so

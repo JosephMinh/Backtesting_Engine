@@ -1,0 +1,33 @@
+[workspace]
+members = [
+    "rust/kernels",
+    "rust/opsd",
+    "rust/guardian",
+    "rust/watchdog",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+version = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_crate_dependencies = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+
+[workspace.metadata.backtesting_engine]
+python_bindings_package = "python/bindings"
+build_entrypoint = "cargo check --workspace"
+format_entrypoint = "cargo fmt --all --check"
+lint_entrypoint = "cargo clippy --workspace --all-targets -- -D warnings"
+test_entrypoint = "cargo test --workspace"
+
+[workspace.metadata.backtesting_engine.crate_responsibilities]
+"rust/kernels" = "Canonical signal kernels and shared deterministic compute."
+"rust/opsd" = "Operational daemon modules, runtime ingress, and state-ownership boundaries."
+"rust/guardian" = "Minimal out-of-band emergency control process."
+"rust/watchdog" = "Supervisor and health automation for opsd, guardian, and broker connectivity."

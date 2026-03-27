@@ -1,0 +1,15 @@
+[package]
+name = "backtesting-engine-opsd"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+backtesting-engine-kernels = { path = "../kernels" }
+
+[lints]
+workspace = true
