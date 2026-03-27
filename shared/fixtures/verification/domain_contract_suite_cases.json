@@ -1,0 +1,87 @@
+{
+  "catalog_expectations": {
+    "expected_suite_ids": [
+      "release_schema_and_artifact_lifecycle",
+      "execution_profile_contracts",
+      "bar_parity_contracts",
+      "strategy_contract_contracts",
+      "policy_engine_decision_traces",
+      "lifecycle_compatibility_contracts",
+      "broker_semantics_contracts"
+    ],
+    "expected_related_beads": [
+      "backtesting_engine-ltc.3.9",
+      "backtesting_engine-ltc.4.1",
+      "backtesting_engine-ltc.4.5",
+      "backtesting_engine-ltc.5.1",
+      "backtesting_engine-ltc.7.10",
+      "backtesting_engine-ltc.8.1",
+      "backtesting_engine-ltc.8.2"
+    ],
+    "expected_trace_planes": {
+      "release_schema_and_artifact_lifecycle": "release",
+      "execution_profile_contracts": "release",
+      "bar_parity_contracts": "release",
+      "strategy_contract_contracts": "policy",
+      "policy_engine_decision_traces": "policy",
+      "lifecycle_compatibility_contracts": "policy",
+      "broker_semantics_contracts": "runtime"
+    }
+  },
+  "run_cases": [
+    {
+      "case_id": "release-schema-pass",
+      "suite_id": "release_schema_and_artifact_lifecycle",
+      "run_id": "release_schema_suite_run_001",
+      "fixture_case_id": "release_schema_suite_gold",
+      "mutation": "valid",
+      "expected_status": "pass",
+      "expected_reason_code": "DOMAIN_SUITE_READY"
+    },
+    {
+      "case_id": "execution-profile-missing-diff",
+      "suite_id": "execution_profile_contracts",
+      "run_id": "execution_profile_suite_run_001",
+      "fixture_case_id": "execution_profile_suite_gold",
+      "mutation": "missing_expected_diff",
+      "expected_status": "violation",
+      "expected_reason_code": "DOMAIN_SUITE_EXPECTED_DIFFS_MISSING"
+    },
+    {
+      "case_id": "policy-log-linkage-mismatch",
+      "suite_id": "policy_engine_decision_traces",
+      "run_id": "policy_engine_suite_run_001",
+      "fixture_case_id": "policy_engine_suite_gold",
+      "mutation": "log_linkage_mismatch",
+      "expected_status": "invalid",
+      "expected_reason_code": "DOMAIN_SUITE_LOG_LINKAGE_MISMATCH"
+    },
+    {
+      "case_id": "lifecycle-missing-fixture-source",
+      "suite_id": "lifecycle_compatibility_contracts",
+      "run_id": "lifecycle_compatibility_suite_run_001",
+      "fixture_case_id": "lifecycle_compatibility_suite_gold",
+      "mutation": "missing_fixture_source",
+      "expected_status": "violation",
+      "expected_reason_code": "DOMAIN_SUITE_FIXTURE_PROVENANCE_INCOMPLETE"
+    },
+    {
+      "case_id": "broker-missing-test-module",
+      "suite_id": "broker_semantics_contracts",
+      "run_id": "broker_semantics_suite_run_001",
+      "fixture_case_id": "broker_semantics_suite_gold",
+      "mutation": "missing_test_module",
+      "expected_status": "violation",
+      "expected_reason_code": "DOMAIN_SUITE_TEST_MODULES_INCOMPLETE"
+    },
+    {
+      "case_id": "unknown-suite",
+      "suite_id": "strategy_contract_contracts",
+      "run_id": "strategy_contract_suite_run_001",
+      "fixture_case_id": "strategy_contract_suite_gold",
+      "mutation": "unknown_suite",
+      "expected_status": "invalid",
+      "expected_reason_code": "DOMAIN_SUITE_UNKNOWN"
+    }
+  ]
+}
