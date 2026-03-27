@@ -3,6 +3,16 @@
 //! `watchdog` supervises process health and restart behavior without owning
 //! strategy or reconciliation state.
 
+pub mod recovery;
+
+pub use recovery::{
+    BackupManifest, DurabilityEvidence, JournalDigestRecord, MigrationDomain,
+    MigrationExecutionReport, MigrationExecutionRequest, MigrationStatus, RecoveryDisposition,
+    RestoreExecutionReport, RestoreExecutionRequest, SnapshotManifest, VersionSet,
+    execute_migration, sample_migration_request, sample_restore_request, verify_restore_execution,
+    write_migration_artifacts, write_restore_artifacts,
+};
+
 /// Human-readable role summary for the crate.
 pub const CRATE_ROLE: &str = "supervisor and health automation";
 
@@ -13,6 +23,19 @@ pub enum SupervisionTarget {
     Guardian,
     BrokerGateway,
 }
+
+/// Artifact roots watchdog may read while supervising recovery and migration.
+pub const WATCHDOG_READABLE_ARTIFACT_ROOTS: &[&str] = &[
+    "health_snapshots",
+    "backup_manifests",
+    "snapshot_manifests",
+    "journal_digests",
+    "migration_manifests",
+];
+
+/// Artifact roots watchdog may write while supervising recovery and migration.
+pub const WATCHDOG_WRITABLE_ARTIFACT_ROOTS: &[&str] =
+    &["health_reports", "restore_drills", "migration_reports"];
 
 /// Artifact and authority boundaries for the watchdog process.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -25,8 +48,8 @@ pub struct WatchdogBoundary {
 
 /// Watchdog reads health snapshots and writes supervision evidence only.
 pub const WATCHDOG_BOUNDARY: WatchdogBoundary = WatchdogBoundary {
-    readable_artifact_roots: &["health_snapshots"],
-    writable_artifact_roots: &["health_reports"],
+    readable_artifact_roots: WATCHDOG_READABLE_ARTIFACT_ROOTS,
+    writable_artifact_roots: WATCHDOG_WRITABLE_ARTIFACT_ROOTS,
     supervision_targets: &[
         SupervisionTarget::Opsd,
         SupervisionTarget::Guardian,
@@ -37,7 +60,10 @@ pub const WATCHDOG_BOUNDARY: WatchdogBoundary = WatchdogBoundary {
 
 #[cfg(test)]
 mod tests {
-    use super::{SupervisionTarget, WATCHDOG_BOUNDARY};
+    use super::{
+        SupervisionTarget, WATCHDOG_BOUNDARY, WATCHDOG_READABLE_ARTIFACT_ROOTS,
+        WATCHDOG_WRITABLE_ARTIFACT_ROOTS,
+    };
 
     #[test]
     fn watchdog_supervises_the_expected_runtime_targets() {
@@ -55,6 +81,24 @@ mod tests {
     fn watchdog_does_not_own_economic_state() {
         let boundary = WATCHDOG_BOUNDARY;
         assert!(!boundary.owns_economic_state);
-        assert_eq!(&["health_reports"], boundary.writable_artifact_roots);
+        assert_eq!(
+            WATCHDOG_WRITABLE_ARTIFACT_ROOTS,
+            boundary.writable_artifact_roots
+        );
+    }
+
+    #[test]
+    fn watchdog_boundary_covers_restore_and_migration_artifacts() {
+        let boundary = WATCHDOG_BOUNDARY;
+        assert_eq!(
+            WATCHDOG_READABLE_ARTIFACT_ROOTS,
+            boundary.readable_artifact_roots
+        );
+        assert!(boundary.writable_artifact_roots.contains(&"restore_drills"));
+        assert!(
+            boundary
+                .writable_artifact_roots
+                .contains(&"migration_reports")
+        );
     }
 }
