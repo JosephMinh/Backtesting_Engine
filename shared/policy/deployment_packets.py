@@ -17,6 +17,7 @@ from shared.policy.lifecycle_specs import (
     FRESHNESS_REQUIRED_TAG,
     RUNTIME_ACTIVE_TAG,
     build_enum_transition_map,
+    evaluate_transition,
     states_with_tag,
 )
 from shared.policy.metadata_telemetry import RECORD_DEFINITIONS, StorageClass
@@ -654,11 +655,13 @@ class PacketTransitionReport:
     case_id: str
     packet_kind: str
     packet_id: str
+    machine_id: str
     from_state: str
     to_state: str
     status: str
     reason_code: str
     allowed: bool
+    allowed_next_states: tuple[str, ...]
     explanation: str
     remediation: str
     timestamp: str = field(default_factory=_utcnow)
@@ -788,6 +791,51 @@ def _candidate_freeze_mismatches(
     if registration.frozen_bundle_payload != _jsonable(bundle.to_dict()):
         mismatches.append("frozen_bundle_payload")
     return tuple(mismatches)
+
+
+def _build_packet_transition_report(
+    *,
+    case_id: str,
+    packet_kind: str,
+    packet_id: str,
+    machine_id: str,
+    from_state: str,
+    to_state: str,
+    allowed_reason_code: str,
+    blocked_reason_code: str,
+    no_state_change_reason_code: str,
+    invalid_spec_reason_code: str,
+) -> PacketTransitionReport:
+    lifecycle_report = evaluate_transition(
+        case_id,
+        machine_id,
+        from_state,
+        to_state,
+    )
+    reason_code = {
+        "STATE_MACHINE_TRANSITION_ALLOWED": allowed_reason_code,
+        "STATE_MACHINE_TRANSITION_NOT_ALLOWED": blocked_reason_code,
+        "STATE_MACHINE_NO_STATE_CHANGE": no_state_change_reason_code,
+    }.get(lifecycle_report.reason_code, invalid_spec_reason_code)
+    status = {
+        "STATE_MACHINE_TRANSITION_ALLOWED": PacketStatus.PASS.value,
+        "STATE_MACHINE_TRANSITION_NOT_ALLOWED": PacketStatus.VIOLATION.value,
+        "STATE_MACHINE_NO_STATE_CHANGE": PacketStatus.INVALID.value,
+    }.get(lifecycle_report.reason_code, PacketStatus.INVALID.value)
+    return PacketTransitionReport(
+        case_id=case_id,
+        packet_kind=packet_kind,
+        packet_id=packet_id,
+        machine_id=lifecycle_report.machine_id,
+        from_state=lifecycle_report.from_state,
+        to_state=lifecycle_report.to_state,
+        status=status,
+        reason_code=reason_code,
+        allowed=lifecycle_report.transition_log.allowed,
+        allowed_next_states=lifecycle_report.transition_log.allowed_next_states,
+        explanation=lifecycle_report.explanation,
+        remediation=lifecycle_report.remediation,
+    )
 
 
 def _readiness_context(record: BundleReadinessRecord) -> dict[str, str | None]:
@@ -1332,32 +1380,17 @@ def transition_bundle_readiness_record(
     record: BundleReadinessRecord,
     to_state: ReadinessState,
 ) -> PacketTransitionReport:
-    allowed = to_state in READINESS_ALLOWED_TRANSITIONS[record.lifecycle_state]
-    if not allowed:
-        return PacketTransitionReport(
-            case_id=case_id,
-            packet_kind="bundle_readiness_record",
-            packet_id=record.bundle_readiness_record_id,
-            from_state=record.lifecycle_state.value,
-            to_state=to_state.value,
-            status=PacketStatus.VIOLATION.value,
-            reason_code="BUNDLE_READINESS_INVALID_TRANSITION",
-            allowed=False,
-            explanation="The requested readiness transition is not part of the canonical state machine.",
-            remediation="Advance the readiness record only through the plan-defined transitions.",
-        )
-
-    return PacketTransitionReport(
+    return _build_packet_transition_report(
         case_id=case_id,
         packet_kind="bundle_readiness_record",
         packet_id=record.bundle_readiness_record_id,
+        machine_id=BUNDLE_READINESS_MACHINE_ID,
         from_state=record.lifecycle_state.value,
         to_state=to_state.value,
-        status=PacketStatus.PASS.value,
-        reason_code="BUNDLE_READINESS_TRANSITION_ALLOWED",
-        allowed=True,
-        explanation="The readiness transition is allowed by the canonical state machine.",
-        remediation="No remediation required.",
+        allowed_reason_code="BUNDLE_READINESS_TRANSITION_ALLOWED",
+        blocked_reason_code="BUNDLE_READINESS_INVALID_TRANSITION",
+        no_state_change_reason_code="BUNDLE_READINESS_NO_STATE_CHANGE",
+        invalid_spec_reason_code="BUNDLE_READINESS_TRANSITION_SPEC_INVALID",
     )
 
 
@@ -1465,6 +1498,78 @@ def validate_deployment_instance(
             remediation="Bind at least one session-readiness packet before marking the deployment active.",
         )
 
+    if (
+        instance.lifecycle_state not in {DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
+        and instance.withdrawal_event_id
+    ):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="deployment_instance",
+            packet_id=instance.deployment_instance_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="DEPLOYMENT_INSTANCE_WITHDRAWAL_EVENT_STATE_MISMATCH",
+            context=_deployment_context(instance),
+            missing_fields=(),
+            explanation=(
+                "Only withdrawn or closed deployment states may retain a withdrawal event id."
+            ),
+            remediation="Clear the withdrawal event or advance the deployment into a withdrawn or closed state.",
+        )
+
+    if (
+        instance.lifecycle_state not in {DeploymentState.WITHDRAWN, DeploymentState.CLOSED}
+        and instance.stop_event_id
+    ):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="deployment_instance",
+            packet_id=instance.deployment_instance_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="DEPLOYMENT_INSTANCE_STOP_EVENT_STATE_MISMATCH",
+            context=_deployment_context(instance),
+            missing_fields=(),
+            explanation=(
+                "Only withdrawn or closed deployment states may retain a stop event id."
+            ),
+            remediation="Clear the stop event or advance the deployment into a withdrawn or closed state.",
+        )
+
+    if (
+        instance.lifecycle_state == DeploymentState.WITHDRAWN
+        and not instance.withdrawal_event_id
+    ):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="deployment_instance",
+            packet_id=instance.deployment_instance_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="DEPLOYMENT_INSTANCE_WITHDRAWAL_EVENT_REQUIRED",
+            context=_deployment_context(instance),
+            missing_fields=("withdrawal_event_id",),
+            explanation=(
+                "Withdrawn deployment states must retain the withdrawal event that removed the lane from service."
+            ),
+            remediation="Record the withdrawal event before marking the deployment withdrawn.",
+        )
+
+    if (
+        instance.lifecycle_state == DeploymentState.CLOSED
+        and not (instance.stop_event_id or instance.withdrawal_event_id)
+    ):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="deployment_instance",
+            packet_id=instance.deployment_instance_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="DEPLOYMENT_INSTANCE_TERMINAL_EVENT_REQUIRED",
+            context=_deployment_context(instance),
+            missing_fields=("stop_event_id", "withdrawal_event_id"),
+            explanation=(
+                "Closed deployment states must retain either a stop event, a withdrawal event, or both for later audit."
+            ),
+            remediation="Record the terminal event evidence before closing the deployment instance.",
+        )
+
     return PacketValidationReport(
         case_id=case_id,
         packet_kind="deployment_instance",
@@ -1486,32 +1591,17 @@ def transition_deployment_instance(
     instance: DeploymentInstance,
     to_state: DeploymentState,
 ) -> PacketTransitionReport:
-    allowed = to_state in DEPLOYMENT_ALLOWED_TRANSITIONS[instance.lifecycle_state]
-    if not allowed:
-        return PacketTransitionReport(
-            case_id=case_id,
-            packet_kind="deployment_instance",
-            packet_id=instance.deployment_instance_id,
-            from_state=instance.lifecycle_state.value,
-            to_state=to_state.value,
-            status=PacketStatus.VIOLATION.value,
-            reason_code="DEPLOYMENT_INSTANCE_INVALID_TRANSITION",
-            allowed=False,
-            explanation="The requested deployment transition is not part of the canonical state machine.",
-            remediation="Advance the deployment only through the plan-defined lifecycle transitions.",
-        )
-
-    return PacketTransitionReport(
+    return _build_packet_transition_report(
         case_id=case_id,
         packet_kind="deployment_instance",
         packet_id=instance.deployment_instance_id,
+        machine_id=DEPLOYMENT_INSTANCE_MACHINE_ID,
         from_state=instance.lifecycle_state.value,
         to_state=to_state.value,
-        status=PacketStatus.PASS.value,
-        reason_code="DEPLOYMENT_INSTANCE_TRANSITION_ALLOWED",
-        allowed=True,
-        explanation="The deployment transition is allowed by the canonical state machine.",
-        remediation="No remediation required.",
+        allowed_reason_code="DEPLOYMENT_INSTANCE_TRANSITION_ALLOWED",
+        blocked_reason_code="DEPLOYMENT_INSTANCE_INVALID_TRANSITION",
+        no_state_change_reason_code="DEPLOYMENT_INSTANCE_NO_STATE_CHANGE",
+        invalid_spec_reason_code="DEPLOYMENT_INSTANCE_TRANSITION_SPEC_INVALID",
     )
 
 

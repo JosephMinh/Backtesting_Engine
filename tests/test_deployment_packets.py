@@ -241,6 +241,13 @@ class DeploymentPacketContractTest(unittest.TestCase):
                 )
                 self.assertEqual(payload["expected_status"], report.status)
                 self.assertEqual(payload["expected_reason_code"], report.reason_code)
+                if "expected_machine_id" in payload:
+                    self.assertEqual(payload["expected_machine_id"], report.machine_id)
+                if "expected_allowed_next_states" in payload:
+                    self.assertEqual(
+                        tuple(payload["expected_allowed_next_states"]),
+                        report.allowed_next_states,
+                    )
 
     def test_deployment_fixture_and_transition_cases_emit_expected_reports(self) -> None:
         fixtures = load_cases()
@@ -262,6 +269,13 @@ class DeploymentPacketContractTest(unittest.TestCase):
                 )
                 self.assertEqual(payload["expected_status"], report.status)
                 self.assertEqual(payload["expected_reason_code"], report.reason_code)
+                if "expected_machine_id" in payload:
+                    self.assertEqual(payload["expected_machine_id"], report.machine_id)
+                if "expected_allowed_next_states" in payload:
+                    self.assertEqual(
+                        tuple(payload["expected_allowed_next_states"]),
+                        report.allowed_next_states,
+                    )
 
     def test_promotion_and_session_fixture_cases_emit_expected_reports(self) -> None:
         fixtures = load_cases()
@@ -346,6 +360,27 @@ class DeploymentPacketContractTest(unittest.TestCase):
         self.assertEqual(PacketStatus.PASS.value, report.status)
         self.assertIn("closed dependencies", report.explanation.lower())
         self.assertEqual("candidate_bundle_replay", report.packet_kind)
+
+    def test_transition_report_includes_machine_id_and_allowed_next_states(self) -> None:
+        case = next(
+            case
+            for case in load_cases()["deployment_transition_cases"]
+            if case["case_id"] == "allow_live_canary_to_live_active"
+        )
+        report = transition_deployment_instance(
+            case["case_id"],
+            build_deployment(case["payload"]),
+            DeploymentState(case["to_state"]),
+        )
+        payload = report.to_dict()
+
+        self.assertEqual("deployment_instance_lifecycle", report.machine_id)
+        self.assertEqual(("LIVE_ACTIVE", "WITHDRAWN", "CLOSED"), report.allowed_next_states)
+        self.assertTrue(
+            {"machine_id", "allowed_next_states", "allowed", "from_state", "to_state"}.issubset(
+                payload.keys()
+            )
+        )
 
     def test_session_packet_report_is_structured_and_green_when_valid(self) -> None:
         report = validate_session_readiness_packet(

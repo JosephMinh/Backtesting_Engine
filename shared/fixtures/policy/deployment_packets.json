@@ -285,6 +285,8 @@
         "approval_history_ids": []
       },
       "to_state": "PORTABILITY_PENDING",
+      "expected_machine_id": "bundle_readiness_lifecycle",
+      "expected_allowed_next_states": ["PORTABILITY_PENDING", "RECERT_REQUIRED", "SUSPECT", "REVOKED"],
       "expected_status": "pass",
       "expected_reason_code": "BUNDLE_READINESS_TRANSITION_ALLOWED"
     },
@@ -305,8 +307,32 @@
         "approval_history_ids": ["live_eligibility_signoff_v1"]
       },
       "to_state": "PAPER_PASSED",
+      "expected_machine_id": "bundle_readiness_lifecycle",
+      "expected_allowed_next_states": ["RECERT_REQUIRED", "SUSPECT", "REVOKED"],
       "expected_status": "violation",
       "expected_reason_code": "BUNDLE_READINESS_INVALID_TRANSITION"
+    },
+    {
+      "case_id": "reject_replay_passed_no_state_change",
+      "payload": {
+        "bundle_readiness_record_id": "bundle_readiness_transition_v3",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "target_account_binding_id": "ibkr_paper_account_binding_v1",
+        "policy_bundle_hash": "policy_bundle_sha256_001",
+        "account_risk_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "broker_capability_descriptor_id": "broker_capability_ibkr_v1",
+        "approved_data_profile_release_id": "ibkr_1oz_comex_bars_1m_v1",
+        "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_2026q1_v1",
+        "current_margin_snapshot_id": "broker_margin_snapshot_2026q1_v1",
+        "freshness_evidence_ids": [],
+        "lifecycle_state": "REPLAY_PASSED",
+        "approval_history_ids": ["replay_signoff_v1"]
+      },
+      "to_state": "REPLAY_PASSED",
+      "expected_machine_id": "bundle_readiness_lifecycle",
+      "expected_allowed_next_states": ["PAPER_ELIGIBLE", "RECERT_REQUIRED", "SUSPECT", "REVOKED"],
+      "expected_status": "invalid",
+      "expected_reason_code": "BUNDLE_READINESS_NO_STATE_CHANGE"
     }
   ],
   "deployment_cases": [
@@ -351,6 +377,69 @@
       },
       "expected_status": "incompatible",
       "expected_reason_code": "DEPLOYMENT_INSTANCE_STATE_LANE_MISMATCH"
+    },
+    {
+      "case_id": "reject_running_deployment_with_stop_event",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_live_v2",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 8,
+        "operator_action_ids": ["activate_live_v1"],
+        "start_event_id": "deployment_start_live_v2",
+        "stop_event_id": "deployment_stop_live_v2",
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "LIVE_ACTIVE"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_STOP_EVENT_STATE_MISMATCH"
+    },
+    {
+      "case_id": "reject_withdrawn_deployment_without_withdrawal_event",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_shadow_v2",
+        "lane": "shadow_live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_shadow_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 4,
+        "operator_action_ids": ["withdraw_shadow_v1"],
+        "start_event_id": "deployment_start_shadow_v2",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "WITHDRAWN"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_WITHDRAWAL_EVENT_REQUIRED"
+    },
+    {
+      "case_id": "reject_closed_deployment_without_terminal_event",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_live_v3",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 10,
+        "operator_action_ids": ["close_live_v1"],
+        "start_event_id": "deployment_start_live_v3",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "CLOSED"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_TERMINAL_EVENT_REQUIRED"
     }
   ],
   "deployment_transition_cases": [
@@ -373,6 +462,8 @@
         "lifecycle_state": "LIVE_CANARY"
       },
       "to_state": "LIVE_ACTIVE",
+      "expected_machine_id": "deployment_instance_lifecycle",
+      "expected_allowed_next_states": ["LIVE_ACTIVE", "WITHDRAWN", "CLOSED"],
       "expected_status": "pass",
       "expected_reason_code": "DEPLOYMENT_INSTANCE_TRANSITION_ALLOWED"
     },
@@ -395,8 +486,34 @@
         "lifecycle_state": "CLOSED"
       },
       "to_state": "LIVE_ACTIVE",
+      "expected_machine_id": "deployment_instance_lifecycle",
+      "expected_allowed_next_states": [],
       "expected_status": "violation",
       "expected_reason_code": "DEPLOYMENT_INSTANCE_INVALID_TRANSITION"
+    },
+    {
+      "case_id": "reject_live_active_no_state_change",
+      "payload": {
+        "deployment_instance_id": "deployment_gold_live_transition_v2",
+        "lane": "live",
+        "target_account_binding_id": "ibkr_live_account_binding_v1",
+        "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_001",
+        "bundle_readiness_record_id": "bundle_readiness_gold_candidate_v1",
+        "active_promotion_packet_id": "promotion_packet_gold_live_v1",
+        "session_readiness_packet_ids": ["session_packet_gold_live_20260326"],
+        "runtime_sequence_number": 11,
+        "operator_action_ids": ["activate_live_v2"],
+        "start_event_id": "deployment_start_live_v2",
+        "stop_event_id": null,
+        "withdrawal_event_id": null,
+        "recovery_event_ids": [],
+        "lifecycle_state": "LIVE_ACTIVE"
+      },
+      "to_state": "LIVE_ACTIVE",
+      "expected_machine_id": "deployment_instance_lifecycle",
+      "expected_allowed_next_states": ["WITHDRAWN", "CLOSED"],
+      "expected_status": "invalid",
+      "expected_reason_code": "DEPLOYMENT_INSTANCE_NO_STATE_CHANGE"
     }
   ],
   "promotion_cases": [
