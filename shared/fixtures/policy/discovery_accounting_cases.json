@@ -1,0 +1,506 @@
+{
+  "shared_request_defaults": {
+    "case_id": "exploratory_search_stays_bounded",
+    "preregistration": {
+      "registration_id": "family_prereg_gold_breakout_v1",
+      "family_id": "gold_breakout",
+      "subfamily_id": "comex_open_drive",
+      "economic_thesis": "Opening range displacement after overnight compression persists into the liquid COMEX session.",
+      "lane_assumptions": [
+        "Signals are evaluated on completed bars only.",
+        "The intended execution lane is 1OZ COMEX, not MGC."
+      ],
+      "target_session_class": "regular_comex",
+      "intended_execution_style": "passive_limit_entry_with_protective_stop",
+      "intended_holding_period": "intraday_flat_by_session_close",
+      "research_symbol": "MGC",
+      "expected_execution_symbol": "1OZ",
+      "execution_symbol_tradability_hypothesis": "Research alpha found on MGC remains economically viable once proven portable to 1OZ with native execution checks.",
+      "failure_criteria": [
+        "After-cost expectancy turns negative across the certified validation split.",
+        "Session-conditioned drawdown exceeds the preregistered downside tolerance."
+      ],
+      "preliminary_parameter_ranges": [
+        {
+          "parameter_id": "opening_range_minutes",
+          "lower_bound": 5.0,
+          "upper_bound": 30.0,
+          "rationale": "Constrain the opening range to realistic intraday discovery windows."
+        },
+        {
+          "parameter_id": "breakout_buffer_bps",
+          "lower_bound": 0.5,
+          "upper_bound": 8.0,
+          "rationale": "Allow only small entry buffers consistent with liquid gold futures."
+        }
+      ],
+      "primary_evaluation_metrics": [
+        "after_cost_sharpe",
+        "passive_gold_excess_return",
+        "max_drawdown_fraction"
+      ],
+      "budget_limits": {
+        "historical_data_spend_limit_usd": 250.0,
+        "compute_spend_limit_usd": 400.0,
+        "tuning_trial_limit": 40,
+        "operator_review_hours_limit": 8.0,
+        "exploratory_budget_limit_usd": 1500.0,
+        "continuation_budget_limit_usd": 5000.0,
+        "deep_budget_requires_viability": true
+      },
+      "created_at_utc": "2026-03-27T03:45:00+00:00",
+      "schema_version": 1
+    },
+    "family_ledger": {
+      "family_id": "gold_breakout",
+      "subfamily_id": "comex_open_drive",
+      "research_run_ids": [
+        "research_run_gold_breakout_001",
+        "research_run_gold_breakout_002",
+        "research_run_gold_breakout_003"
+      ],
+      "promotable_trial_count": 12,
+      "null_comparison_count": 5,
+      "historical_data_spend_usd": 180.0,
+      "compute_spend_usd": 240.0,
+      "operator_review_hours": 5.5,
+      "requested_next_budget_usd": 200.0,
+      "retained_log_ids": [
+        "family_discovery_log_001",
+        "family_discovery_log_002"
+      ],
+      "correlation_id": "corr_family_discovery_gold_breakout_001",
+      "diagnostic_delta_ids": [
+        "delta_random_entry_001",
+        "delta_anchor_shift_001",
+        "delta_side_flip_001",
+        "delta_permutation_001",
+        "delta_regime_001"
+      ]
+    },
+    "null_suite_entries": [
+      {
+        "null_model_id": "random_entry",
+        "study_id": "null_random_entry_001",
+        "completed": true,
+        "sample_count": 200,
+        "retained_artifact_ids": [
+          "artifact_random_entry_001"
+        ],
+        "retained_log_ids": [
+          "log_random_entry_001"
+        ],
+        "diagnostic_deltas": [
+          {
+            "metric_id": "after_cost_sharpe",
+            "baseline_value": -0.15,
+            "observed_value": 0.72,
+            "delta_value": 0.87,
+            "interpretation": "Observed family materially outperforms random entry."
+          }
+        ]
+      },
+      {
+        "null_model_id": "time_shifted_anchor",
+        "study_id": "null_time_shifted_001",
+        "completed": true,
+        "sample_count": 120,
+        "retained_artifact_ids": [
+          "artifact_time_shifted_001"
+        ],
+        "retained_log_ids": [
+          "log_time_shifted_001"
+        ],
+        "diagnostic_deltas": [
+          {
+            "metric_id": "after_cost_sharpe",
+            "baseline_value": 0.05,
+            "observed_value": 0.72,
+            "delta_value": 0.67,
+            "interpretation": "Observed family outperforms time-shifted anchors."
+          }
+        ]
+      },
+      {
+        "null_model_id": "side_flipped_or_ablated",
+        "study_id": "null_side_flip_001",
+        "completed": true,
+        "sample_count": 120,
+        "retained_artifact_ids": [
+          "artifact_side_flip_001"
+        ],
+        "retained_log_ids": [
+          "log_side_flip_001"
+        ],
+        "diagnostic_deltas": [
+          {
+            "metric_id": "passive_gold_excess_return",
+            "baseline_value": -0.1,
+            "observed_value": 0.24,
+            "delta_value": 0.34,
+            "interpretation": "Observed family beats side-flipped and ablated variants."
+          }
+        ]
+      },
+      {
+        "null_model_id": "permutation",
+        "study_id": "null_permutation_001",
+        "completed": true,
+        "sample_count": 250,
+        "retained_artifact_ids": [
+          "artifact_permutation_001"
+        ],
+        "retained_log_ids": [
+          "log_permutation_001"
+        ],
+        "diagnostic_deltas": [
+          {
+            "metric_id": "max_drawdown_fraction",
+            "baseline_value": 0.18,
+            "observed_value": 0.09,
+            "delta_value": -0.09,
+            "interpretation": "Observed family improves on permutation stress drawdown."
+          }
+        ]
+      },
+      {
+        "null_model_id": "regime_conditional",
+        "study_id": "null_regime_001",
+        "completed": true,
+        "sample_count": 90,
+        "retained_artifact_ids": [
+          "artifact_regime_001"
+        ],
+        "retained_log_ids": [
+          "log_regime_001"
+        ],
+        "diagnostic_deltas": [
+          {
+            "metric_id": "after_cost_sharpe",
+            "baseline_value": 0.11,
+            "observed_value": 0.72,
+            "delta_value": 0.61,
+            "interpretation": "Observed family outperforms regime-conditioned nulls."
+          }
+        ]
+      }
+    ],
+    "program_ledger": {
+      "ledger_id": "program_discovery_ledger_001",
+      "family_entries": [
+        {
+          "family_id": "gold_breakout",
+          "subfamily_id": "comex_open_drive",
+          "research_run_ids": [
+            "research_run_gold_breakout_001",
+            "research_run_gold_breakout_002",
+            "research_run_gold_breakout_003"
+          ],
+          "promotable_trial_count": 12,
+          "null_comparison_count": 5,
+          "historical_data_spend_usd": 180.0,
+          "compute_spend_usd": 240.0,
+          "operator_review_hours": 5.5,
+          "requested_next_budget_usd": 200.0,
+          "retained_log_ids": [
+            "family_discovery_log_001",
+            "family_discovery_log_002"
+          ],
+          "correlation_id": "corr_family_discovery_gold_breakout_001",
+          "diagnostic_delta_ids": [
+            "delta_random_entry_001",
+            "delta_anchor_shift_001",
+            "delta_side_flip_001",
+            "delta_permutation_001",
+            "delta_regime_001"
+          ]
+        },
+        {
+          "family_id": "mean_reversion",
+          "subfamily_id": "overnight_revert",
+          "research_run_ids": [
+            "research_run_mean_reversion_001"
+          ],
+          "promotable_trial_count": 4,
+          "null_comparison_count": 2,
+          "historical_data_spend_usd": 60.0,
+          "compute_spend_usd": 70.0,
+          "operator_review_hours": 2.0,
+          "requested_next_budget_usd": 0.0,
+          "retained_log_ids": [
+            "family_discovery_log_mr_001"
+          ],
+          "correlation_id": "corr_family_discovery_mean_reversion_001",
+          "diagnostic_delta_ids": [
+            "delta_mr_random_001",
+            "delta_mr_regime_001"
+          ]
+        }
+      ],
+      "cumulative_promotable_trial_count": 16,
+      "cumulative_null_comparison_count": 7,
+      "cumulative_data_spend_usd": 240.0,
+      "cumulative_compute_spend_usd": 310.0,
+      "cumulative_operator_review_hours": 7.5,
+      "continuation_decision_record_ids": [],
+      "recorded_at_utc": "2026-03-27T04:05:00+00:00"
+    },
+    "continuation_decision": null,
+    "evaluated_at_utc": "2026-03-27T04:10:00+00:00",
+    "schema_version": 1
+  },
+  "evaluation_cases": [
+    {
+      "case_id": "bounded_exploratory_search_passes",
+      "overrides": {},
+      "expected": {
+        "status": "pass",
+        "decision": "allow_exploratory",
+        "reason_code": "DISCOVERY_ACCOUNTING_EXPLORATORY_ALLOWED",
+        "triggered_check_ids": [],
+        "family_total_spend_usd": 420.0,
+        "program_total_spend_usd": 550.0,
+        "remaining_exploratory_budget_usd": 1080.0,
+        "completed_null_model_ids": [
+          "random_entry",
+          "time_shifted_anchor",
+          "side_flipped_or_ablated",
+          "permutation",
+          "regime_conditional"
+        ]
+      }
+    },
+    {
+      "case_id": "missing_required_null_family_blocks",
+      "overrides": {
+        "null_suite_entries": [
+          {
+            "null_model_id": "random_entry",
+            "study_id": "null_random_entry_001",
+            "completed": true,
+            "sample_count": 200,
+            "retained_artifact_ids": ["artifact_random_entry_001"],
+            "retained_log_ids": ["log_random_entry_001"],
+            "diagnostic_deltas": [
+              {
+                "metric_id": "after_cost_sharpe",
+                "baseline_value": -0.15,
+                "observed_value": 0.72,
+                "delta_value": 0.87,
+                "interpretation": "Observed family materially outperforms random entry."
+              }
+            ]
+          },
+          {
+            "null_model_id": "time_shifted_anchor",
+            "study_id": "null_time_shifted_001",
+            "completed": true,
+            "sample_count": 120,
+            "retained_artifact_ids": ["artifact_time_shifted_001"],
+            "retained_log_ids": ["log_time_shifted_001"],
+            "diagnostic_deltas": [
+              {
+                "metric_id": "after_cost_sharpe",
+                "baseline_value": 0.05,
+                "observed_value": 0.72,
+                "delta_value": 0.67,
+                "interpretation": "Observed family outperforms time-shifted anchors."
+              }
+            ]
+          },
+          {
+            "null_model_id": "side_flipped_or_ablated",
+            "study_id": "null_side_flip_001",
+            "completed": true,
+            "sample_count": 120,
+            "retained_artifact_ids": ["artifact_side_flip_001"],
+            "retained_log_ids": ["log_side_flip_001"],
+            "diagnostic_deltas": [
+              {
+                "metric_id": "passive_gold_excess_return",
+                "baseline_value": -0.1,
+                "observed_value": 0.24,
+                "delta_value": 0.34,
+                "interpretation": "Observed family beats side-flipped and ablated variants."
+              }
+            ]
+          },
+          {
+            "null_model_id": "permutation",
+            "study_id": "null_permutation_001",
+            "completed": true,
+            "sample_count": 250,
+            "retained_artifact_ids": ["artifact_permutation_001"],
+            "retained_log_ids": ["log_permutation_001"],
+            "diagnostic_deltas": [
+              {
+                "metric_id": "max_drawdown_fraction",
+                "baseline_value": 0.18,
+                "observed_value": 0.09,
+                "delta_value": -0.09,
+                "interpretation": "Observed family improves on permutation stress drawdown."
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "block",
+        "reason_code": "DISCOVERY_ACCOUNTING_NULL_SUITE_INCOMPLETE",
+        "triggered_check_ids": [
+          "null_suite_coverage"
+        ]
+      }
+    },
+    {
+      "case_id": "program_ledger_aggregation_mismatch_is_invalid",
+      "overrides": {
+        "program_ledger": {
+          "cumulative_promotable_trial_count": 15
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "block",
+        "reason_code": "DISCOVERY_ACCOUNTING_PROGRAM_LEDGER_MISMATCH",
+        "triggered_check_ids": [
+          "program_discovery_ledger"
+        ]
+      }
+    },
+    {
+      "case_id": "exploratory_overrun_requires_continuation",
+      "overrides": {
+        "family_ledger": {
+          "requested_next_budget_usd": 1200.0
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "decision": "block",
+        "reason_code": "DISCOVERY_ACCOUNTING_CONTINUATION_REQUIRED",
+        "triggered_check_ids": [
+          "continuation_gate"
+        ]
+      }
+    },
+    {
+      "case_id": "approved_continuation_allows_deeper_search",
+      "overrides": {
+        "family_ledger": {
+          "requested_next_budget_usd": 1200.0
+        },
+        "program_ledger": {
+          "continuation_decision_record_ids": [
+            "family_decision_gold_breakout_continue_001"
+          ]
+        },
+        "continuation_decision": {
+          "decision_record_id": "family_decision_gold_breakout_continue_001",
+          "family_id": "gold_breakout",
+          "decision_timestamp_utc": "2026-03-27T04:00:00+00:00",
+          "decision_type": "continue",
+          "evidence_references": [
+            "research_run_gold_breakout_001",
+            "research_run_gold_breakout_002",
+            "research_run_gold_breakout_003"
+          ],
+          "budget_consumed_usd": 420.0,
+          "next_budget_authorized_usd": 1500.0,
+          "reviewer_self_attestations": [
+            {
+              "reviewer_id": "operator_self",
+              "attested_controls": [
+                "budget_review",
+                "evidence_review"
+              ],
+              "signed_at_utc": "2026-03-27T03:59:00+00:00"
+            }
+          ],
+          "reason_bundle": [
+            "null_suite_complete",
+            "family_budget_authorized",
+            "program_discovery_ledger_reviewed"
+          ],
+          "revisit_at_utc": null,
+          "lifecycle_state": "active"
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "decision": "allow_with_continuation",
+        "reason_code": "DISCOVERY_ACCOUNTING_CONTINUED_WITH_APPROVAL",
+        "triggered_check_ids": []
+      }
+    },
+    {
+      "case_id": "family_ledger_mismatch_is_invalid",
+      "overrides": {
+        "family_ledger": {
+          "subfamily_id": "other_subfamily"
+        },
+        "program_ledger": {
+          "family_entries": [
+            {
+              "family_id": "gold_breakout",
+              "subfamily_id": "other_subfamily",
+              "research_run_ids": [
+                "research_run_gold_breakout_001",
+                "research_run_gold_breakout_002",
+                "research_run_gold_breakout_003"
+              ],
+              "promotable_trial_count": 12,
+              "null_comparison_count": 5,
+              "historical_data_spend_usd": 180.0,
+              "compute_spend_usd": 240.0,
+              "operator_review_hours": 5.5,
+              "requested_next_budget_usd": 200.0,
+              "retained_log_ids": [
+                "family_discovery_log_001",
+                "family_discovery_log_002"
+              ],
+              "correlation_id": "corr_family_discovery_gold_breakout_001",
+              "diagnostic_delta_ids": [
+                "delta_random_entry_001",
+                "delta_anchor_shift_001",
+                "delta_side_flip_001",
+                "delta_permutation_001",
+                "delta_regime_001"
+              ]
+            },
+            {
+              "family_id": "mean_reversion",
+              "subfamily_id": "overnight_revert",
+              "research_run_ids": [
+                "research_run_mean_reversion_001"
+              ],
+              "promotable_trial_count": 4,
+              "null_comparison_count": 2,
+              "historical_data_spend_usd": 60.0,
+              "compute_spend_usd": 70.0,
+              "operator_review_hours": 2.0,
+              "requested_next_budget_usd": 0.0,
+              "retained_log_ids": [
+                "family_discovery_log_mr_001"
+              ],
+              "correlation_id": "corr_family_discovery_mean_reversion_001",
+              "diagnostic_delta_ids": [
+                "delta_mr_random_001",
+                "delta_mr_regime_001"
+              ]
+            }
+          ]
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "block",
+        "reason_code": "DISCOVERY_ACCOUNTING_FAMILY_LEDGER_INVALID",
+        "triggered_check_ids": [
+          "family_discovery_accounting"
+        ]
+      }
+    }
+  ]
+}
