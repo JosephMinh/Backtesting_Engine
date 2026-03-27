@@ -1,3 +1,5 @@
+#![allow(unused_crate_dependencies)]
+
 #[path = "../readiness.rs"]
 mod readiness;
 
@@ -86,22 +88,27 @@ fn main() -> ExitCode {
 #[cfg(test)]
 mod smoke_tests {
     use std::env;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     use super::readiness::{
         assemble_session_readiness_packet, sample_session_readiness_request,
         write_session_readiness_artifacts,
     };
 
+    fn safe_tmp_root() -> PathBuf {
+        let shm_root = Path::new("/dev/shm");
+        if shm_root.exists() {
+            shm_root.join("backtesting_engine_opsd_readiness_smoke_tests")
+        } else {
+            env::temp_dir().join("backtesting_engine_opsd_readiness_smoke_tests")
+        }
+    }
+
     #[test]
     fn scenario_sweep_emits_readiness_states() {
         let artifact_root = PathBuf::from(
-            env::var("READINESS_SMOKE_ARTIFACT_ROOT").unwrap_or_else(|_| {
-                env::temp_dir()
-                    .join("backtesting_engine_opsd_readiness_smoke_tests")
-                    .display()
-                    .to_string()
-            }),
+            env::var("READINESS_SMOKE_ARTIFACT_ROOT")
+                .unwrap_or_else(|_| safe_tmp_root().display().to_string()),
         );
 
         for scenario in [
