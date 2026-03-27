@@ -76,6 +76,157 @@
       "expected_reason_code": "CANDIDATE_BUNDLE_CONCRETE_ACCOUNT_BINDING_FORBIDDEN"
     }
   ],
+  "candidate_freeze_cases": [
+    {
+      "case_id": "register_candidate_bundle_freeze_log",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_001",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_001",
+        "correlation_id": "corr-candidate-freeze-001",
+        "operator_reason_bundle": [
+          "candidate bundle was frozen after promotable selection"
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "CANDIDATE_BUNDLE_FREEZE_REGISTERED"
+    },
+    {
+      "case_id": "reject_mismatched_candidate_bundle_freeze_log",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_002",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_002",
+        "correlation_id": "corr-candidate-freeze-002",
+        "operator_reason_bundle": [
+          "candidate bundle was frozen after promotable selection"
+        ],
+        "content_hash": "candidate_bundle_sha256_tampered"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "CANDIDATE_BUNDLE_FREEZE_LOG_MISMATCH"
+    }
+  ],
+  "candidate_load_cases": [
+    {
+      "case_id": "load_candidate_bundle_from_freeze_log",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_003",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_003",
+        "correlation_id": "corr-candidate-load-001",
+        "operator_reason_bundle": [
+          "candidate bundle load used the frozen content-addressed artifact"
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "CANDIDATE_BUNDLE_LOAD_MATCHES_FREEZE_LOG"
+    },
+    {
+      "case_id": "reject_mutated_candidate_bundle_load",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_004",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_004",
+        "correlation_id": "corr-candidate-load-002",
+        "operator_reason_bundle": [
+          "candidate bundle load used the frozen content-addressed artifact"
+        ]
+      },
+      "bundle_overrides": {
+        "parameterization_digest": "params_sha256_mutated"
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "CANDIDATE_BUNDLE_LOAD_MISMATCH"
+    }
+  ],
+  "candidate_replay_cases": [
+    {
+      "case_id": "allow_candidate_bundle_replay_ready",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_005",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_005",
+        "correlation_id": "corr-candidate-replay-001",
+        "operator_reason_bundle": [
+          "candidate bundle freeze log retained replay references"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_001",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_001",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_005",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_001",
+          "signed_manifest_candidate_bundle_005",
+          "replay_cert_v1",
+          "tradability_study_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001",
+          "sha256:feature002"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "dependency_manifest_hashes": [
+          "dep_dag_sha256_001"
+        ],
+        "correlation_id": "corr-candidate-replay-001",
+        "operator_reason_bundle": [
+          "replay fixture and signed manifest are available for the frozen candidate"
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "CANDIDATE_BUNDLE_REPLAY_READY"
+    },
+    {
+      "case_id": "reject_candidate_bundle_replay_with_missing_evidence",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_006",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_006",
+        "correlation_id": "corr-candidate-replay-002",
+        "operator_reason_bundle": [
+          "candidate bundle freeze log retained replay references"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_002",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_002",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_006",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_002",
+          "signed_manifest_candidate_bundle_006",
+          "replay_cert_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a"
+        ],
+        "dependency_manifest_hashes": [],
+        "correlation_id": "corr-candidate-replay-002",
+        "operator_reason_bundle": [
+          "replay dependencies are incomplete"
+        ]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "CANDIDATE_BUNDLE_REPLAY_NOT_CLOSED"
+    }
+  ],
   "readiness_cases": [
     {
       "case_id": "allow_live_eligible_readiness_record",

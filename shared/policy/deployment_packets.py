@@ -85,6 +85,16 @@ def _utcnow() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True)
 class CandidateBundle:
     bundle_id: str
@@ -204,6 +214,155 @@ class CandidateBundle:
     @classmethod
     def from_json(cls, payload: str) -> "CandidateBundle":
         return cls.from_dict(_decode_json(payload, "candidate_bundle"))
+
+
+@dataclass(frozen=True)
+class CandidateBundleFreezeRegistration:
+    registration_log_id: str
+    candidate_bundle_id: str
+    content_hash: str
+    signal_kernel_digest: str
+    parameterization_digest: str
+    dataset_release_id: str
+    analytic_release_id: str | None
+    data_profile_release_id: str
+    resolved_context_bundle_id: str
+    execution_profile_release_id: str
+    dependency_dag_hash: str
+    feature_contract_hashes: tuple[str, ...]
+    required_evidence_ids: tuple[str, ...]
+    compatibility_matrix_version: str
+    signature_ids: tuple[str, ...]
+    registration_artifact_id: str
+    correlation_id: str
+    operator_reason_bundle: tuple[str, ...]
+    frozen_bundle_payload: dict[str, Any]
+    created_at_utc: str = field(default_factory=_utcnow)
+
+    def to_dict(self) -> dict[str, Any]:
+        return _jsonable(asdict(self))
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "CandidateBundleFreezeRegistration":
+        return cls(
+            registration_log_id=str(payload["registration_log_id"]),
+            candidate_bundle_id=str(payload["candidate_bundle_id"]),
+            content_hash=str(payload["content_hash"]),
+            signal_kernel_digest=str(payload["signal_kernel_digest"]),
+            parameterization_digest=str(payload["parameterization_digest"]),
+            dataset_release_id=str(payload["dataset_release_id"]),
+            analytic_release_id=(
+                str(payload["analytic_release_id"])
+                if payload.get("analytic_release_id")
+                else None
+            ),
+            data_profile_release_id=str(payload["data_profile_release_id"]),
+            resolved_context_bundle_id=str(payload["resolved_context_bundle_id"]),
+            execution_profile_release_id=str(payload["execution_profile_release_id"]),
+            dependency_dag_hash=str(payload["dependency_dag_hash"]),
+            feature_contract_hashes=tuple(
+                str(item) for item in payload["feature_contract_hashes"]
+            ),
+            required_evidence_ids=tuple(
+                str(item) for item in payload["required_evidence_ids"]
+            ),
+            compatibility_matrix_version=str(payload["compatibility_matrix_version"]),
+            signature_ids=tuple(str(item) for item in payload["signature_ids"]),
+            registration_artifact_id=str(payload["registration_artifact_id"]),
+            correlation_id=str(payload["correlation_id"]),
+            operator_reason_bundle=tuple(
+                str(item) for item in payload["operator_reason_bundle"]
+            ),
+            frozen_bundle_payload=_jsonable(dict(payload["frozen_bundle_payload"])),
+            created_at_utc=str(payload.get("created_at_utc", _utcnow())),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "CandidateBundleFreezeRegistration":
+        return cls.from_dict(_decode_json(payload, "candidate_bundle_registration"))
+
+
+@dataclass(frozen=True)
+class CandidateBundleReplayContext:
+    replay_context_id: str
+    registration_log_id: str
+    replay_fixture_id: str
+    signed_manifest_id: str
+    available_artifact_ids: tuple[str, ...]
+    available_feature_contract_hashes: tuple[str, ...]
+    available_signature_ids: tuple[str, ...]
+    dependency_manifest_hashes: tuple[str, ...]
+    correlation_id: str
+    operator_reason_bundle: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return _jsonable(asdict(self))
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "CandidateBundleReplayContext":
+        return cls(
+            replay_context_id=str(payload["replay_context_id"]),
+            registration_log_id=str(payload["registration_log_id"]),
+            replay_fixture_id=str(payload["replay_fixture_id"]),
+            signed_manifest_id=str(payload["signed_manifest_id"]),
+            available_artifact_ids=tuple(
+                str(item) for item in payload["available_artifact_ids"]
+            ),
+            available_feature_contract_hashes=tuple(
+                str(item) for item in payload["available_feature_contract_hashes"]
+            ),
+            available_signature_ids=tuple(
+                str(item) for item in payload["available_signature_ids"]
+            ),
+            dependency_manifest_hashes=tuple(
+                str(item) for item in payload["dependency_manifest_hashes"]
+            ),
+            correlation_id=str(payload["correlation_id"]),
+            operator_reason_bundle=tuple(
+                str(item) for item in payload["operator_reason_bundle"]
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "CandidateBundleReplayContext":
+        return cls.from_dict(_decode_json(payload, "candidate_bundle_replay_context"))
+
+
+def build_candidate_bundle_freeze_registration(
+    bundle: CandidateBundle,
+    *,
+    registration_log_id: str,
+    registration_artifact_id: str,
+    correlation_id: str,
+    operator_reason_bundle: tuple[str, ...],
+) -> CandidateBundleFreezeRegistration:
+    return CandidateBundleFreezeRegistration(
+        registration_log_id=registration_log_id,
+        candidate_bundle_id=bundle.bundle_id,
+        content_hash=bundle.content_hash,
+        signal_kernel_digest=bundle.signal_kernel_digest,
+        parameterization_digest=bundle.parameterization_digest,
+        dataset_release_id=bundle.dataset_release_id,
+        analytic_release_id=bundle.analytic_release_id,
+        data_profile_release_id=bundle.data_profile_release_id,
+        resolved_context_bundle_id=bundle.resolved_context_bundle_id,
+        execution_profile_release_id=bundle.execution_profile_release_id,
+        dependency_dag_hash=bundle.dependency_dag_hash,
+        feature_contract_hashes=bundle.feature_contract_hashes,
+        required_evidence_ids=bundle.required_evidence_ids,
+        compatibility_matrix_version=bundle.compatibility_matrix_version,
+        signature_ids=bundle.signature_ids,
+        registration_artifact_id=registration_artifact_id,
+        correlation_id=correlation_id,
+        operator_reason_bundle=operator_reason_bundle,
+        frozen_bundle_payload=_jsonable(bundle.to_dict()),
+    )
 
 
 @dataclass(frozen=True)
@@ -477,7 +636,7 @@ class PacketValidationReport:
     packet_id: str | None
     status: str
     reason_code: str
-    context: dict[str, str | None]
+    context: dict[str, Any]
     missing_fields: tuple[str, ...]
     explanation: str
     remediation: str
@@ -564,6 +723,71 @@ def _candidate_context(bundle: CandidateBundle) -> dict[str, str | None]:
         "execution_profile_release_id": bundle.execution_profile_release_id,
         "compatibility_matrix_version": bundle.compatibility_matrix_version,
     }
+
+
+def _registration_context(
+    registration: CandidateBundleFreezeRegistration,
+) -> dict[str, Any]:
+    return {
+        "candidate_bundle_id": registration.candidate_bundle_id,
+        "content_hash": registration.content_hash,
+        "registration_log_id": registration.registration_log_id,
+        "registration_artifact_id": registration.registration_artifact_id,
+        "compatibility_matrix_version": registration.compatibility_matrix_version,
+    }
+
+
+def _replay_context(
+    replay_context: CandidateBundleReplayContext,
+) -> dict[str, Any]:
+    return {
+        "replay_context_id": replay_context.replay_context_id,
+        "registration_log_id": replay_context.registration_log_id,
+        "replay_fixture_id": replay_context.replay_fixture_id,
+        "signed_manifest_id": replay_context.signed_manifest_id,
+        "correlation_id": replay_context.correlation_id,
+    }
+
+
+def _candidate_freeze_mismatches(
+    bundle: CandidateBundle,
+    registration: CandidateBundleFreezeRegistration,
+) -> tuple[str, ...]:
+    mismatches: list[str] = []
+    if registration.candidate_bundle_id != bundle.bundle_id:
+        mismatches.append("candidate_bundle_id")
+    if registration.content_hash != bundle.content_hash:
+        mismatches.append("content_hash")
+    if registration.signal_kernel_digest != bundle.signal_kernel_digest:
+        mismatches.append("signal_kernel_digest")
+    if registration.parameterization_digest != bundle.parameterization_digest:
+        mismatches.append("parameterization_digest")
+    if registration.dataset_release_id != bundle.dataset_release_id:
+        mismatches.append("dataset_release_id")
+    if registration.analytic_release_id != bundle.analytic_release_id:
+        mismatches.append("analytic_release_id")
+    if registration.data_profile_release_id != bundle.data_profile_release_id:
+        mismatches.append("data_profile_release_id")
+    if registration.resolved_context_bundle_id != bundle.resolved_context_bundle_id:
+        mismatches.append("resolved_context_bundle_id")
+    if (
+        registration.execution_profile_release_id
+        != bundle.execution_profile_release_id
+    ):
+        mismatches.append("execution_profile_release_id")
+    if registration.dependency_dag_hash != bundle.dependency_dag_hash:
+        mismatches.append("dependency_dag_hash")
+    if registration.feature_contract_hashes != bundle.feature_contract_hashes:
+        mismatches.append("feature_contract_hashes")
+    if registration.required_evidence_ids != bundle.required_evidence_ids:
+        mismatches.append("required_evidence_ids")
+    if registration.compatibility_matrix_version != bundle.compatibility_matrix_version:
+        mismatches.append("compatibility_matrix_version")
+    if registration.signature_ids != bundle.signature_ids:
+        mismatches.append("signature_ids")
+    if registration.frozen_bundle_payload != _jsonable(bundle.to_dict()):
+        mismatches.append("frozen_bundle_payload")
+    return tuple(mismatches)
 
 
 def _readiness_context(record: BundleReadinessRecord) -> dict[str, str | None]:
@@ -752,6 +976,250 @@ def validate_candidate_bundle(
         explanation=(
             "The candidate bundle is immutable, content-addressed, and free of concrete account "
             "or freshness-sensitive operational bindings."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_candidate_bundle_freeze_registration(
+    case_id: str,
+    bundle: CandidateBundle,
+    registration: CandidateBundleFreezeRegistration,
+) -> PacketValidationReport:
+    candidate_report = validate_candidate_bundle(case_id, bundle)
+    if candidate_report.status != PacketStatus.PASS.value:
+        return candidate_report
+
+    missing_fields = tuple(
+        field_name
+        for field_name, field_value in {
+            "registration_log_id": registration.registration_log_id,
+            "registration_artifact_id": registration.registration_artifact_id,
+            "correlation_id": registration.correlation_id,
+            "operator_reason_bundle": registration.operator_reason_bundle,
+            "frozen_bundle_payload": registration.frozen_bundle_payload,
+        }.items()
+        if not field_value
+    )
+    if missing_fields:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_freeze_registration",
+            packet_id=registration.registration_log_id or None,
+            status=PacketStatus.INVALID.value,
+            reason_code="CANDIDATE_BUNDLE_FREEZE_LOG_INCOMPLETE",
+            context=_registration_context(registration),
+            missing_fields=missing_fields,
+            explanation=(
+                "The candidate bundle freeze log must retain a registration id, artifact id, "
+                "correlation id, operator reasons, and the frozen payload snapshot."
+            ),
+            remediation="Record the full freeze registration payload before declaring the bundle frozen.",
+        )
+
+    mismatches = _candidate_freeze_mismatches(bundle, registration)
+    if mismatches:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_freeze_registration",
+            packet_id=registration.registration_log_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="CANDIDATE_BUNDLE_FREEZE_LOG_MISMATCH",
+            context=_registration_context(registration),
+            missing_fields=mismatches,
+            explanation=(
+                "The candidate bundle freeze log does not preserve the exact frozen bundle "
+                f"identity and evidence pointers: {mismatches}."
+            ),
+            remediation="Rebuild the freeze registration so it mirrors the exact frozen bundle payload.",
+        )
+
+    return PacketValidationReport(
+        case_id=case_id,
+        packet_kind="candidate_bundle_freeze_registration",
+        packet_id=registration.registration_log_id,
+        status=PacketStatus.PASS.value,
+        reason_code="CANDIDATE_BUNDLE_FREEZE_REGISTERED",
+        context=_registration_context(registration),
+        missing_fields=(),
+        explanation=(
+            "The candidate bundle freeze log preserves the exact frozen payload, digests, "
+            "compatibility references, and evidence pointers needed for later review."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_candidate_bundle_load(
+    case_id: str,
+    bundle: CandidateBundle,
+    registration: CandidateBundleFreezeRegistration,
+) -> PacketValidationReport:
+    freeze_report = validate_candidate_bundle_freeze_registration(
+        case_id,
+        bundle,
+        registration,
+    )
+    if freeze_report.status != PacketStatus.PASS.value:
+        status = (
+            freeze_report.status
+            if freeze_report.status == PacketStatus.INVALID.value
+            else PacketStatus.VIOLATION.value
+        )
+        reason_code = (
+            "CANDIDATE_BUNDLE_LOAD_INVALID"
+            if status == PacketStatus.INVALID.value
+            else "CANDIDATE_BUNDLE_LOAD_MISMATCH"
+        )
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_load",
+            packet_id=bundle.bundle_id,
+            status=status,
+            reason_code=reason_code,
+            context=_candidate_context(bundle),
+            missing_fields=freeze_report.missing_fields,
+            explanation=(
+                "Loading the candidate bundle did not reproduce the exact frozen registration payload."
+            ),
+            remediation="Load only the exact content-addressed bundle recorded in the freeze registration log.",
+        )
+
+    return PacketValidationReport(
+        case_id=case_id,
+        packet_kind="candidate_bundle_load",
+        packet_id=bundle.bundle_id,
+        status=PacketStatus.PASS.value,
+        reason_code="CANDIDATE_BUNDLE_LOAD_MATCHES_FREEZE_LOG",
+        context=_candidate_context(bundle),
+        missing_fields=(),
+        explanation=(
+            "Loading the candidate bundle reproduces the same immutable payload that was registered at freeze time."
+        ),
+        remediation="No remediation required.",
+    )
+
+
+def validate_candidate_bundle_replay_readiness(
+    case_id: str,
+    bundle: CandidateBundle,
+    registration: CandidateBundleFreezeRegistration,
+    replay_context: CandidateBundleReplayContext,
+) -> PacketValidationReport:
+    load_report = validate_candidate_bundle_load(case_id, bundle, registration)
+    if load_report.status != PacketStatus.PASS.value:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_replay",
+            packet_id=bundle.bundle_id,
+            status=load_report.status,
+            reason_code="CANDIDATE_BUNDLE_REPLAY_LOAD_MISMATCH",
+            context=_replay_context(replay_context),
+            missing_fields=load_report.missing_fields,
+            explanation=(
+                "Replay cannot proceed because the loaded candidate bundle does not match the frozen registration payload."
+            ),
+            remediation="Repair the freeze and load path before attempting replay.",
+        )
+
+    missing_fields = tuple(
+        field_name
+        for field_name, field_value in {
+            "replay_context_id": replay_context.replay_context_id,
+            "registration_log_id": replay_context.registration_log_id,
+            "replay_fixture_id": replay_context.replay_fixture_id,
+            "signed_manifest_id": replay_context.signed_manifest_id,
+            "correlation_id": replay_context.correlation_id,
+            "operator_reason_bundle": replay_context.operator_reason_bundle,
+        }.items()
+        if not field_value
+    )
+    if missing_fields:
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_replay",
+            packet_id=bundle.bundle_id,
+            status=PacketStatus.INVALID.value,
+            reason_code="CANDIDATE_BUNDLE_REPLAY_CONTEXT_INCOMPLETE",
+            context=_replay_context(replay_context),
+            missing_fields=missing_fields,
+            explanation="Replay readiness requires an explicit replay fixture, signed manifest, correlation id, and operator reasons.",
+            remediation="Populate the replay context before certification or paper-readiness checks.",
+        )
+
+    required_artifacts = {
+        bundle.dataset_release_id,
+        bundle.data_profile_release_id,
+        bundle.resolved_context_bundle_id,
+        bundle.execution_profile_release_id,
+        replay_context.replay_fixture_id,
+        replay_context.signed_manifest_id,
+        *bundle.required_evidence_ids,
+    }
+    if bundle.analytic_release_id:
+        required_artifacts.add(bundle.analytic_release_id)
+
+    available_artifacts = set(replay_context.available_artifact_ids)
+    missing_artifact_ids = tuple(sorted(required_artifacts - available_artifacts))
+    missing_feature_contract_hashes = tuple(
+        sorted(
+            set(bundle.feature_contract_hashes)
+            - set(replay_context.available_feature_contract_hashes)
+        )
+    )
+    missing_signature_ids = tuple(
+        sorted(set(bundle.signature_ids) - set(replay_context.available_signature_ids))
+    )
+    dependency_manifest_present = (
+        bundle.dependency_dag_hash in replay_context.dependency_manifest_hashes
+    )
+    registration_log_matches = (
+        replay_context.registration_log_id == registration.registration_log_id
+    )
+
+    if (
+        missing_artifact_ids
+        or missing_feature_contract_hashes
+        or missing_signature_ids
+        or not dependency_manifest_present
+        or not registration_log_matches
+    ):
+        return PacketValidationReport(
+            case_id=case_id,
+            packet_kind="candidate_bundle_replay",
+            packet_id=bundle.bundle_id,
+            status=PacketStatus.VIOLATION.value,
+            reason_code="CANDIDATE_BUNDLE_REPLAY_NOT_CLOSED",
+            context={
+                **_replay_context(replay_context),
+                "missing_artifact_ids": list(missing_artifact_ids),
+                "missing_feature_contract_hashes": list(
+                    missing_feature_contract_hashes
+                ),
+                "missing_signature_ids": list(missing_signature_ids),
+                "dependency_manifest_present": dependency_manifest_present,
+                "registration_log_matches": registration_log_matches,
+            },
+            missing_fields=missing_artifact_ids
+            + missing_feature_contract_hashes
+            + missing_signature_ids,
+            explanation=(
+                "Replay readiness requires closed dependency references, verified signatures, "
+                "and artifact availability for the frozen candidate bundle."
+            ),
+            remediation="Restore the missing dependency, evidence, signature, or registration references before replay certification.",
+        )
+
+    return PacketValidationReport(
+        case_id=case_id,
+        packet_kind="candidate_bundle_replay",
+        packet_id=bundle.bundle_id,
+        status=PacketStatus.PASS.value,
+        reason_code="CANDIDATE_BUNDLE_REPLAY_READY",
+        context=_replay_context(replay_context),
+        missing_fields=(),
+        explanation=(
+            "Replay can load the exact frozen bundle with closed dependencies, verified signatures, and inspectable evidence references."
         ),
         remediation="No remediation required.",
     )
