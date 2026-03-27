@@ -1,0 +1,281 @@
+{
+  "cases": [
+    {
+      "case_id": "oneoz_passes_small_account_actual_contract_gate",
+      "request": {
+        "case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "candidate_id": "candidate_gold_trend_v1",
+        "promotion_target": "live",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "requested_contract_count": 1,
+        "requested_operating_posture": "intraday_flat_default",
+        "overnight_requested": false,
+        "expected_daily_loss_usd": 60.0,
+        "expected_max_drawdown_usd": 500.0,
+        "expected_overnight_gap_stress_usd": 20.0,
+        "margin_snapshot": {
+          "snapshot_id": "broker_margin_snapshot_1oz_20260327",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "initial_margin_requirement_usd": 125.0,
+          "maintenance_margin_requirement_usd": 110.0,
+          "captured_at_utc": "2026-03-27T11:30:00+00:00",
+          "valid_to_utc": "2026-03-27T23:59:00+00:00"
+        },
+        "fee_schedule": {
+          "snapshot_id": "fee_schedule_snapshot_1oz_20260327",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "commission_per_contract_side_usd": 1.0,
+          "exchange_and_regulatory_per_contract_side_usd": 0.5,
+          "captured_at_utc": "2026-03-27T00:00:00+00:00",
+          "valid_from_utc": "2026-03-27T00:00:00+00:00",
+          "valid_to_utc": "2026-03-31T23:59:00+00:00"
+        },
+        "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+      },
+      "expected": {
+        "status": "pass",
+        "reason_code": "ACCOUNT_FIT_PASSED",
+        "allowed_execution_symbol": "1OZ",
+        "round_turn_fees_usd": 3.0,
+        "failed_check_ids": [],
+        "checks": {
+          "approved_execution_symbol": {
+            "applied": true,
+            "passed": true
+          },
+          "initial_margin_fraction": {
+            "applied": true,
+            "passed": true,
+            "actual_fraction": 0.0256
+          },
+          "maintenance_margin_fraction": {
+            "applied": true,
+            "passed": true,
+            "actual_fraction": 0.0226
+          },
+          "daily_loss_lockout_fraction": {
+            "applied": true,
+            "passed": true,
+            "actual_fraction": 0.0126
+          },
+          "max_drawdown_fraction": {
+            "applied": true,
+            "passed": true,
+            "actual_fraction": 0.1006
+          },
+          "overnight_gap_stress_fraction": {
+            "applied": false,
+            "passed": true,
+            "actual_fraction": 0.0046
+          }
+        }
+      }
+    },
+    {
+      "case_id": "mgc_fails_but_oneoz_can_proceed",
+      "request": {
+        "case_id": "mgc_fails_but_oneoz_can_proceed",
+        "candidate_id": "candidate_gold_trend_v1",
+        "promotion_target": "live",
+        "product_profile_id": "mgc_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "requested_contract_count": 1,
+        "requested_operating_posture": "overnight_strict",
+        "overnight_requested": true,
+        "expected_daily_loss_usd": 140.0,
+        "expected_max_drawdown_usd": 820.0,
+        "expected_overnight_gap_stress_usd": 260.0,
+        "margin_snapshot": {
+          "snapshot_id": "broker_margin_snapshot_mgc_20260327",
+          "broker": "IBKR",
+          "symbol": "MGC",
+          "initial_margin_requirement_usd": 1400.0,
+          "maintenance_margin_requirement_usd": 1275.0,
+          "captured_at_utc": "2026-03-27T11:30:00+00:00",
+          "valid_to_utc": "2026-03-27T23:59:00+00:00"
+        },
+        "fee_schedule": {
+          "snapshot_id": "fee_schedule_snapshot_mgc_20260327",
+          "broker": "IBKR",
+          "symbol": "MGC",
+          "commission_per_contract_side_usd": 1.5,
+          "exchange_and_regulatory_per_contract_side_usd": 0.5,
+          "captured_at_utc": "2026-03-27T00:00:00+00:00",
+          "valid_from_utc": "2026-03-27T00:00:00+00:00",
+          "valid_to_utc": "2026-03-31T23:59:00+00:00"
+        },
+        "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+      },
+      "expected": {
+        "status": "fail",
+        "reason_code": "ACCOUNT_FIT_MULTIPLE_CONSTRAINTS_EXCEEDED",
+        "allowed_execution_symbol": null,
+        "round_turn_fees_usd": 4.0,
+        "failed_check_ids": [
+          "approved_execution_symbol",
+          "initial_margin_fraction",
+          "daily_loss_lockout_fraction",
+          "max_drawdown_fraction",
+          "overnight_gap_stress_fraction"
+        ],
+        "checks": {
+          "approved_execution_symbol": {
+            "applied": true,
+            "passed": false
+          },
+          "initial_margin_fraction": {
+            "applied": true,
+            "passed": false,
+            "actual_fraction": 0.2808
+          },
+          "maintenance_margin_fraction": {
+            "applied": true,
+            "passed": true,
+            "actual_fraction": 0.2558
+          },
+          "daily_loss_lockout_fraction": {
+            "applied": true,
+            "passed": false,
+            "actual_fraction": 0.0288
+          },
+          "max_drawdown_fraction": {
+            "applied": true,
+            "passed": false,
+            "actual_fraction": 0.1648
+          },
+          "overnight_gap_stress_fraction": {
+            "applied": true,
+            "passed": false,
+            "actual_fraction": 0.0528
+          }
+        }
+      }
+    },
+    {
+      "case_id": "stale_margin_snapshot_blocks_account_fit",
+      "request": {
+        "case_id": "stale_margin_snapshot_blocks_account_fit",
+        "candidate_id": "candidate_gold_meanrev_v1",
+        "promotion_target": "paper",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "requested_contract_count": 1,
+        "requested_operating_posture": "intraday_flat_default",
+        "overnight_requested": false,
+        "expected_daily_loss_usd": 45.0,
+        "expected_max_drawdown_usd": 250.0,
+        "expected_overnight_gap_stress_usd": 10.0,
+        "margin_snapshot": {
+          "snapshot_id": "broker_margin_snapshot_1oz_stale",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "initial_margin_requirement_usd": 125.0,
+          "maintenance_margin_requirement_usd": 110.0,
+          "captured_at_utc": "2026-03-26T11:30:00+00:00",
+          "valid_to_utc": "2026-03-26T23:59:00+00:00"
+        },
+        "fee_schedule": {
+          "snapshot_id": "fee_schedule_snapshot_1oz_20260327",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "commission_per_contract_side_usd": 1.0,
+          "exchange_and_regulatory_per_contract_side_usd": 0.5,
+          "captured_at_utc": "2026-03-27T00:00:00+00:00",
+          "valid_from_utc": "2026-03-27T00:00:00+00:00",
+          "valid_to_utc": "2026-03-31T23:59:00+00:00"
+        },
+        "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+      },
+      "expected": {
+        "status": "stale",
+        "reason_code": "ACCOUNT_FIT_MARGIN_SNAPSHOT_STALE",
+        "allowed_execution_symbol": null,
+        "round_turn_fees_usd": 3.0,
+        "failed_check_ids": []
+      }
+    },
+    {
+      "case_id": "stale_fee_schedule_blocks_account_fit",
+      "request": {
+        "case_id": "stale_fee_schedule_blocks_account_fit",
+        "candidate_id": "candidate_gold_meanrev_v1",
+        "promotion_target": "shadow_live",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "requested_contract_count": 1,
+        "requested_operating_posture": "intraday_flat_default",
+        "overnight_requested": false,
+        "expected_daily_loss_usd": 45.0,
+        "expected_max_drawdown_usd": 250.0,
+        "expected_overnight_gap_stress_usd": 10.0,
+        "margin_snapshot": {
+          "snapshot_id": "broker_margin_snapshot_1oz_20260327",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "initial_margin_requirement_usd": 125.0,
+          "maintenance_margin_requirement_usd": 110.0,
+          "captured_at_utc": "2026-03-27T11:30:00+00:00",
+          "valid_to_utc": "2026-03-27T23:59:00+00:00"
+        },
+        "fee_schedule": {
+          "snapshot_id": "fee_schedule_snapshot_1oz_stale",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "commission_per_contract_side_usd": 1.0,
+          "exchange_and_regulatory_per_contract_side_usd": 0.5,
+          "captured_at_utc": "2026-03-20T00:00:00+00:00",
+          "valid_from_utc": "2026-03-20T00:00:00+00:00",
+          "valid_to_utc": "2026-03-26T23:59:00+00:00"
+        },
+        "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+      },
+      "expected": {
+        "status": "stale",
+        "reason_code": "ACCOUNT_FIT_FEE_SCHEDULE_STALE",
+        "allowed_execution_symbol": null,
+        "round_turn_fees_usd": 3.0,
+        "failed_check_ids": []
+      }
+    },
+    {
+      "case_id": "negative_fee_component_is_rejected_at_parse_time",
+      "request": {
+        "case_id": "negative_fee_component_is_rejected_at_parse_time",
+        "candidate_id": "candidate_gold_trend_v1",
+        "promotion_target": "live",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "requested_contract_count": 1,
+        "requested_operating_posture": "intraday_flat_default",
+        "overnight_requested": false,
+        "expected_daily_loss_usd": 60.0,
+        "expected_max_drawdown_usd": 500.0,
+        "expected_overnight_gap_stress_usd": 20.0,
+        "margin_snapshot": {
+          "snapshot_id": "broker_margin_snapshot_1oz_20260327",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "initial_margin_requirement_usd": 125.0,
+          "maintenance_margin_requirement_usd": 110.0,
+          "captured_at_utc": "2026-03-27T11:30:00+00:00",
+          "valid_to_utc": "2026-03-27T23:59:00+00:00"
+        },
+        "fee_schedule": {
+          "snapshot_id": "fee_schedule_snapshot_1oz_bad",
+          "broker": "IBKR",
+          "symbol": "1OZ",
+          "commission_per_contract_side_usd": -1.0,
+          "exchange_and_regulatory_per_contract_side_usd": 0.5,
+          "captured_at_utc": "2026-03-27T00:00:00+00:00",
+          "valid_from_utc": "2026-03-27T00:00:00+00:00",
+          "valid_to_utc": "2026-03-31T23:59:00+00:00"
+        },
+        "evaluated_at_utc": "2026-03-27T16:00:00+00:00"
+      },
+      "expected_parse_error": "commission_per_contract_side_usd: must be non-negative"
+    }
+  ]
+}

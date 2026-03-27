@@ -920,6 +920,22 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(
+        surface_id="actual_execution_contract_account_fit",
+        title="Account-fit gate on the actual execution contract",
+        related_beads=("backtesting_engine-ltc.5.4",),
+        phase_gates=("phase_5", "phase_7"),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(
+            VerificationClass.GOLDEN_PATH,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
         surface_id="fully_loaded_economics",
         title="Fully loaded economics and recurring cost model",
         related_beads=("backtesting_engine-ltc.5.5",),
@@ -930,6 +946,35 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
             FixtureSource.SYNTHETIC_FAILURE_CASE,
         ),
         golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
+        surface_id="absolute_dollar_viability_and_benchmark_gate",
+        title="Absolute-dollar viability and benchmark gate",
+        related_beads=("backtesting_engine-ltc.5.6",),
+        phase_gates=("phase_5",),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(VerificationClass.GOLDEN_PATH,),
+        failure_path=(VerificationClass.FAILURE_PATH,),
+    ),
+    _gate_profile(
+        surface_id="strict_overnight_candidate_class",
+        title="Strict overnight candidate class",
+        related_beads=("backtesting_engine-ltc.5.7",),
+        phase_gates=("phase_5", "phase_7"),
+        fixture_sources=(
+            FixtureSource.PLAN_SEEDED_FIXTURE,
+            FixtureSource.CERTIFIED_RELEASE,
+            FixtureSource.SYNTHETIC_FAILURE_CASE,
+        ),
+        golden_path=(
+            VerificationClass.GOLDEN_PATH,
+            VerificationClass.OPERATIONAL_REHEARSAL,
+        ),
         failure_path=(VerificationClass.FAILURE_PATH,),
     ),
     _gate_profile(

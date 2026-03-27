@@ -714,6 +714,47 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
 
+    def test_bead_54_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.5.4" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "actual_execution_contract_account_fit",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_5", "phase_7"), matching[0].phase_gates)
+
+    def test_bead_54_profile_declares_account_fit_workflow_and_fixtures(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "actual_execution_contract_account_fit"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(ArtifactRequirement.FIXTURE_MANIFESTS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.REPRODUCIBILITY_STAMPS,
+            profile.retained_artifacts,
+        )
+
     def test_bead_55_is_mapped_into_the_shared_verification_plan(self) -> None:
         matching = [
             profile
@@ -745,6 +786,85 @@ class VerificationContractTest(unittest.TestCase):
             profile.retained_artifacts,
         )
         self.assertIn(ArtifactRequirement.STRUCTURED_LOGS, profile.retained_artifacts)
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
+    def test_bead_56_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.5.6" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual(
+            "absolute_dollar_viability_and_benchmark_gate",
+            matching[0].surface_id,
+        )
+        self.assertEqual(("phase_5",), matching[0].phase_gates)
+
+    def test_bead_56_profile_declares_economic_gate_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "absolute_dollar_viability_and_benchmark_gate"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual((VerificationClass.GOLDEN_PATH,), profile.golden_path)
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
+        self.assertIn(
+            ArtifactRequirement.OPERATOR_REASON_BUNDLES,
+            profile.retained_artifacts,
+        )
+
+    def test_bead_57_is_mapped_into_the_shared_verification_plan(self) -> None:
+        matching = [
+            profile
+            for profile in VERIFICATION_PROFILES
+            if "backtesting_engine-ltc.5.7" in profile.related_beads
+        ]
+        self.assertEqual(1, len(matching))
+        self.assertEqual("strict_overnight_candidate_class", matching[0].surface_id)
+        self.assertEqual(("phase_5", "phase_7"), matching[0].phase_gates)
+
+    def test_bead_57_profile_declares_overnight_operational_rehearsal_lanes(self) -> None:
+        profile = next(
+            profile
+            for profile in VERIFICATION_PROFILES
+            if profile.surface_id == "strict_overnight_candidate_class"
+        )
+        self.assertEqual(
+            (
+                FixtureSource.PLAN_SEEDED_FIXTURE,
+                FixtureSource.CERTIFIED_RELEASE,
+                FixtureSource.SYNTHETIC_FAILURE_CASE,
+            ),
+            profile.fixture_contract.sources,
+        )
+        self.assertEqual(
+            (
+                VerificationClass.GOLDEN_PATH,
+                VerificationClass.OPERATIONAL_REHEARSAL,
+            ),
+            profile.golden_path,
+        )
+        self.assertEqual((VerificationClass.FAILURE_PATH,), profile.failure_path)
+        self.assertIn(
+            ArtifactRequirement.EXPECTED_VS_ACTUAL_DIFFS,
+            profile.retained_artifacts,
+        )
         self.assertIn(
             ArtifactRequirement.OPERATOR_REASON_BUNDLES,
             profile.retained_artifacts,

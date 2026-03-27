@@ -1,0 +1,240 @@
+{
+  "cases": [
+    {
+      "case_id": "keep_when_monthly_net_is_material_and_beats_required_benchmarks",
+      "request": {
+        "case_id": "keep_when_monthly_net_is_material_and_beats_required_benchmarks",
+        "evaluation_id": "absolute-dollar-001",
+        "candidate_id": "candidate-gold-trend-v1",
+        "strategy_family_id": "family-gold-trend",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-002",
+        "account_fit_status": "pass",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": 128.0,
+        "conservative_monthly_net_usd": 420.0,
+        "passive_gold_benchmark_monthly_usd": 180.0,
+        "cash_benchmark_monthly_usd": 35.0,
+        "downside_low_turnover_monthly_net_usd": 210.0,
+        "worst_session_loss_usd": 160.0,
+        "operator_maintenance_hours_per_month": 3.0,
+        "lower_touch_alternative_monthly_net_usd": 150.0,
+        "lower_touch_alternative_operator_hours_per_month": 1.5,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 100.0
+        }
+      },
+      "expected": {
+        "status": "pass",
+        "decision": "keep",
+        "reason_code": "ABSOLUTE_DOLLAR_VIABILITY_PASSED",
+        "monthly_excess_vs_passive_gold_usd": 240.0,
+        "monthly_excess_vs_cash_usd": 385.0,
+        "free_cash_usd": 4872.0,
+        "conservative_return_on_committed_margin": 3.28125,
+        "worst_session_loss_fraction_of_free_cash": 0.03284072249589491,
+        "net_per_operator_maintenance_hour_usd": 140.0,
+        "lower_touch_alternative_net_per_hour_usd": 100.0,
+        "lower_touch_dominates": false,
+        "failed_check_ids": [],
+        "sensitivity_scenario_ids": [
+          "conservative_baseline",
+          "low_turnover_downside"
+        ]
+      }
+    },
+    {
+      "case_id": "reject_when_positive_but_de_minimis_at_live_size",
+      "request": {
+        "case_id": "reject_when_positive_but_de_minimis_at_live_size",
+        "evaluation_id": "absolute-dollar-002",
+        "candidate_id": "candidate-gold-trend-v2",
+        "strategy_family_id": "family-gold-trend",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-001",
+        "account_fit_status": "pass",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": 128.0,
+        "conservative_monthly_net_usd": 120.0,
+        "passive_gold_benchmark_monthly_usd": 60.0,
+        "cash_benchmark_monthly_usd": 25.0,
+        "downside_low_turnover_monthly_net_usd": 55.0,
+        "worst_session_loss_usd": 150.0,
+        "operator_maintenance_hours_per_month": 2.0,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 0.0
+        }
+      },
+      "expected": {
+        "status": "fail",
+        "decision": "reject",
+        "reason_code": "ABSOLUTE_DOLLAR_DE_MINIMIS",
+        "monthly_excess_vs_passive_gold_usd": 60.0,
+        "monthly_excess_vs_cash_usd": 95.0,
+        "lower_touch_dominates": false,
+        "failed_check_ids": [
+          "de_minimis_monthly_net"
+        ]
+      }
+    },
+    {
+      "case_id": "reject_when_passive_gold_benchmark_still_wins",
+      "request": {
+        "case_id": "reject_when_passive_gold_benchmark_still_wins",
+        "evaluation_id": "absolute-dollar-003",
+        "candidate_id": "candidate-gold-breakout-v1",
+        "strategy_family_id": "family-gold-breakout",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-002",
+        "account_fit_status": "pass",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": 128.0,
+        "conservative_monthly_net_usd": 220.0,
+        "passive_gold_benchmark_monthly_usd": 260.0,
+        "cash_benchmark_monthly_usd": 35.0,
+        "downside_low_turnover_monthly_net_usd": 130.0,
+        "worst_session_loss_usd": 140.0,
+        "operator_maintenance_hours_per_month": 3.5,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 50.0
+        }
+      },
+      "expected": {
+        "status": "fail",
+        "decision": "reject",
+        "reason_code": "ABSOLUTE_DOLLAR_PASSIVE_GOLD_BENCHMARK_NOT_BEATEN",
+        "monthly_excess_vs_passive_gold_usd": -40.0,
+        "monthly_excess_vs_cash_usd": 185.0,
+        "lower_touch_dominates": false,
+        "failed_check_ids": [
+          "passive_gold_benchmark_excess"
+        ]
+      }
+    },
+    {
+      "case_id": "pivot_when_lower_touch_alternative_dominates_after_operator_time",
+      "request": {
+        "case_id": "pivot_when_lower_touch_alternative_dominates_after_operator_time",
+        "evaluation_id": "absolute-dollar-004",
+        "candidate_id": "candidate-gold-meanrev-v1",
+        "strategy_family_id": "family-gold-meanrev",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-002",
+        "account_fit_status": "pass",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": 128.0,
+        "conservative_monthly_net_usd": 330.0,
+        "passive_gold_benchmark_monthly_usd": 120.0,
+        "cash_benchmark_monthly_usd": 30.0,
+        "downside_low_turnover_monthly_net_usd": 150.0,
+        "worst_session_loss_usd": 135.0,
+        "operator_maintenance_hours_per_month": 8.0,
+        "lower_touch_alternative_monthly_net_usd": 310.0,
+        "lower_touch_alternative_operator_hours_per_month": 1.5,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 100.0
+        }
+      },
+      "expected": {
+        "status": "fail",
+        "decision": "pivot",
+        "reason_code": "ABSOLUTE_DOLLAR_LOWER_TOUCH_ALTERNATIVE_DOMINATES",
+        "monthly_excess_vs_passive_gold_usd": 210.0,
+        "monthly_excess_vs_cash_usd": 300.0,
+        "net_per_operator_maintenance_hour_usd": 41.25,
+        "lower_touch_alternative_net_per_hour_usd": 206.66666666666666,
+        "lower_touch_dominates": true,
+        "failed_check_ids": [
+          "lower_touch_alternative_dominance"
+        ]
+      }
+    },
+    {
+      "case_id": "invalid_when_account_fit_prerequisite_is_not_green",
+      "request": {
+        "case_id": "invalid_when_account_fit_prerequisite_is_not_green",
+        "evaluation_id": "absolute-dollar-005",
+        "candidate_id": "candidate-gold-meanrev-v2",
+        "strategy_family_id": "family-gold-meanrev",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "stale_margin_snapshot_blocks_account_fit",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-002",
+        "account_fit_status": "stale",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": 128.0,
+        "conservative_monthly_net_usd": 300.0,
+        "passive_gold_benchmark_monthly_usd": 90.0,
+        "cash_benchmark_monthly_usd": 30.0,
+        "downside_low_turnover_monthly_net_usd": 120.0,
+        "worst_session_loss_usd": 140.0,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 100.0
+        }
+      },
+      "expected": {
+        "status": "invalid",
+        "decision": "reject",
+        "reason_code": "ABSOLUTE_DOLLAR_ACCOUNT_FIT_PREREQUISITE_MISSING",
+        "failed_check_ids": []
+      }
+    },
+    {
+      "case_id": "negative_committed_margin_is_rejected_at_parse_time",
+      "request": {
+        "case_id": "negative_committed_margin_is_rejected_at_parse_time",
+        "evaluation_id": "absolute-dollar-006",
+        "candidate_id": "candidate-gold-trend-v3",
+        "strategy_family_id": "family-gold-trend",
+        "product_profile_id": "oneoz_comex_v1",
+        "account_profile_id": "solo_small_gold_ibkr_5000_v1",
+        "execution_symbol": "1OZ",
+        "source_account_fit_case_id": "oneoz_passes_small_account_actual_contract_gate",
+        "source_fully_loaded_economics_evaluation_id": "econ-eval-002",
+        "account_fit_status": "pass",
+        "approved_starting_equity_usd": 5000,
+        "committed_margin_usd": -1.0,
+        "conservative_monthly_net_usd": 300.0,
+        "passive_gold_benchmark_monthly_usd": 90.0,
+        "cash_benchmark_monthly_usd": 30.0,
+        "downside_low_turnover_monthly_net_usd": 120.0,
+        "worst_session_loss_usd": 140.0,
+        "thresholds": {
+          "de_minimis_monthly_net_usd": 200.0,
+          "minimum_passive_gold_excess_usd": 0.0,
+          "minimum_cash_excess_usd": 0.0,
+          "minimum_low_turnover_monthly_net_usd": 100.0
+        }
+      },
+      "expected_parse_error": "committed_margin_usd: must be non-negative"
+    }
+  ]
+}

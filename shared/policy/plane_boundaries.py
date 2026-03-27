@@ -387,6 +387,21 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         ),
     ),
     SharedContractSurface(
+        surface_id="actual_execution_contract_account_fit",
+        module="shared.policy.account_fit_gate",
+        source_path="shared/policy/account_fit_gate.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.6",
+        purpose=(
+            "Actual-contract account-fit gating with fresh broker margin, current fee "
+            "artifacts, and 1OZ-versus-MGC eligibility diagnostics"
+        ),
+    ),
+    SharedContractSurface(
         surface_id="fully_loaded_economics",
         module="shared.policy.fully_loaded_economics",
         source_path="shared/policy/fully_loaded_economics.py",
@@ -399,6 +414,36 @@ SHARED_CONTRACT_SURFACES: tuple[SharedContractSurface, ...] = (
         purpose=(
             "Gross, net-direct, and net-fully-loaded economics with explicit recurring "
             "cost allocation and execution-profile conditioning"
+        ),
+    ),
+    SharedContractSurface(
+        surface_id="absolute_dollar_viability_and_benchmark_gate",
+        module="shared.policy.absolute_dollar_viability",
+        source_path="shared/policy/absolute_dollar_viability.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.8",
+        purpose=(
+            "Conservative monthly dollar viability, passive-gold and cash benchmark "
+            "comparisons, downside sensitivity, and lower-touch alternative pivots"
+        ),
+    ),
+    SharedContractSurface(
+        surface_id="strict_overnight_candidate_class",
+        module="shared.policy.overnight_candidate",
+        source_path="shared/policy/overnight_candidate.py",
+        consumed_by=(
+            PlaneId.PYTHON_RESEARCH,
+            PlaneId.RUST_OPERATIONS,
+            PlaneId.SHARED_CONTRACTS,
+        ),
+        plan_section="7.9",
+        purpose=(
+            "Strict overnight-candidate qualification with retained hold, exit, restart, "
+            "degradation, and session-boundary margin evidence"
         ),
     ),
     SharedContractSurface(

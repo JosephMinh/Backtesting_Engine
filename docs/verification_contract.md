@@ -56,7 +56,10 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Strategy contracts and canonical signal kernels | `backtesting_engine-ltc.5.1` | `unit`, `contract`, `property` | `golden_path`, `parity_certification` | `failure_path` |
 | Baseline risk controls and waiver defaults | `backtesting_engine-ltc.5.2` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Operating-envelope and session-conditioned risk profiles | `backtesting_engine-ltc.5.3` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Account-fit gate on the actual execution contract | `backtesting_engine-ltc.5.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Fully loaded economics and recurring cost model | `backtesting_engine-ltc.5.5` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
+| Absolute-dollar viability and benchmark gate | `backtesting_engine-ltc.5.6` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
+| Strict overnight candidate class | `backtesting_engine-ltc.5.7` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Lifecycle state machines and compatibility domains | `backtesting_engine-ltc.8.2` | `unit`, `contract`, `property` | `golden_path` | `failure_path`, `operational_rehearsal` |
 | Structured logging and artifact capture | `backtesting_engine-ltc.11.6` | `unit`, `contract`, `property` | `golden_path`, `replay_certification`, `operational_rehearsal` | `failure_path` |
 | Research governance and selection | `backtesting_engine-ltc.6.1`, `6.2`, `6.6`, `6.7` | `unit`, `contract`, `property` | `golden_path` | `failure_path` |
