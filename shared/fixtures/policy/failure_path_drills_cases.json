@@ -1,0 +1,691 @@
+{
+  "drill_cases": [
+    {
+      "case_id": "allow_reconnect_before_ack_halts_before_mutation",
+      "payload": {
+        "drill_id": "failure_drill_reconnect_001",
+        "scenario": "reconnect_before_ack",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-reconnect-001",
+        "decision_trace_id": "trace-failure-drill-reconnect-001",
+        "expected_safe_outcome": "halt_before_mutation",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "reconnect_001_detected",
+            "event_type": "broker_reconnect_detected",
+            "correlation_id": "corr-failure-drill-reconnect-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "order_intent_ambiguous_001"
+            ],
+            "artifact_ids": [
+              "snapshot_live_20260327_201"
+            ],
+            "reason_code": "RECOVERY_FENCE_RECOVERING_STATE_REQUIRED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "reconnect_001_recovery",
+            "event_type": "recovery_fence_evaluated",
+            "correlation_id": "corr-failure-drill-reconnect-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "watchdog_restart_20260327_201"
+            ],
+            "artifact_ids": [
+              "journal_replay_live_20260327_201",
+              "journal_digest_frontier_live_20260327_201"
+            ],
+            "reason_code": "RECOVERY_FENCE_RECOVERING_AND_GOVERNED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "reconnect_001_halted",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-reconnect-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "session_packet_gold_live_20260327"
+            ],
+            "artifact_ids": [
+              "warmup_trace_live_20260327_201"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "halt_before_mutation"
+          }
+        ],
+        "recovery_request": {
+          "recovery_run_id": "recovery_run_live_20260327_201",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "trigger_event_id": "watchdog_restart_20260327_201",
+          "entered_recovering_state": true,
+          "no_new_entries_asserted": true,
+          "broker_mutations_blocked": true,
+          "broker_positions_reconciled": true,
+          "open_orders_reconciled": true,
+          "order_intent_mappings_repaired": true,
+          "ambiguity_detected": true,
+          "ambiguity_disposition": "halt",
+          "snapshot_artifact_id": "snapshot_live_20260327_201",
+          "journal_replay_artifact_id": "journal_replay_live_20260327_201",
+          "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_201",
+          "warmup_source": "operational_evidence",
+          "warmup_artifact_id": "warmup_trace_live_20260327_201",
+          "session_reset_or_material_reconnect": true,
+          "fresh_session_packet": {
+            "session_readiness_packet_id": "session_packet_gold_live_20260327",
+            "deployment_instance_id": "deployment_gold_live_v1",
+            "session_id": "2026-03-27_COMEX_GLOBEX",
+            "valid_from_utc": "2026-03-27T22:00:00+00:00",
+            "valid_to_utc": "2026-03-28T21:00:00+00:00",
+            "source_promotion_packet_id": "promotion_packet_gold_live_v1",
+            "fee_check_id": "fee_check_live_20260327",
+            "margin_check_id": "margin_check_live_20260327",
+            "entitlement_check_id": "entitlement_check_live_20260327",
+            "contract_conformance_check_id": "contract_conformance_live_20260327",
+            "backup_freshness_check_id": "backup_check_live_20260327",
+            "restore_drill_check_id": "restore_drill_check_live_20260327",
+            "clock_health_check_id": "clock_health_live_20260327",
+            "secret_health_check_id": "ops_health_live_20260327",
+            "unresolved_discrepancy_status": "clear",
+            "operating_envelope_check_id": "operating_envelope_live_20260327",
+            "session_eligibility_check_id": "session_eligibility_live_20260327",
+            "session_status": "green",
+            "blocked_check_ids": [],
+            "decision_trace_hash": "session_trace_sha256_201"
+          },
+          "correlation_id": "corr-recovery-live-20260327-201",
+          "operator_reason_bundle": [
+            "reconnect-before-ack remained ambiguous so the runtime halted before mutation"
+          ],
+          "signed_recovery_hash": "recovery_hash_live_20260327_201"
+        },
+        "operator_reason_bundle": [
+          "The drill proves ambiguous reconnect recovery halts before any new broker mutation."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "allow_policy_engine_impairment_exit_only",
+      "payload": {
+        "drill_id": "failure_drill_degradation_001",
+        "scenario": "degraded_data",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-degradation-001",
+        "decision_trace_id": "trace-failure-drill-degradation-001",
+        "expected_safe_outcome": "exit_only",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "degradation_001_detected",
+            "event_type": "policy_engine_impairment_detected",
+            "correlation_id": "corr-failure-drill-degradation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "2026-03-27_COMEX_GLOBEX"
+            ],
+            "artifact_ids": [
+              "ops_health_policy_engine_20260327_001"
+            ],
+            "reason_code": "DEGRADATION_SEVERE_SIGNAL_REQUIRES_STRONG_ACTION",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "degradation_001_evaluated",
+            "event_type": "degradation_assessment_evaluated",
+            "correlation_id": "corr-failure-drill-degradation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "2026-03-27_COMEX_GLOBEX"
+            ],
+            "artifact_ids": [
+              "policy_drift_trace_20260327_001"
+            ],
+            "reason_code": "DEGRADATION_ACTION_MATCHES_SIGNAL_SEVERITY",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "degradation_001_exit_only",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-degradation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "2026-03-27_COMEX_GLOBEX"
+            ],
+            "artifact_ids": [
+              "degradation_summary_20260327_001"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "exit_only"
+          }
+        ],
+        "degradation_assessment": {
+          "assessment_id": "degradation_live_20260327_101",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "session_id": "2026-03-27_COMEX_GLOBEX",
+          "market_data_fresh": true,
+          "stale_quote_rate_bps": 9,
+          "bar_parity_healthy": true,
+          "connection_healthy": true,
+          "clock_synced": true,
+          "broker_latency_ms": 280,
+          "policy_engine_healthy": false,
+          "intraday_mismatch_above_tolerance": false,
+          "proposed_action": "exit_only",
+          "new_entries_blocked": true,
+          "correlation_id": "corr-degradation-live-20260327-101",
+          "operator_reason_bundle": [
+            "policy-engine impairment escalated the session into exit-only mode"
+          ],
+          "signed_assessment_hash": "degradation_hash_live_20260327_101"
+        },
+        "operator_reason_bundle": [
+          "The drill proves severe health impairment pivots to exit-only instead of silent continuation."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "allow_dependency_revocation_withdraw_and_review",
+      "payload": {
+        "drill_id": "failure_drill_revocation_001",
+        "scenario": "dependency_revocation",
+        "target_deployment_instance_id": "deployment_live_gold_301",
+        "correlation_id": "corr-failure-drill-revocation-001",
+        "decision_trace_id": "trace-failure-drill-revocation-001",
+        "expected_safe_outcome": "withdraw_and_review",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "revocation_001_detected",
+            "event_type": "dependency_revocation_detected",
+            "correlation_id": "corr-failure-drill-revocation-001",
+            "referenced_ids": [
+              "deployment_live_gold_301",
+              "data_profile_release_gold_2026q1_v1"
+            ],
+            "artifact_ids": [
+              "dependency_notice_20260327_001"
+            ],
+            "reason_code": "READINESS_DEPENDENCY_WITHDRAWAL_REQUIRED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "revocation_001_withdrawn",
+            "event_type": "withdrawal_review_completed",
+            "correlation_id": "corr-failure-drill-revocation-001",
+            "referenced_ids": [
+              "deployment_live_gold_301",
+              "incident_live_301"
+            ],
+            "artifact_ids": [
+              "operator_action_guardian_301"
+            ],
+            "reason_code": "EMERGENCY_WITHDRAWAL_REVIEW_COMPLETED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "revocation_001_safe",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-revocation-001",
+            "referenced_ids": [
+              "deployment_live_gold_301",
+              "bundle_readiness_record_gold_301"
+            ],
+            "artifact_ids": [
+              "review_summary_20260327_301"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "withdraw_and_review"
+          }
+        ],
+        "dependency_request": {
+          "case_id": "failure_drill_revocation_dependency_001",
+          "readiness_record": {
+            "bundle_readiness_record_id": "bundle_readiness_record_gold_301",
+            "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_301",
+            "target_account_binding_id": "account_binding_live_gold_301",
+            "policy_bundle_hash": "policy_bundle_hash_gold_301",
+            "account_risk_profile_id": "account_risk_profile_gold_301",
+            "broker_capability_descriptor_id": "broker_capability_descriptor_gold_301",
+            "approved_data_profile_release_id": "data_profile_release_gold_2026q1_v1",
+            "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_gold_301",
+            "current_margin_snapshot_id": "margin_snapshot_gold_301",
+            "freshness_evidence_ids": [
+              "freshness_evidence_301"
+            ],
+            "lifecycle_state": "LIVE_ELIGIBLE",
+            "approval_history_ids": [
+              "approval_history_301"
+            ]
+          },
+          "dependency_surface_kind": "data_profile_release",
+          "dependency_surface_id": "data_profile_release_gold_2026q1_v1",
+          "dependency_lifecycle_state": "REVOKED",
+          "correction_event": null,
+          "active_deployment": {
+            "deployment_instance_id": "deployment_live_gold_301",
+            "lane": "live",
+            "target_account_binding_id": "account_binding_live_gold_301",
+            "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_301",
+            "bundle_readiness_record_id": "bundle_readiness_record_gold_301",
+            "active_promotion_packet_id": "promotion_packet_gold_live_v301",
+            "session_readiness_packet_ids": [
+              "session_readiness_gold_301"
+            ],
+            "runtime_sequence_number": 301,
+            "operator_action_ids": [
+              "operator_action_guardian_301"
+            ],
+            "start_event_id": "deployment_start_event_301",
+            "stop_event_id": null,
+            "withdrawal_event_id": null,
+            "recovery_event_ids": [],
+            "lifecycle_state": "LIVE_ACTIVE"
+          },
+          "reviewed_waiver_id": null,
+          "operator_reason_bundle": [
+            "revoked dependency must not remain live without a reviewed waiver"
+          ]
+        },
+        "withdrawal_review_request": {
+          "case_id": "failure_drill_withdrawal_review_001",
+          "readiness_record": {
+            "bundle_readiness_record_id": "bundle_readiness_record_gold_301",
+            "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_301",
+            "target_account_binding_id": "account_binding_live_gold_301",
+            "policy_bundle_hash": "policy_bundle_hash_gold_301",
+            "account_risk_profile_id": "account_risk_profile_gold_301",
+            "broker_capability_descriptor_id": "broker_capability_descriptor_gold_301",
+            "approved_data_profile_release_id": "data_profile_release_gold_2026q1_v1",
+            "current_fee_schedule_snapshot_id": "fee_schedule_snapshot_gold_301",
+            "current_margin_snapshot_id": "margin_snapshot_gold_301",
+            "freshness_evidence_ids": [
+              "freshness_evidence_301"
+            ],
+            "lifecycle_state": "LIVE_ELIGIBLE",
+            "approval_history_ids": [
+              "approval_history_301"
+            ]
+          },
+          "deployment": {
+            "deployment_instance_id": "deployment_live_gold_301",
+            "lane": "live",
+            "target_account_binding_id": "account_binding_live_gold_301",
+            "candidate_bundle_id": "candidate_bundle_gold_core_candidate_bundle_sha256_301",
+            "bundle_readiness_record_id": "bundle_readiness_record_gold_301",
+            "active_promotion_packet_id": "promotion_packet_gold_live_v301",
+            "session_readiness_packet_ids": [
+              "session_readiness_gold_301"
+            ],
+            "runtime_sequence_number": 302,
+            "operator_action_ids": [
+              "operator_action_guardian_301"
+            ],
+            "start_event_id": "deployment_start_event_301",
+            "stop_event_id": null,
+            "withdrawal_event_id": "withdrawal_event_301",
+            "recovery_event_ids": [],
+            "lifecycle_state": "WITHDRAWN"
+          },
+          "trigger_source": "guardian",
+          "operator_action_id": "operator_action_guardian_301",
+          "incident_reference_id": "incident_live_301",
+          "withdrawn_at_utc": "2026-03-27T00:00:00+00:00",
+          "review_completed_at_utc": "2026-03-27T08:00:00+00:00",
+          "review_decision_state": "RECERT_REQUIRED",
+          "review_rationale": "withdrawal review required recertification before any future activation"
+        },
+        "operator_reason_bundle": [
+          "The drill proves revoked dependencies force withdrawal and produce a timely review trail."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "allow_authoritative_reconciliation_blocks_next_session",
+      "payload": {
+        "drill_id": "failure_drill_reconciliation_001",
+        "scenario": "reconciliation_failure",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-reconciliation-001",
+        "decision_trace_id": "trace-failure-drill-reconciliation-001",
+        "expected_safe_outcome": "next_session_blocked",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "reconciliation_001_statement",
+            "event_type": "authoritative_statement_ingested",
+            "correlation_id": "corr-failure-drill-reconciliation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "2026-03-27"
+            ],
+            "artifact_ids": [
+              "ibkr_statement_set_20260327_301"
+            ],
+            "reason_code": "LEDGER_CLOSE_ELIGIBILITY_GOVERNED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "reconciliation_001_discrepancy",
+            "event_type": "ledger_close_evaluated",
+            "correlation_id": "corr-failure-drill-reconciliation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "statement_gap_20260327_301"
+            ],
+            "artifact_ids": [
+              "statement_gap_20260327_301"
+            ],
+            "reason_code": "LEDGER_CLOSE_ELIGIBILITY_GOVERNED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "reconciliation_001_blocked",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-reconciliation-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "2026-03-28_COMEX_GLOBEX"
+            ],
+            "artifact_ids": [
+              "next_session_eligibility_20260328_301"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "next_session_blocked"
+          }
+        ],
+        "ledger_close_artifact": {
+          "ledger_close_id": "ledger_close_live_20260327_301",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "ledger_close_date": "2026-03-27",
+          "authoritative_statement_set_id": "ibkr_statement_set_20260327_301",
+          "as_booked_pnl": 481.5,
+          "as_reconciled_pnl": 437.25,
+          "discrepancy_summary_ids": [
+            "statement_gap_20260327_301"
+          ],
+          "discrepancy_above_tolerance": true,
+          "reviewed_or_waived": false,
+          "review_or_waiver_id": null,
+          "next_session_eligibility": "blocked",
+          "cash_movements_reconciled": true,
+          "commissions_reconciled": true,
+          "margin_reconciled": true,
+          "correlation_id": "corr-ledger-close-live-20260327-301",
+          "operator_reason_bundle": [
+            "statement discrepancy blocks the next session until review"
+          ],
+          "signed_ledger_hash": "ledger_hash_live_20260327_301"
+        },
+        "operator_reason_bundle": [
+          "The drill proves unresolved authoritative reconciliation blocks the next session."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "allow_restore_host_loss_remains_halted_until_review",
+      "payload": {
+        "drill_id": "failure_drill_restore_001",
+        "scenario": "restore_after_host_loss",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-restore-001",
+        "decision_trace_id": "trace-failure-drill-restore-001",
+        "expected_safe_outcome": "remain_halted_until_review",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "restore_001_host_loss",
+            "event_type": "host_loss_simulated",
+            "correlation_id": "corr-failure-drill-restore-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "backup_checkpoint_live_20260327_401"
+            ],
+            "artifact_ids": [
+              "backup_checkpoint_live_20260327_401"
+            ],
+            "reason_code": "RESTORE_DRILL_RECONCILIATION_REVIEW_REQUIRED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "restore_001_recovered",
+            "event_type": "restore_drill_evaluated",
+            "correlation_id": "corr-failure-drill-restore-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "journal_digest_frontier_live_20260327_401"
+            ],
+            "artifact_ids": [
+              "snapshot_live_20260327_401",
+              "journal_barrier_live_20260327_401"
+            ],
+            "reason_code": "RESTORE_DRILL_RECONCILIATION_REVIEW_REQUIRED",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "restore_001_halted",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-restore-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "restore_drill_live_20260327_401"
+            ],
+            "artifact_ids": [
+              "restore_review_pending_20260327_401"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "remain_halted_until_review"
+          }
+        ],
+        "restore_drill_artifact": {
+          "restore_drill_id": "restore_drill_live_20260327_401",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "backup_artifact_id": "backup_checkpoint_live_20260327_401",
+          "snapshot_artifact_id": "snapshot_live_20260327_401",
+          "journal_barrier_id": "journal_barrier_live_20260327_401",
+          "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_401",
+          "off_host_recoverable": true,
+          "digest_chain_verified": true,
+          "restored_to_clean_host": true,
+          "entered_recovering_state": true,
+          "broker_reconciliation_clean": false,
+          "reviewed_waiver_id": null,
+          "rpo_target_minutes": 30,
+          "achieved_rpo_minutes": 18,
+          "rto_target_minutes": 60,
+          "achieved_rto_minutes": 44,
+          "dashboard_visible": true,
+          "correlation_id": "corr-restore-live-20260327-401",
+          "operator_reason_bundle": [
+            "host-loss restore remained halted after dirty reconciliation"
+          ],
+          "signed_restore_hash": "restore_hash_live_20260327_401"
+        },
+        "operator_reason_bundle": [
+          "The drill proves restored runtime stays halted until reconciliation is reviewed."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "allow_safe_stop_persists_restart_artifacts",
+      "payload": {
+        "drill_id": "failure_drill_safe_stop_001",
+        "scenario": "safe_stop",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-safe-stop-001",
+        "decision_trace_id": "trace-failure-drill-safe-stop-001",
+        "expected_safe_outcome": "restart_artifacts_persisted",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "safe_stop_001_requested",
+            "event_type": "graceful_shutdown_requested",
+            "correlation_id": "corr-failure-drill-safe-stop-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "maintenance_restart"
+            ],
+            "artifact_ids": [
+              "final_snapshot_live_20260327_501"
+            ],
+            "reason_code": "GRACEFUL_SHUTDOWN_PERSISTED_FOR_RESTART",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "safe_stop_001_barrier",
+            "event_type": "graceful_shutdown_persisted",
+            "correlation_id": "corr-failure-drill-safe-stop-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "journal_barrier_live_20260327_501"
+            ],
+            "artifact_ids": [
+              "journal_barrier_live_20260327_501",
+              "journal_digest_frontier_live_20260327_501"
+            ],
+            "reason_code": "GRACEFUL_SHUTDOWN_PERSISTED_FOR_RESTART",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "safe_stop_001_complete",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-safe-stop-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1",
+              "shutdown_record_live_20260327_501"
+            ],
+            "artifact_ids": [
+              "shutdown_summary_20260327_501"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "restart_artifacts_persisted"
+          }
+        ],
+        "shutdown_record": {
+          "shutdown_record_id": "shutdown_record_live_20260327_501",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "stop_new_entries_asserted": true,
+          "drain_policy": "cancel",
+          "final_snapshot_artifact_id": "final_snapshot_live_20260327_501",
+          "journal_barrier_id": "journal_barrier_live_20260327_501",
+          "journal_digest_frontier_id": "journal_digest_frontier_live_20260327_501",
+          "shutdown_reason": "maintenance_restart",
+          "restart_ready": true,
+          "correlation_id": "corr-shutdown-live-20260327-501",
+          "operator_reason_bundle": [
+            "safe-stop behavior preserved restart-safe shutdown artifacts"
+          ],
+          "signed_shutdown_hash": "shutdown_hash_live_20260327_501"
+        },
+        "operator_reason_bundle": [
+          "The drill proves graceful safe-stop persists restart artifacts instead of leaving shutdown ambiguous."
+        ]
+      },
+      "expected_status": "pass",
+      "expected_reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED"
+    },
+    {
+      "case_id": "reject_failure_drill_with_correlation_mismatch",
+      "payload": {
+        "drill_id": "failure_drill_bad_timeline_001",
+        "scenario": "degraded_data",
+        "target_deployment_instance_id": "deployment_gold_live_v1",
+        "correlation_id": "corr-failure-drill-bad-timeline-001",
+        "decision_trace_id": "trace-failure-drill-bad-timeline-001",
+        "expected_safe_outcome": "exit_only",
+        "timeline_events": [
+          {
+            "sequence_number": 10,
+            "event_id": "bad_timeline_001_detected",
+            "event_type": "degradation_detected",
+            "correlation_id": "corr-failure-drill-bad-timeline-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1"
+            ],
+            "artifact_ids": [
+              "degradation_summary_20260327_bad"
+            ],
+            "reason_code": "DEGRADATION_ACTION_MATCHES_SIGNAL_SEVERITY",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 20,
+            "event_id": "bad_timeline_001_mismatch",
+            "event_type": "correlation_broken",
+            "correlation_id": "corr-failure-drill-bad-timeline-002",
+            "referenced_ids": [
+              "deployment_gold_live_v1"
+            ],
+            "artifact_ids": [
+              "degradation_trace_20260327_bad"
+            ],
+            "reason_code": "DEGRADATION_ACTION_MATCHES_SIGNAL_SEVERITY",
+            "declared_safe_outcome": null
+          },
+          {
+            "sequence_number": 30,
+            "event_id": "bad_timeline_001_safe",
+            "event_type": "safe_outcome_recorded",
+            "correlation_id": "corr-failure-drill-bad-timeline-001",
+            "referenced_ids": [
+              "deployment_gold_live_v1"
+            ],
+            "artifact_ids": [
+              "degradation_summary_20260327_bad_final"
+            ],
+            "reason_code": "FAILURE_DRILL_SAFE_OUTCOME_OBSERVED",
+            "declared_safe_outcome": "exit_only"
+          }
+        ],
+        "degradation_assessment": {
+          "assessment_id": "degradation_live_20260327_bad",
+          "deployment_instance_id": "deployment_gold_live_v1",
+          "session_id": "2026-03-27_COMEX_GLOBEX",
+          "market_data_fresh": true,
+          "stale_quote_rate_bps": 7,
+          "bar_parity_healthy": true,
+          "connection_healthy": true,
+          "clock_synced": true,
+          "broker_latency_ms": 250,
+          "policy_engine_healthy": false,
+          "intraday_mismatch_above_tolerance": false,
+          "proposed_action": "exit_only",
+          "new_entries_blocked": true,
+          "correlation_id": "corr-degradation-live-20260327-bad",
+          "operator_reason_bundle": [
+            "timeline correlation was intentionally broken in this negative case"
+          ],
+          "signed_assessment_hash": "degradation_hash_live_20260327_bad"
+        },
+        "operator_reason_bundle": [
+          "The drill harness must reject broken correlation evidence."
+        ]
+      },
+      "expected_status": "violation",
+      "expected_reason_code": "FAILURE_DRILL_TIMELINE_CORRELATION_MISMATCH"
+    }
+  ]
+}
