@@ -1129,6 +1129,7 @@ VERIFICATION_PROFILES: tuple[VerificationProfile, ...] = (
         title="Definition-of-done closure and continuation review",
         related_beads=(
             "backtesting_engine-ltc.10.1",
+            "backtesting_engine-ltc.10.2",
             "backtesting_engine-ltc.10.4",
         ),
         phase_gates=("phase_9",),

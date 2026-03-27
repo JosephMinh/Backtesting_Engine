@@ -1,0 +1,176 @@
+{
+  "defaults": {
+    "register_id": "residual_limitations_register_v1",
+    "stack_id": "first_live_stack_gold",
+    "initial_objective": "honest validation and safe operation",
+    "register_artifact_id": "artifact_residual_limitations_register_v1",
+    "recorded_at_utc": "2026-03-27T00:00:00+00:00",
+    "operator_notes": [
+      "Residual limitations remain explicit inputs into promotion and continuation review.",
+      "The first live stack is intentionally constrained rather than pretending to be final."
+    ],
+    "limitations": [
+      {
+        "limitation_id": "ibkr_market_data_dependency",
+        "title": "IBKR market-data dependency",
+        "summary": "IBKR market data remains an operational dependency and is not a premium low-latency feed.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable for honest validation and safe operation because v1 values operational truth over feed sophistication.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "A second feed is only eligible after live diagnostics prove IBKR data is insufficient.",
+        "evidence_ids": [
+          "artifact_market_data_dependency_v1"
+        ],
+        "notes": [
+          "Do not silently normalize this limitation away in later review."
+        ]
+      },
+      {
+        "limitation_id": "one_oz_liquidity_heterogeneity",
+        "title": "1OZ liquidity heterogeneity",
+        "summary": "1OZ liquidity varies materially by session and can constrain viable strategy classes.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable in v1 only because the lane is about proving tradability honestly before widening scope.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "Symbol expansion or symbol switch requires continuation-review evidence from tradability studies.",
+        "evidence_ids": [
+          "artifact_liquidity_study_v1"
+        ],
+        "notes": [
+          "Liquidity assumptions must stay explicit in continuation review."
+        ]
+      },
+      {
+        "limitation_id": "bar_based_microstructure_gap",
+        "title": "Bar-based microstructure gap",
+        "summary": "Bar-based logic will miss depth-sensitive and microstructure-dependent opportunities.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable for v1 because the initial objective is safe and honest validation, not microstructure capture.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "Sub-minute or depth-aware live logic requires a deliberate continuation-review redesign.",
+        "evidence_ids": [
+          "artifact_microstructure_gap_v1"
+        ],
+        "notes": [
+          "This is a deliberate limitation, not a forgotten roadmap item."
+        ]
+      },
+      {
+        "limitation_id": "live_capital_posture_limit",
+        "title": "Minimum live capital posture limit",
+        "summary": "The approved $5,000 / one-1OZ posture caps absolute-dollar opportunity in the initial stack.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable for v1 because the stack is proving safe operation at small size before any capital expansion.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "Raising capital posture requires continuation review and measured evidence that the lane is worth scaling.",
+        "evidence_ids": [
+          "artifact_capital_posture_v1"
+        ],
+        "notes": [
+          "The small capital posture is a deliberate throttle, not a hidden permanent limit."
+        ]
+      },
+      {
+        "limitation_id": "overnight_operational_risk",
+        "title": "Overnight operational risk",
+        "summary": "Overnight operation is riskier and operationally stricter than intraday-flat operation.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable in v1 because safety requires stricter overnight gating rather than optimistic expansion.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "Overnight scope only expands after continuation review confirms overnight evidence remains acceptable.",
+        "evidence_ids": [
+          "artifact_overnight_risk_v1"
+        ],
+        "notes": [
+          "Overnight remains explicitly stricter than intraday-flat."
+        ]
+      },
+      {
+        "limitation_id": "single_host_infrastructure_concentration",
+        "title": "Single-host infrastructure concentration",
+        "summary": "Single-host operation concentrates infrastructure risk even with guardian and off-host durability.",
+        "accepted_only_for_initial_objective": true,
+        "objective_rationale": "Acceptable for the initial objective because the first live lane values simplicity and recovery drills over premature multi-host complexity.",
+        "decision_surface_ids": [
+          "promotion_review",
+          "continuation_review",
+          "expansion_review"
+        ],
+        "expansion_guardrail": "Multi-host infrastructure only becomes eligible when continuation review shows one-host SLOs are insufficient.",
+        "evidence_ids": [
+          "artifact_single_host_risk_v1"
+        ],
+        "notes": [
+          "One-host posture is acceptable only because it remains explicit and reviewable."
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "explicit_register_is_complete",
+      "expected": {
+        "status": "pass",
+        "reason_code": "RESIDUAL_LIMITATIONS_REGISTER_COMPLETE"
+      }
+    },
+    {
+      "case_id": "missing_single_host_limit",
+      "drop_limitation_ids": [
+        "single_host_infrastructure_concentration"
+      ],
+      "expected": {
+        "status": "violation",
+        "reason_code": "RESIDUAL_LIMITATIONS_MISSING_REQUIRED_LIMITATION"
+      }
+    },
+    {
+      "case_id": "liquidity_limit_missing_continuation_surface",
+      "limitation_mutations": {
+        "one_oz_liquidity_heterogeneity": {
+          "decision_surface_ids": [
+            "promotion_review",
+            "expansion_review"
+          ]
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "RESIDUAL_LIMITATIONS_MISSING_DECISION_SURFACE"
+      }
+    },
+    {
+      "case_id": "capital_limit_not_objective_bound",
+      "limitation_mutations": {
+        "live_capital_posture_limit": {
+          "accepted_only_for_initial_objective": false,
+          "objective_rationale": ""
+        }
+      },
+      "expected": {
+        "status": "violation",
+        "reason_code": "RESIDUAL_LIMITATIONS_NOT_OBJECTIVE_BOUND"
+      }
+    }
+  ]
+}

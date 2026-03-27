@@ -68,7 +68,7 @@ It also carries the shared lifecycle/compatibility contract for `backtesting_eng
 | Paper runtime and operational evidence | `backtesting_engine-ltc.7.7`, `7.8`, `7.10`, `backtesting_engine-tox` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path`, `replay_certification` |
 | Operator observability and response targets | `backtesting_engine-ltc.8.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 | Live-readiness and resilience | `backtesting_engine-ltc.8.1`, `8.3`, `8.5`, `backtesting_engine-w81` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path`, `replay_certification` |
-| Program closure and continuation | `backtesting_engine-ltc.10.1`, `10.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
+| Program closure and continuation | `backtesting_engine-ltc.10.1`, `10.2`, `10.4` | `unit`, `contract`, `property` | `golden_path`, `operational_rehearsal` | `failure_path` |
 
 ## Required Retained Artifacts
 
