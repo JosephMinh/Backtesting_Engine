@@ -1,0 +1,230 @@
+{
+  "drill_cases": [
+    {
+      "case_id": "guardian_authorized_flatten_executes_with_independent_verification",
+      "runner": "guardian",
+      "command": "emergency-drill",
+      "scenario": "authorized-flatten",
+      "phase": "guardian_emergency",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "execute_authorized_flatten_after_independent_verification",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "guardian.emergency-drill",
+        "shared/policy/failure_path_drills.py"
+      ],
+      "explanation": "Guardian must execute the emergency flatten only after independently verifying broker reachability and authorization.",
+      "expected": {
+        "disposition": "executed",
+        "reason_code": "GUARDIAN_EMERGENCY_ACTION_EXECUTED",
+        "action": "flatten_all_positions",
+        "duplicate_invocation": "false"
+      }
+    },
+    {
+      "case_id": "guardian_impaired_connectivity_rejects_and_escalates",
+      "runner": "guardian",
+      "command": "emergency-drill",
+      "scenario": "impaired-connectivity",
+      "phase": "guardian_emergency",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "reject_emergency_action_until_connectivity_is_proved",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "guardian.emergency-drill",
+        "shared/policy/failure_path_drills.py"
+      ],
+      "explanation": "Guardian must refuse the action when it cannot independently verify connectivity, forcing operator escalation instead of blind flatten attempts.",
+      "expected": {
+        "disposition": "rejected",
+        "reason_code": "GUARDIAN_CONNECTIVITY_PROOF_REQUIRED",
+        "action": "flatten_all_positions",
+        "duplicate_invocation": "false"
+      }
+    },
+    {
+      "case_id": "watchdog_supervision_restart_requires_recovering_gate",
+      "runner": "watchdog",
+      "command": "supervision-drill",
+      "scenario": "opsd-restart-into-recovering",
+      "phase": "supervision_restart",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "restrict_runtime_until_recovering_path_completes",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "watchdog.supervision-drill",
+        "rust/opsd/src/recovery.rs"
+      ],
+      "explanation": "A supervised restart must not silently resume trading; it must return the runtime to RECOVERING with operator-readable restrictions.",
+      "expected": {
+        "state": "restrict",
+        "reason_code": "WATCHDOG_SUPERVISION_RECOVERING_REQUIRED",
+        "restarted_target_count": "1",
+        "quarantined_target_count": "0"
+      }
+    },
+    {
+      "case_id": "watchdog_restore_ambiguity_halts_safely",
+      "runner": "watchdog",
+      "command": "restore-drill",
+      "scenario": "ambiguous-state",
+      "phase": "restore_verification",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "safe_halt_on_restore_ambiguity",
+      "summary_key": "explanation",
+      "contract_refs": [
+        "watchdog.restore-drill",
+        "rust/opsd/src/recovery.rs"
+      ],
+      "explanation": "Any ambiguity in restored state or intent ownership must leave the runtime halted rather than guessing at resumability.",
+      "expected": {
+        "disposition": "safe_halt",
+        "reason_code": "RESTORE_AMBIGUITY_REQUIRES_SAFE_HALT",
+        "verified_frontier_digest": "digest-3",
+        "backup_age_minutes": "10"
+      }
+    },
+    {
+      "case_id": "watchdog_migration_dirty_state_store_safe_halt",
+      "runner": "watchdog",
+      "command": "execute-migration",
+      "scenario": "dirty-state-store",
+      "phase": "migration_execution",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "safe_halt_when_migration_prerequisites_are_not_met",
+      "summary_key": "explanation",
+      "contract_refs": [
+        "watchdog.execute-migration",
+        "rust/watchdog/src/recovery.rs"
+      ],
+      "explanation": "Executable migrations must halt instead of mutating state when the verified backup frontier or clean state-store preconditions are missing.",
+      "expected": {
+        "status": "safe_halt",
+        "reason_code": "MIGRATION_PREREQUISITES_NOT_MET",
+        "safe_halt_required": "true",
+        "applied_steps": "0"
+      }
+    },
+    {
+      "case_id": "watchdog_clock_unknown_sync_blocks_activation",
+      "runner": "watchdog",
+      "command": "clock-health",
+      "scenario": "blocked-unknown-sync",
+      "phase": "activation_health",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "block_activation_until_clock_trust_is_restored",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "watchdog.clock-health",
+        "shared/policy/verification_contract.py"
+      ],
+      "explanation": "If clock trust is unknown, activation must block immediately instead of proceeding on stale or ambiguous temporal evidence.",
+      "expected": {
+        "state": "block",
+        "reason_code": "CLOCK_SYNC_STATE_UNKNOWN",
+        "measured_skew_ms": "42"
+      }
+    },
+    {
+      "case_id": "watchdog_secret_break_glass_blocks_activation",
+      "runner": "watchdog",
+      "command": "secret-health",
+      "scenario": "break-glass-review-required",
+      "phase": "credential_health",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "block_activation_until_break_glass_review_is_complete",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "watchdog.secret-health",
+        "shared/policy/verification_contract.py"
+      ],
+      "explanation": "Break-glass secret usage without reviewed follow-up must block activation and produce an operator-readable credential-health explanation.",
+      "expected": {
+        "state": "block",
+        "reason_code": "SECRET_HEALTH_BREAK_GLASS_REVIEW_REQUIRED",
+        "delivery_surface": "runtime_secret_path"
+      }
+    },
+    {
+      "case_id": "watchdog_activation_preflight_blocks_on_failed_health_checks",
+      "runner": "watchdog",
+      "command": "activation-preflight",
+      "scenario": "blocked-clock",
+      "phase": "activation_preflight",
+      "primary_reason_key": "reason_code",
+      "safe_outcome_assertion": "refuse_activation_until_preflight_checks_are_green",
+      "summary_key": "operator_summary",
+      "contract_refs": [
+        "watchdog.activation-preflight",
+        "shared/policy/verification_contract.py"
+      ],
+      "explanation": "The activation bundle must remain blocked when prerequisite health evidence is red, even if the rest of the stack appears available.",
+      "expected": {
+        "state": "block",
+        "reason_code": "ACTIVATION_PREFLIGHT_BLOCKED",
+        "failed_check_count": "1",
+        "warning_check_count": "0"
+      }
+    },
+    {
+      "case_id": "opsd_session_readiness_rejects_stale_provider",
+      "runner": "opsd",
+      "scenario": "session-readiness",
+      "phase": "session_readiness",
+      "primary_reason_key": "blocked_reason_code",
+      "safe_outcome_assertion": "reject_session_activation_when_required_providers_are_stale",
+      "summary_key": "latest_summary",
+      "contract_refs": [
+        "opsd.session-readiness",
+        "shared/policy/readiness_revocation.py"
+      ],
+      "explanation": "The runtime must block session activation when a required provider goes stale and must retain the blocked packet identity for operator review.",
+      "expected": {
+        "blocked_status": "blocked",
+        "blocked_reason_code": "READINESS_PROVIDER_STALE",
+        "blocked_provider_ids": "clock-check-001",
+        "health_latest_readiness_status": "blocked"
+      }
+    },
+    {
+      "case_id": "opsd_duplicate_order_control_dedupes_and_withdraws",
+      "runner": "opsd",
+      "scenario": "broker-mutation-control",
+      "phase": "broker_mutation_control",
+      "primary_reason_key": "control_reason_code",
+      "safe_outcome_assertion": "dedupe_duplicate_callbacks_and_preserve_operator_withdrawal_control",
+      "contract_refs": [
+        "opsd.broker-mutation-control",
+        "shared/policy/broker_semantics.py"
+      ],
+      "explanation": "Retry and duplicate callback paths must remain idempotent while still honoring operator withdrawal controls with retained broker-order identities.",
+      "expected": {
+        "retry_idempotent": "true",
+        "duplicate_callback_deduplicated": "true",
+        "callback_reason_code": "BROKER_DUPLICATE_CALLBACK_DEDUPED",
+        "control_reason_code": "WITHDRAW_LIVE_OPERATOR_REQUEST",
+        "dispatch_count": "3"
+      }
+    },
+    {
+      "case_id": "opsd_authoritative_reconciliation_blocks_next_session",
+      "runner": "opsd",
+      "scenario": "authoritative-reconciliation",
+      "phase": "authoritative_reconciliation",
+      "primary_reason_key": "daily_close_reason",
+      "safe_outcome_assertion": "block_next_session_until_authoritative_discrepancies_are_reviewed",
+      "contract_refs": [
+        "opsd.authoritative-reconciliation",
+        "shared/policy/verification_contract.py"
+      ],
+      "explanation": "Authoritative reconciliation failures must retain discrepancy identities and block next-session eligibility instead of silently rolling forward.",
+      "expected": {
+        "intraday_status": "review_required",
+        "intraday_reason": "INTRADAY_RECONCILIATION_RESTRICTED",
+        "daily_close_status": "review_required",
+        "daily_close_reason": "AUTHORITATIVE_LEDGER_CLOSE_BLOCKED",
+        "next_session_eligibility": "blocked"
+      }
+    }
+  ]
+}
