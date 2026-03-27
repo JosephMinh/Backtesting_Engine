@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+export CARGO_TARGET_DIR="$repo_root/target"
+export TMPDIR="$repo_root/target/tmp"
+mkdir -p "$TMPDIR"
+
 artifact_root="${1:-${TMPDIR:-/tmp}/backtesting_engine_watchdog_restore_migration_$(date +%Y%m%dT%H%M%S)}"
 
 mkdir -p "$artifact_root"

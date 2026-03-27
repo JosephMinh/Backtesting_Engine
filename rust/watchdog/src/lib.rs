@@ -3,8 +3,19 @@
 //! `watchdog` supervises process health and restart behavior without owning
 //! strategy or reconciliation state.
 
+pub mod health;
 pub mod recovery;
 
+pub use health::{
+    ActivationPreflightSummary, BackupFreshnessObservation, BackupFreshnessReport,
+    ClockHealthObservation, ClockHealthReport, ClockSyncState, HealthState,
+    RestoreDrillObservation, RestoreDrillReport, SecretDeliverySurface, SecretHealthObservation,
+    SecretHealthReport, evaluate_activation_preflight, evaluate_backup_freshness,
+    evaluate_clock_health, evaluate_restore_drill, evaluate_secret_health,
+    sample_activation_preflight_inputs, sample_clock_health_observation,
+    sample_secret_health_observation, write_activation_preflight_artifacts,
+    write_clock_health_artifacts, write_secret_health_artifacts,
+};
 pub use recovery::{
     BackupManifest, DurabilityEvidence, JournalDigestRecord, MigrationDomain,
     MigrationExecutionReport, MigrationExecutionRequest, MigrationStatus, RecoveryDisposition,

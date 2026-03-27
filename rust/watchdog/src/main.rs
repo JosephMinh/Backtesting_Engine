@@ -3,12 +3,15 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use backtesting_engine_watchdog::{
-    execute_migration, sample_migration_request, sample_restore_request, verify_restore_execution,
-    write_migration_artifacts, write_restore_artifacts,
+    evaluate_clock_health, execute_migration, sample_activation_preflight_inputs,
+    sample_clock_health_observation, sample_migration_request, sample_restore_request,
+    sample_secret_health_observation, verify_restore_execution,
+    write_activation_preflight_artifacts, write_clock_health_artifacts, write_migration_artifacts,
+    write_restore_artifacts, write_secret_health_artifacts,
 };
 
 fn usage() -> &'static str {
-    "usage: cargo run -p backtesting-engine-watchdog -- <restore-drill|execute-migration> <scenario> --artifact-dir <dir>"
+    "usage: cargo run -p backtesting-engine-watchdog -- <restore-drill|execute-migration|clock-health|secret-health|activation-preflight> <scenario> --artifact-dir <dir>"
 }
 
 fn parse_artifact_dir(args: &[String]) -> Result<PathBuf, String> {
@@ -61,6 +64,59 @@ fn run(args: &[String]) -> Result<(), String> {
             println!("safe_halt_required={}", report.safe_halt_required);
             println!("applied_steps={}", report.applied_steps.len());
             println!("explanation={}", report.explanation);
+            Ok(())
+        }
+        ("clock-health", scenario) => {
+            let observation = sample_clock_health_observation(scenario)
+                .ok_or_else(|| format!("unknown clock-health scenario: {scenario}"))?;
+            let report = evaluate_clock_health(&observation);
+            write_clock_health_artifacts(&artifact_dir, &observation, &report)
+                .map_err(|err| format!("failed to write clock-health artifacts: {err}"))?;
+            println!("command=clock-health");
+            println!("scenario={scenario}");
+            println!("artifact_dir={}", artifact_dir.display());
+            println!("state={}", report.state.as_str());
+            println!("reason_code={}", report.reason_code);
+            println!("measured_skew_ms={}", report.measured_skew_ms);
+            println!("operator_summary={}", report.operator_summary);
+            Ok(())
+        }
+        ("secret-health", scenario) => {
+            let observation = sample_secret_health_observation(scenario)
+                .ok_or_else(|| format!("unknown secret-health scenario: {scenario}"))?;
+            let report = backtesting_engine_watchdog::evaluate_secret_health(&observation);
+            write_secret_health_artifacts(&artifact_dir, &observation, &report)
+                .map_err(|err| format!("failed to write secret-health artifacts: {err}"))?;
+            println!("command=secret-health");
+            println!("scenario={scenario}");
+            println!("artifact_dir={}", artifact_dir.display());
+            println!("state={}", report.state.as_str());
+            println!("reason_code={}", report.reason_code);
+            println!("delivery_surface={}", report.delivery_surface.as_str());
+            println!("operator_summary={}", report.operator_summary);
+            Ok(())
+        }
+        ("activation-preflight", scenario) => {
+            let (clock_report, secret_report, backup_report, restore_report, summary) =
+                sample_activation_preflight_inputs(scenario)
+                    .ok_or_else(|| format!("unknown activation-preflight scenario: {scenario}"))?;
+            write_activation_preflight_artifacts(
+                &artifact_dir,
+                &clock_report,
+                &secret_report,
+                &backup_report,
+                &restore_report,
+                &summary,
+            )
+            .map_err(|err| format!("failed to write activation-preflight artifacts: {err}"))?;
+            println!("command=activation-preflight");
+            println!("scenario={scenario}");
+            println!("artifact_dir={}", artifact_dir.display());
+            println!("state={}", summary.state.as_str());
+            println!("reason_code={}", summary.reason_code);
+            println!("failed_check_count={}", summary.failed_check_ids.len());
+            println!("warning_check_count={}", summary.warning_check_ids.len());
+            println!("operator_summary={}", summary.operator_summary);
             Ok(())
         }
         _ => Err(usage().to_string()),
