@@ -46,6 +46,12 @@ def _coerce_budget_value(value: object, *, field_name: str) -> float:
     return parsed
 
 
+def _coerce_seed_value(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("seed values must be explicit integers")
+    return value
+
+
 @unique
 class ResearchRunPurpose(str, Enum):
     SCREENING = "screening"
@@ -152,6 +158,11 @@ class ResearchRunRecord:
                 field_name="created_at_utc",
             ),
         )
+        object.__setattr__(
+            self,
+            "seeds",
+            tuple(_coerce_seed_value(seed) for seed in self.seeds),
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -190,7 +201,7 @@ class ResearchRunRecord:
             data_profile_release_id=str(payload["data_profile_release_id"]),
             execution_profile_id=str(payload["execution_profile_id"]),
             parameter_reference_id=str(payload["parameter_reference_id"]),
-            seeds=tuple(int(item) for item in payload["seeds"]),
+            seeds=tuple(_coerce_seed_value(item) for item in payload["seeds"]),
             policy_bundle_hash=str(payload["policy_bundle_hash"]),
             compatibility_matrix_version=str(payload["compatibility_matrix_version"]),
             output_artifact_digests=tuple(

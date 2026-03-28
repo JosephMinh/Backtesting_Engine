@@ -171,6 +171,26 @@ class ReleaseSchemaContractTest(unittest.TestCase):
         )
         self.assertEqual("2026-03-01T00:00:00+00:00", release.observation_cutoff_utc)
 
+    def test_dataset_release_rejects_non_string_observation_cutoff(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "dataset_release: observation_cutoff_utc must be timezone-aware and UTC-normalizable",
+        ):
+            DatasetRelease(
+                release_id="dataset_release_invalid_cutoff_v1",
+                raw_input_hashes=("raw_sha256_a",),
+                reference_version_hashes=("calendar_sha256_v3",),
+                observation_cutoff_utc=True,  # type: ignore[arg-type]
+                validation_rules_version="validation_rules_v7",
+                catalog_version="catalog_v4",
+                protocol_versions={"ingestion_protocol": "ingest_v2"},
+                vendor_revision_watermark="databento_revision_2026-03-01",
+                correction_horizon="t_plus_2_business_days",
+                certification_report_hash="cert_report_sha256_001",
+                policy_bundle_hash="policy_bundle_sha256_001",
+                lifecycle_state=ReleaseLifecycleState.APPROVED,
+            )
+
     def test_release_loaders_require_explicit_integer_schema_version(self) -> None:
         for release_kind, payload in (
             (

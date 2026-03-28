@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import unittest
 
 from shared.policy.research_state import (
@@ -329,6 +330,15 @@ class TestResearchStateContract(unittest.TestCase):
             "next_budget_authorized_usd must be finite and non-negative",
         ):
             FamilyDecisionRecord.from_dict(payload)
+
+    def test_research_run_rejects_boolean_seed_values(self):
+        with self.assertRaisesRegex(ValueError, "seed values must be explicit integers"):
+            replace(sample_research_run("run-bool-seed"), seeds=(True, 11))
+
+        payload = sample_research_run().to_dict()
+        payload["seeds"] = [False, 11]
+        with self.assertRaisesRegex(ValueError, "seed values must be explicit integers"):
+            ResearchRunRecord.from_dict(payload)
 
 
 if __name__ == "__main__":

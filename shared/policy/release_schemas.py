@@ -25,7 +25,7 @@ def _normalize_observation_cutoff(value: str) -> str:
         normalized = canonicalize_persisted_timestamp(
             datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
         )
-    except (TypeError, ValueError) as exc:
+    except (AttributeError, TypeError, ValueError) as exc:
         raise ValueError(
             "dataset_release: observation_cutoff_utc must be timezone-aware and UTC-normalizable"
         ) from exc
