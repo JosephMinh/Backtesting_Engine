@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import TypeVar
+from typing import Any, TypeVar
 
 SUPPORTED_LIFECYCLE_SPEC_SCHEMA_VERSION = 1
 
@@ -21,6 +21,85 @@ FRESHNESS_REQUIRED_TAG = "requires_freshness"
 RUNTIME_ACTIVE_TAG = "runtime_active"
 
 EnumT = TypeVar("EnumT", bound=Enum)
+
+
+def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
+    try:
+        loaded = json.JSONDecoder().decode(payload)
+    except ValueError as exc:
+        raise ValueError(f"{label}: invalid JSON payload") from exc
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label}: expected JSON object")
+    return loaded
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
+    if not parsed:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return parsed
+
+
+def _require_int(value: object, *, field_name: str, minimum: int | None = None) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if minimum is not None and value < minimum:
+        qualifier = "positive" if minimum == 1 else f">= {minimum}"
+        raise ValueError(f"{field_name}: must be {qualifier}")
+    return value
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of strings")
+    return tuple(_require_non_empty_string(item, field_name=field_name) for item in value)
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of objects")
+    return tuple(_require_mapping(item, field_name=field_name) for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _require_int(value, field_name=field_name, minimum=1)
+    if parsed != SUPPORTED_LIFECYCLE_SPEC_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {parsed}; "
+            f"expected {SUPPORTED_LIFECYCLE_SPEC_SCHEMA_VERSION}"
+        )
+    return parsed
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[EnumT],
+    description: str,
+) -> EnumT:
+    if isinstance(value, enum_type):
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
 
 
 @unique
@@ -53,6 +132,22 @@ class LifecycleStateSpec:
             "summary": self.summary,
             "tags": list(self.tags),
         }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "LifecycleStateSpec":
+        payload = _require_mapping(payload, field_name="lifecycle_state_spec")
+        return cls(
+            state_id=_require_non_empty_string(payload["state_id"], field_name="state_id"),
+            summary=_require_non_empty_string(payload["summary"], field_name="summary"),
+            tags=_require_string_sequence(payload.get("tags", ()), field_name="tags"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "LifecycleStateSpec":
+        return cls.from_dict(_decode_json_object(payload, label="lifecycle_state_spec"))
 
 
 @dataclass(frozen=True)
@@ -90,6 +185,51 @@ class LifecycleMachineSpec:
             "notes": self.notes,
         }
 
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "LifecycleMachineSpec":
+        payload = _require_mapping(payload, field_name="lifecycle_machine_spec")
+        if "schema_version" not in payload:
+            raise ValueError("schema_version: missing required field")
+        transitions = _require_mapping(
+            payload["allowed_transitions"],
+            field_name="allowed_transitions",
+        )
+        return cls(
+            machine_id=_require_non_empty_string(payload["machine_id"], field_name="machine_id"),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
+            initial_state=_require_non_empty_string(
+                payload["initial_state"],
+                field_name="initial_state",
+            ),
+            terminal_states=_require_string_sequence(
+                payload["terminal_states"],
+                field_name="terminal_states",
+            ),
+            states=tuple(
+                LifecycleStateSpec.from_dict(item)
+                for item in _require_object_sequence(payload["states"], field_name="states")
+            ),
+            allowed_transitions={
+                _require_non_empty_string(state_id, field_name="allowed_transitions"): _require_string_sequence(
+                    next_states,
+                    field_name="allowed_transitions",
+                )
+                for state_id, next_states in transitions.items()
+            },
+            notes=_require_non_empty_string(payload["notes"], field_name="notes"),
+            schema_version=_require_schema_version(
+                payload["schema_version"],
+                field_name="schema_version",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "LifecycleMachineSpec":
+        return cls.from_dict(_decode_json_object(payload, label="lifecycle_machine_spec"))
+
 
 @dataclass(frozen=True)
 class CompatibilityDomainSpec:
@@ -108,6 +248,35 @@ class CompatibilityDomainSpec:
             "consumers": list(self.consumers),
         }
 
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "CompatibilityDomainSpec":
+        payload = _require_mapping(payload, field_name="compatibility_domain_spec")
+        return cls(
+            domain_id=_require_enum_value(
+                payload["domain_id"],
+                field_name="domain_id",
+                enum_type=CompatibilityDomain,
+                description="compatibility domain",
+            ),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
+            description=_require_non_empty_string(
+                payload["description"],
+                field_name="description",
+            ),
+            canonical_evidence_fields=_require_string_sequence(
+                payload["canonical_evidence_fields"],
+                field_name="canonical_evidence_fields",
+            ),
+            consumers=_require_string_sequence(payload["consumers"], field_name="consumers"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "CompatibilityDomainSpec":
+        return cls.from_dict(_decode_json_object(payload, label="compatibility_domain_spec"))
+
 
 @dataclass(frozen=True)
 class TransitionLog:
@@ -125,6 +294,27 @@ class TransitionLog:
             "allowed": self.allowed,
             "allowed_next_states": list(self.allowed_next_states),
         }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "TransitionLog":
+        payload = _require_mapping(payload, field_name="transition_log")
+        return cls(
+            machine_id=_require_non_empty_string(payload["machine_id"], field_name="machine_id"),
+            from_state=_require_non_empty_string(payload["from_state"], field_name="from_state"),
+            to_state=_require_non_empty_string(payload["to_state"], field_name="to_state"),
+            allowed=_require_bool(payload["allowed"], field_name="allowed"),
+            allowed_next_states=_require_string_sequence(
+                payload["allowed_next_states"],
+                field_name="allowed_next_states",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "TransitionLog":
+        return cls.from_dict(_decode_json_object(payload, label="transition_log"))
 
 
 @dataclass(frozen=True)
@@ -152,6 +342,39 @@ class LifecycleTransitionReport:
             "remediation": self.remediation,
         }
 
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "LifecycleTransitionReport":
+        payload = _require_mapping(payload, field_name="lifecycle_transition_report")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            machine_id=_require_non_empty_string(payload["machine_id"], field_name="machine_id"),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=LifecycleContractStatus,
+                description="lifecycle contract status",
+            ).value,
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            from_state=_require_non_empty_string(payload["from_state"], field_name="from_state"),
+            to_state=_require_non_empty_string(payload["to_state"], field_name="to_state"),
+            transition_log=TransitionLog.from_dict(payload["transition_log"]),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "LifecycleTransitionReport":
+        return cls.from_dict(_decode_json_object(payload, label="lifecycle_transition_report"))
+
 
 @dataclass(frozen=True)
 class CompatibilityBindingRequest:
@@ -159,6 +382,44 @@ class CompatibilityBindingRequest:
     subject_ref: str
     provided_domains: dict[str, str]
     required_domains: tuple[str, ...] = DEFAULT_COMPATIBILITY_DOMAIN_IDS
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "case_id": self.case_id,
+            "subject_ref": self.subject_ref,
+            "provided_domains": self.provided_domains,
+            "required_domains": list(self.required_domains),
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "CompatibilityBindingRequest":
+        payload = _require_mapping(payload, field_name="compatibility_binding_request")
+        provided_domains = _require_mapping(
+            payload["provided_domains"],
+            field_name="provided_domains",
+        )
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            subject_ref=_require_non_empty_string(payload["subject_ref"], field_name="subject_ref"),
+            provided_domains={
+                _require_non_empty_string(domain_id, field_name="provided_domains"): _require_non_empty_string(
+                    value,
+                    field_name="provided_domains",
+                )
+                for domain_id, value in provided_domains.items()
+            },
+            required_domains=_require_string_sequence(
+                payload.get("required_domains", DEFAULT_COMPATIBILITY_DOMAIN_IDS),
+                field_name="required_domains",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "CompatibilityBindingRequest":
+        return cls.from_dict(_decode_json_object(payload, label="compatibility_binding_request"))
 
 
 @dataclass(frozen=True)
@@ -189,6 +450,63 @@ class CompatibilityBindingReport:
             "explanation": self.explanation,
             "remediation": self.remediation,
         }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "CompatibilityBindingReport":
+        payload = _require_mapping(payload, field_name="compatibility_binding_report")
+        provided_domains = _require_mapping(
+            payload["provided_domains"],
+            field_name="provided_domains",
+        )
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            subject_ref=_require_non_empty_string(payload["subject_ref"], field_name="subject_ref"),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=LifecycleContractStatus,
+                description="lifecycle contract status",
+            ).value,
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            required_domains=_require_string_sequence(
+                payload["required_domains"],
+                field_name="required_domains",
+            ),
+            provided_domains={
+                _require_non_empty_string(domain_id, field_name="provided_domains"): _require_non_empty_string(
+                    value,
+                    field_name="provided_domains",
+                )
+                for domain_id, value in provided_domains.items()
+            },
+            missing_domains=_require_string_sequence(
+                payload["missing_domains"],
+                field_name="missing_domains",
+            ),
+            unknown_domains=_require_string_sequence(
+                payload["unknown_domains"],
+                field_name="unknown_domains",
+            ),
+            blank_domains=_require_string_sequence(
+                payload["blank_domains"],
+                field_name="blank_domains",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "CompatibilityBindingReport":
+        return cls.from_dict(_decode_json_object(payload, label="compatibility_binding_report"))
 
 
 STATE_MACHINE_SPECS: tuple[LifecycleMachineSpec, ...] = (

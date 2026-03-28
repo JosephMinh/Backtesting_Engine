@@ -1,5 +1,6 @@
 import json
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from shared.policy.lifecycle_specs import (
@@ -10,10 +11,13 @@ from shared.policy.lifecycle_specs import (
     DEPLOYMENT_INSTANCE_MACHINE_ID,
     FRESHNESS_REQUIRED_TAG,
     LifecycleContractStatus,
+    LifecycleMachineSpec,
+    LifecycleTransitionReport,
     RUNTIME_ACTIVE_TAG,
     STATE_MACHINE_SPECS,
     VALIDATION_ERRORS,
     CompatibilityDomain,
+    CompatibilityBindingReport,
     CompatibilityBindingRequest,
     build_enum_transition_map,
     evaluate_compatibility_binding,
@@ -191,3 +195,102 @@ class LifecycleSpecContractTest(unittest.TestCase):
         snapshot = state_machine_spec(BUNDLE_READINESS_MACHINE_ID).to_dict()
         self.assertEqual("bundle_readiness_lifecycle", snapshot["machine_id"])
         self.assertEqual("FROZEN", snapshot["initial_state"])
+
+    def test_machine_spec_round_trip_preserves_catalog_shape(self) -> None:
+        spec = state_machine_spec(BUNDLE_READINESS_MACHINE_ID)
+        self.assertEqual(
+            spec.to_dict(),
+            LifecycleMachineSpec.from_json(spec.to_json()).to_dict(),
+        )
+
+    def test_machine_spec_loader_rejects_invalid_boundary_values(self) -> None:
+        payload = deepcopy(state_machine_spec(BUNDLE_READINESS_MACHINE_ID).to_dict())
+        invalid_cases = (
+            ("non_object_payload", [], "lifecycle_machine_spec: must be an object"),
+            (
+                "states_string",
+                lambda item: item.__setitem__("states", "state"),
+                "states: must be a list of objects",
+            ),
+            (
+                "allowed_transitions_string",
+                lambda item: item.__setitem__("allowed_transitions", "A->B"),
+                "allowed_transitions: must be an object",
+            ),
+            (
+                "schema_version_unsupported",
+                lambda item: item.__setitem__("schema_version", 2),
+                "schema_version: unsupported schema version 2; expected 1",
+            ),
+            (
+                "schema_version_missing",
+                lambda item: item.pop("schema_version"),
+                "schema_version: missing required field",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                if case_id == "non_object_payload":
+                    with self.assertRaisesRegex(ValueError, error):
+                        LifecycleMachineSpec.from_dict(mutate)
+                    continue
+                item = deepcopy(payload)
+                mutate(item)
+                with self.assertRaisesRegex(ValueError, error):
+                    LifecycleMachineSpec.from_dict(item)
+
+    def test_binding_request_and_report_round_trip_preserve_shape(self) -> None:
+        compatibility_case = load_cases()["compatibility_cases"][0]
+        request = CompatibilityBindingRequest.from_dict(
+            {
+                "case_id": compatibility_case["case_id"],
+                "subject_ref": compatibility_case["subject_ref"],
+                "provided_domains": compatibility_case["provided_domains"],
+            }
+        )
+        self.assertEqual(
+            request.to_dict(),
+            CompatibilityBindingRequest.from_json(request.to_json()).to_dict(),
+        )
+
+        report = evaluate_compatibility_binding(request)
+        self.assertEqual(
+            report.to_dict(),
+            CompatibilityBindingReport.from_json(report.to_json()).to_dict(),
+        )
+
+    def test_binding_and_transition_report_loaders_reject_invalid_boundary_values(self) -> None:
+        compatibility_case = load_cases()["compatibility_cases"][0]
+        request_payload = {
+            "case_id": compatibility_case["case_id"],
+            "subject_ref": compatibility_case["subject_ref"],
+            "provided_domains": compatibility_case["provided_domains"],
+        }
+
+        invalid_request = deepcopy(request_payload)
+        invalid_request["provided_domains"] = "domains"
+        with self.assertRaisesRegex(ValueError, "provided_domains: must be an object"):
+            CompatibilityBindingRequest.from_dict(invalid_request)
+
+        compatibility_report = evaluate_compatibility_binding(
+            CompatibilityBindingRequest.from_dict(request_payload)
+        ).to_dict()
+        invalid_report = deepcopy(compatibility_report)
+        invalid_report["status"] = "ship"
+        with self.assertRaisesRegex(
+            ValueError,
+            "status: must be a valid lifecycle contract status",
+        ):
+            CompatibilityBindingReport.from_dict(invalid_report)
+
+        transition_report = evaluate_transition(
+            case_id="roundtrip_transition",
+            machine_id=BUNDLE_READINESS_MACHINE_ID,
+            from_state="FROZEN",
+            to_state="PORTABILITY_PENDING",
+        ).to_dict()
+        invalid_transition = deepcopy(transition_report)
+        invalid_transition["transition_log"] = "trace"
+        with self.assertRaisesRegex(ValueError, "transition_log: must be an object"):
+            LifecycleTransitionReport.from_dict(invalid_transition)
