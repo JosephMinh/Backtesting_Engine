@@ -39,6 +39,18 @@ def _parse_utc(timestamp: str) -> datetime.datetime:
     return datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
 
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
 def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     try:
         loaded = json.JSONDecoder().decode(payload)
@@ -47,6 +59,35 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     if not isinstance(loaded, dict):
         raise ValueError(f"{label}: expected JSON object")
     return loaded
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _require_status(value: object, *, field_name: str) -> str:
+    if isinstance(value, BarParityStatus):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a valid bar parity status")
+    try:
+        return BarParityStatus(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid bar parity status") from exc
 
 
 @unique
@@ -93,7 +134,7 @@ class BarParityDimensionResult:
         return cls(
             dimension_id=str(payload["dimension_id"]),
             dimension_name=str(payload["dimension_name"]),
-            passed=bool(payload["passed"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
             reason_code=str(payload["reason_code"]),
             diagnostic=str(payload["diagnostic"]),
             research_value=dict(payload["research_value"]),
@@ -101,11 +142,9 @@ class BarParityDimensionResult:
             tolerance=dict(payload["tolerance"]),
             research_artifact_reference=str(payload["research_artifact_reference"]),
             live_artifact_reference=str(payload["live_artifact_reference"]),
-            timestamp=str(
-                payload.get(
-                    "timestamp",
-                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                )
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
             ),
         )
 
@@ -148,9 +187,18 @@ class BarParityCertificationRequest:
             ),
             research_feed=str(payload["research_feed"]),
             live_feed=str(payload["live_feed"]),
-            certified_at_utc=str(payload["certified_at_utc"]),
-            freshness_expires_at_utc=str(payload["freshness_expires_at_utc"]),
-            evaluation_time_utc=str(payload["evaluation_time_utc"]),
+            certified_at_utc=_normalize_utc_timestamp(
+                payload["certified_at_utc"],
+                field_name="certified_at_utc",
+            ),
+            freshness_expires_at_utc=_normalize_utc_timestamp(
+                payload["freshness_expires_at_utc"],
+                field_name="freshness_expires_at_utc",
+            ),
+            evaluation_time_utc=_normalize_utc_timestamp(
+                payload["evaluation_time_utc"],
+                field_name="evaluation_time_utc",
+            ),
             parity_expectations=tuple(str(item) for item in payload["parity_expectations"]),
             mismatch_histogram_artifact_ids=tuple(
                 str(item) for item in payload["mismatch_histogram_artifact_ids"]
@@ -162,8 +210,9 @@ class BarParityCertificationRequest:
                 BarParityDimensionResult.from_dict(dimension_payload)
                 for dimension_payload in payload["dimensions"]
             ),
-            schema_version=int(
-                payload.get("schema_version", SUPPORTED_BAR_PARITY_SCHEMA_VERSION)
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="bar_parity_request",
             ),
         )
 
@@ -202,11 +251,17 @@ class BarParityCertificationReport:
         return cls(
             case_id=str(payload["case_id"]),
             data_profile_release_id=payload.get("data_profile_release_id"),
-            status=str(payload["status"]),
+            status=_require_status(payload["status"], field_name="status"),
             reason_code=str(payload["reason_code"]),
             artifact_id=str(payload["artifact_id"]),
-            freshness_valid=bool(payload["freshness_valid"]),
-            parity_passed=bool(payload["parity_passed"]),
+            freshness_valid=_require_bool(
+                payload["freshness_valid"],
+                field_name="freshness_valid",
+            ),
+            parity_passed=_require_bool(
+                payload["parity_passed"],
+                field_name="parity_passed",
+            ),
             drifted_dimensions=tuple(str(item) for item in payload["drifted_dimensions"]),
             mismatch_histogram_artifact_ids=tuple(
                 str(item) for item in payload["mismatch_histogram_artifact_ids"]
@@ -219,11 +274,9 @@ class BarParityCertificationReport:
             ],
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            timestamp=str(
-                payload.get(
-                    "timestamp",
-                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                )
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
             ),
         )
 

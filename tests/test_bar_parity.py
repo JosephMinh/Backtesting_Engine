@@ -240,6 +240,82 @@ class BarParityContractTests(unittest.TestCase):
             list(report.drifted_dimensions),
         )
 
+    def test_dimension_loader_rejects_truthy_boolean_and_naive_timestamp(self) -> None:
+        request = build_request(load_cases()["bar_parity_cases"][0])
+        dimension_payload = request.dimensions[0].to_dict()
+
+        payload_with_truthy_bool = dict(dimension_payload)
+        payload_with_truthy_bool["passed"] = "true"
+        with self.assertRaisesRegex(ValueError, "passed must be a boolean"):
+            type(request.dimensions[0]).from_dict(payload_with_truthy_bool)
+
+        payload_with_naive_timestamp = dict(dimension_payload)
+        payload_with_naive_timestamp["timestamp"] = "2026-03-01T00:00:00"
+        with self.assertRaisesRegex(ValueError, "timestamp must be timezone-aware"):
+            type(request.dimensions[0]).from_dict(payload_with_naive_timestamp)
+
+        payload_without_timestamp = dict(dimension_payload)
+        payload_without_timestamp.pop("timestamp")
+        with self.assertRaises(KeyError):
+            type(request.dimensions[0]).from_dict(payload_without_timestamp)
+
+    def test_request_loader_requires_explicit_integer_schema_version_and_aware_times(self) -> None:
+        payload = build_request(load_cases()["bar_parity_cases"][0]).to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "bar_parity_request: schema_version must be an integer",
+        ):
+            BarParityCertificationRequest.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "bar_parity_request: schema_version must be an integer",
+        ):
+            BarParityCertificationRequest.from_dict(payload_with_bool_schema)
+
+        payload_with_naive_time = dict(payload)
+        payload_with_naive_time["evaluation_time_utc"] = "2026-03-02T00:00:00"
+        with self.assertRaisesRegex(ValueError, "evaluation_time_utc must be timezone-aware"):
+            BarParityCertificationRequest.from_dict(payload_with_naive_time)
+
+    def test_report_loader_rejects_truthy_flags_and_naive_timestamp(self) -> None:
+        request = build_request(load_cases()["bar_parity_cases"][0])
+        report = evaluate_databento_ibkr_bar_parity(request)
+        payload = report.to_dict()
+
+        payload_with_truthy_flag = dict(payload)
+        payload_with_truthy_flag["freshness_valid"] = "false"
+        with self.assertRaisesRegex(ValueError, "freshness_valid must be a boolean"):
+            BarParityCertificationReport.from_dict(payload_with_truthy_flag)
+
+        payload_with_truthy_parity = dict(payload)
+        payload_with_truthy_parity["parity_passed"] = 1
+        with self.assertRaisesRegex(ValueError, "parity_passed must be a boolean"):
+            BarParityCertificationReport.from_dict(payload_with_truthy_parity)
+
+        payload_with_naive_timestamp = dict(payload)
+        payload_with_naive_timestamp["timestamp"] = "2026-03-02T00:00:00"
+        with self.assertRaisesRegex(ValueError, "timestamp must be timezone-aware"):
+            BarParityCertificationReport.from_dict(payload_with_naive_timestamp)
+
+        payload_with_invalid_status = dict(payload)
+        payload_with_invalid_status["status"] = "done"
+        with self.assertRaisesRegex(
+            ValueError,
+            "status must be a valid bar parity status",
+        ):
+            BarParityCertificationReport.from_dict(payload_with_invalid_status)
+
+        payload_without_timestamp = dict(payload)
+        payload_without_timestamp.pop("timestamp")
+        with self.assertRaises(KeyError):
+            BarParityCertificationReport.from_dict(payload_without_timestamp)
+
 
 if __name__ == "__main__":
     unittest.main()
