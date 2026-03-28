@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from shared.policy.account_fit_gate import AccountFitRequest, evaluate_account_fit
@@ -124,6 +125,200 @@ class OvernightCandidateEdgeCaseTests(unittest.TestCase):
 
         self.assertEqual(OvernightCandidateStatus.INVALID.value, report.status)
         self.assertEqual("OVERNIGHT_CANDIDATE_REQUEST_INVALID", report.reason_code)
+
+    def test_request_loader_rejects_invalid_boundary_values(self) -> None:
+        base_payload = build_request().to_dict()
+        invalid_cases = (
+            (
+                "allow_overnight_truthy_string",
+                lambda payload: payload.__setitem__("allow_overnight", "true"),
+                "allow_overnight must be a boolean",
+            ),
+            (
+                "schema_version_bool",
+                lambda payload: payload.__setitem__("schema_version", True),
+                "overnight_candidate_request: schema_version must be an integer",
+            ),
+            (
+                "evaluated_at_naive_timestamp",
+                lambda payload: payload.__setitem__(
+                    "evaluated_at_utc",
+                    "2026-03-27T16:00:00",
+                ),
+                "evaluated_at_utc must be timezone-aware",
+            ),
+            (
+                "overnight_candidate_class_invalid",
+                lambda payload: payload.__setitem__(
+                    "overnight_candidate_class",
+                    "unsupported",
+                ),
+                "overnight_candidate_class must be a valid overnight candidate class",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    OvernightCandidateRequest.from_dict(payload)
+
+    def test_nested_request_loader_rejects_invalid_record_values(self) -> None:
+        base_payload = build_request().to_dict()
+        invalid_cases = (
+            (
+                "evidence_record_passed_truthy_string",
+                lambda payload: payload["evidence_records"][0].__setitem__("passed", "true"),
+                "passed must be a boolean",
+            ),
+            (
+                "carry_rule_blocks_new_carry_numeric_truthy",
+                lambda payload: payload["carry_restriction_rules"][0].__setitem__(
+                    "blocks_new_carry",
+                    1,
+                ),
+                "blocks_new_carry must be a boolean",
+            ),
+            (
+                "margin_check_required_margin_bool",
+                lambda payload: payload["session_boundary_margin_checks"][0].__setitem__(
+                    "required_margin_usd",
+                    True,
+                ),
+                "required_margin_usd: must be non-negative",
+            ),
+            (
+                "margin_check_boundary_invalid",
+                lambda payload: payload["session_boundary_margin_checks"][0].__setitem__(
+                    "boundary",
+                    "post_close",
+                ),
+                "boundary must be a valid session boundary",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    OvernightCandidateRequest.from_dict(payload)
+
+    def test_identifier_loaders_reject_non_string_values(self) -> None:
+        request_payload = build_request().to_dict()
+        invalid_request_cases = (
+            (
+                "candidate_id_bool",
+                lambda payload: payload.__setitem__("candidate_id", False),
+                "candidate_id must be a non-empty string",
+            ),
+            (
+                "nested_evidence_artifact_bool",
+                lambda payload: payload["evidence_records"][0].__setitem__(
+                    "artifact_ids",
+                    [False],
+                ),
+                "artifact_ids\\[\\] must be a non-empty string",
+            ),
+            (
+                "nested_margin_artifact_bool",
+                lambda payload: payload["session_boundary_margin_checks"][0].__setitem__(
+                    "artifact_id",
+                    False,
+                ),
+                "artifact_id must be a non-empty string",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_request_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(request_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    OvernightCandidateRequest.from_dict(payload)
+
+    def test_report_loader_rejects_invalid_boundary_values(self) -> None:
+        base_payload = evaluate_overnight_candidate(build_request()).to_dict()
+        invalid_cases = (
+            (
+                "status_invalid",
+                lambda payload: payload.__setitem__("status", "ready"),
+                "status must be a valid overnight candidate status",
+            ),
+            (
+                "allow_overnight_truthy_string",
+                lambda payload: payload.__setitem__("allow_overnight", "true"),
+                "allow_overnight must be a boolean",
+            ),
+            (
+                "account_fit_status_invalid",
+                lambda payload: payload.__setitem__("account_fit_status", "ready"),
+                "account_fit_status must be a valid account-fit status",
+            ),
+            (
+                "missing_timestamp",
+                lambda payload: payload.pop("timestamp"),
+                "timestamp must be an ISO-8601 timestamp string",
+            ),
+            (
+                "naive_evaluated_at_timestamp",
+                lambda payload: payload.__setitem__(
+                    "evaluated_at_utc",
+                    "2026-03-27T16:00:00",
+                ),
+                "evaluated_at_utc must be timezone-aware",
+            ),
+            (
+                "boundary_result_passed_truthy_string",
+                lambda payload: payload["boundary_results"][0].__setitem__("passed", "true"),
+                "passed must be a boolean",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    OvernightCandidateReport.from_dict(payload)
+
+    def test_report_identifier_loaders_reject_non_string_values(self) -> None:
+        report_payload = evaluate_overnight_candidate(build_request()).to_dict()
+        invalid_cases = (
+            (
+                "account_fit_case_id_bool",
+                lambda payload: payload.__setitem__("account_fit_case_id", False),
+                "account_fit_case_id must be a non-empty string",
+            ),
+            (
+                "retained_artifact_bool",
+                lambda payload: payload.__setitem__("retained_artifact_ids", [False]),
+                "retained_artifact_ids\\[\\] must be a non-empty string",
+            ),
+            (
+                "failed_check_id_bool",
+                lambda payload: payload.__setitem__("failed_check_ids", [False]),
+                "failed_check_ids\\[\\] must be a non-empty string",
+            ),
+            (
+                "nested_check_artifact_bool",
+                lambda payload: payload["check_results"][0].__setitem__("artifact_ids", [False]),
+                "artifact_ids\\[\\] must be a non-empty string",
+            ),
+            (
+                "boundary_artifact_bool",
+                lambda payload: payload["boundary_results"][0].__setitem__("artifact_id", False),
+                "artifact_id must be a non-empty string",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(report_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    OvernightCandidateReport.from_dict(payload)
 
 
 if __name__ == "__main__":

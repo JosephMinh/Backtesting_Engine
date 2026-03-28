@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -71,8 +72,69 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return decoded
 
 
+def _parse_utc(timestamp: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid {description}") from exc
+
+
 def _as_non_negative_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be non-negative")
     parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be finite")
     if parsed < 0:
         raise ValueError(f"{field_name}: must be non-negative")
     return parsed
@@ -143,10 +205,23 @@ class OvernightEvidenceRecord:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OvernightEvidenceRecord":
         return cls(
-            lane=str(payload["lane"]),
-            scenario_type=str(payload["scenario_type"]),
-            passed=bool(payload["passed"]),
-            artifact_ids=tuple(str(item) for item in payload.get("artifact_ids", ())),
+            lane=_require_enum_value(
+                payload["lane"],
+                field_name="lane",
+                enum_type=OvernightEvidenceLane,
+                description="overnight evidence lane",
+            ),
+            scenario_type=_require_enum_value(
+                payload["scenario_type"],
+                field_name="scenario_type",
+                enum_type=OvernightScenarioType,
+                description="overnight scenario type",
+            ),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            artifact_ids=tuple(
+                _require_non_empty_string(item, field_name="artifact_ids[]")
+                for item in payload.get("artifact_ids", ())
+            ),
             diagnostic=str(payload["diagnostic"]),
         )
 
@@ -165,9 +240,17 @@ class OvernightCarryRestrictionRule:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OvernightCarryRestrictionRule":
         return cls(
-            trigger_id=str(payload["trigger_id"]),
+            trigger_id=_require_enum_value(
+                payload["trigger_id"],
+                field_name="trigger_id",
+                enum_type=OvernightCarryRestrictionTrigger,
+                description="overnight carry restriction trigger",
+            ),
             action=str(payload["action"]),
-            blocks_new_carry=bool(payload["blocks_new_carry"]),
+            blocks_new_carry=_require_bool(
+                payload["blocks_new_carry"],
+                field_name="blocks_new_carry",
+            ),
             diagnostic=str(payload["diagnostic"]),
             remediation=str(payload["remediation"]),
         )
@@ -189,8 +272,18 @@ class SessionBoundaryMarginCheck:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SessionBoundaryMarginCheck":
         return cls(
-            boundary=str(payload["boundary"]),
-            threshold_basis=str(payload["threshold_basis"]),
+            boundary=_require_enum_value(
+                payload["boundary"],
+                field_name="boundary",
+                enum_type=SessionBoundary,
+                description="session boundary",
+            ),
+            threshold_basis=_require_enum_value(
+                payload["threshold_basis"],
+                field_name="threshold_basis",
+                enum_type=MarginThresholdBasis,
+                description="margin threshold basis",
+            ),
             required_margin_usd=_as_non_negative_float(
                 payload["required_margin_usd"],
                 field_name="required_margin_usd",
@@ -200,10 +293,9 @@ class SessionBoundaryMarginCheck:
                 if payload.get("buffer_usd") is not None
                 else None
             ),
-            artifact_id=(
-                str(payload["artifact_id"])
-                if payload.get("artifact_id") not in (None, "")
-                else None
+            artifact_id=_optional_non_empty_string(
+                payload.get("artifact_id"),
+                field_name="artifact_id",
             ),
             diagnostic=str(payload.get("diagnostic", "")),
         )
@@ -248,11 +340,27 @@ class OvernightCandidateRequest:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OvernightCandidateRequest":
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            allow_overnight=bool(payload["allow_overnight"]),
-            overnight_candidate_class=str(payload["overnight_candidate_class"]),
-            requested_operating_posture=str(payload["requested_operating_posture"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            allow_overnight=_require_bool(
+                payload["allow_overnight"],
+                field_name="allow_overnight",
+            ),
+            overnight_candidate_class=_require_enum_value(
+                payload["overnight_candidate_class"],
+                field_name="overnight_candidate_class",
+                enum_type=OvernightCandidateClass,
+                description="overnight candidate class",
+            ),
+            requested_operating_posture=_require_enum_value(
+                payload["requested_operating_posture"],
+                field_name="requested_operating_posture",
+                enum_type=OperatingPosture,
+                description="operating posture",
+            ),
             account_fit_report=AccountFitReport.from_dict(dict(payload["account_fit_report"])),
             session_conditioned_risk_profile=SessionConditionedRiskProfile.from_dict(
                 dict(payload["session_conditioned_risk_profile"])
@@ -270,15 +378,20 @@ class OvernightCandidateRequest:
                 for item in payload.get("session_boundary_margin_checks", ())
             ),
             evaluated_at_utc=(
-                str(payload["evaluated_at_utc"])
+                _normalize_utc_timestamp(
+                    payload["evaluated_at_utc"],
+                    field_name="evaluated_at_utc",
+                )
                 if payload.get("evaluated_at_utc") not in (None, "")
                 else None
             ),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_OVERNIGHT_CANDIDATE_SCHEMA_VERSION,
+            schema_version=(
+                _require_schema_version(
+                    payload["schema_version"],
+                    label="overnight_candidate_request",
                 )
+                if "schema_version" in payload
+                else SUPPORTED_OVERNIGHT_CANDIDATE_SCHEMA_VERSION
             ),
         )
 
@@ -305,9 +418,9 @@ class OvernightCandidateCheckResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OvernightCandidateCheckResult":
         return cls(
-            check_id=str(payload["check_id"]),
-            title=str(payload["title"]),
-            passed=bool(payload["passed"]),
+            check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
+            passed=_require_bool(payload["passed"], field_name="passed"),
             reason_code=(
                 str(payload["reason_code"])
                 if payload.get("reason_code") not in (None, "")
@@ -315,7 +428,10 @@ class OvernightCandidateCheckResult:
             ),
             diagnostic=str(payload["diagnostic"]),
             context=dict(payload.get("context", {})),
-            artifact_ids=tuple(str(item) for item in payload.get("artifact_ids", ())),
+            artifact_ids=tuple(
+                _require_non_empty_string(item, field_name="artifact_ids[]")
+                for item in payload.get("artifact_ids", ())
+            ),
         )
 
 
@@ -337,17 +453,38 @@ class SessionBoundaryMarginResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SessionBoundaryMarginResult":
         return cls(
-            boundary=str(payload["boundary"]),
-            threshold_basis=str(payload["threshold_basis"]),
-            required_margin_usd=float(payload["required_margin_usd"]),
-            buffer_usd=float(payload["buffer_usd"]),
-            actual_fraction=float(payload["actual_fraction"]),
-            threshold_fraction=float(payload["threshold_fraction"]),
-            passed=bool(payload["passed"]),
-            artifact_id=(
-                str(payload["artifact_id"])
-                if payload.get("artifact_id") not in (None, "")
-                else None
+            boundary=_require_enum_value(
+                payload["boundary"],
+                field_name="boundary",
+                enum_type=SessionBoundary,
+                description="session boundary",
+            ),
+            threshold_basis=_require_enum_value(
+                payload["threshold_basis"],
+                field_name="threshold_basis",
+                enum_type=MarginThresholdBasis,
+                description="margin threshold basis",
+            ),
+            required_margin_usd=_as_non_negative_float(
+                payload["required_margin_usd"],
+                field_name="required_margin_usd",
+            ),
+            buffer_usd=_as_non_negative_float(
+                payload["buffer_usd"],
+                field_name="buffer_usd",
+            ),
+            actual_fraction=_as_non_negative_float(
+                payload["actual_fraction"],
+                field_name="actual_fraction",
+            ),
+            threshold_fraction=_as_non_negative_float(
+                payload["threshold_fraction"],
+                field_name="threshold_fraction",
+            ),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            artifact_id=_optional_non_empty_string(
+                payload.get("artifact_id"),
+                field_name="artifact_id",
             ),
             diagnostic=str(payload["diagnostic"]),
         )
@@ -404,25 +541,65 @@ class OvernightCandidateReport:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OvernightCandidateReport":
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            status=str(payload["status"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=OvernightCandidateStatus,
+                description="overnight candidate status",
+            ),
             reason_code=str(payload["reason_code"]),
-            overnight_candidate_class=str(payload["overnight_candidate_class"]),
-            allow_overnight=bool(payload["allow_overnight"]),
-            requested_operating_posture=str(payload["requested_operating_posture"]),
-            account_fit_case_id=str(payload["account_fit_case_id"]),
-            account_fit_status=str(payload["account_fit_status"]),
-            session_conditioned_risk_profile_id=str(
-                payload["session_conditioned_risk_profile_id"]
+            overnight_candidate_class=_require_enum_value(
+                payload["overnight_candidate_class"],
+                field_name="overnight_candidate_class",
+                enum_type=OvernightCandidateClass,
+                description="overnight candidate class",
+            ),
+            allow_overnight=_require_bool(
+                payload["allow_overnight"],
+                field_name="allow_overnight",
+            ),
+            requested_operating_posture=_require_enum_value(
+                payload["requested_operating_posture"],
+                field_name="requested_operating_posture",
+                enum_type=OperatingPosture,
+                description="operating posture",
+            ),
+            account_fit_case_id=_require_non_empty_string(
+                payload["account_fit_case_id"],
+                field_name="account_fit_case_id",
+            ),
+            account_fit_status=_require_enum_value(
+                payload["account_fit_status"],
+                field_name="account_fit_status",
+                enum_type=AccountFitStatus,
+                description="account-fit status",
+            ),
+            session_conditioned_risk_profile_id=_require_non_empty_string(
+                payload["session_conditioned_risk_profile_id"],
+                field_name="session_conditioned_risk_profile_id",
             ),
             carry_restriction_triggers=tuple(
-                str(item) for item in payload.get("carry_restriction_triggers", ())
+                _require_enum_value(
+                    item,
+                    field_name="carry_restriction_triggers",
+                    enum_type=OvernightCarryRestrictionTrigger,
+                    description="overnight carry restriction trigger",
+                )
+                for item in payload.get("carry_restriction_triggers", ())
             ),
             retained_artifact_ids=tuple(
-                str(item) for item in payload.get("retained_artifact_ids", ())
+                _require_non_empty_string(item, field_name="retained_artifact_ids[]")
+                for item in payload.get("retained_artifact_ids", ())
             ),
-            failed_check_ids=tuple(str(item) for item in payload.get("failed_check_ids", ())),
+            failed_check_ids=tuple(
+                _require_non_empty_string(item, field_name="failed_check_ids[]")
+                for item in payload.get("failed_check_ids", ())
+            ),
             check_results=tuple(
                 OvernightCandidateCheckResult.from_dict(dict(item))
                 for item in payload.get("check_results", ())
@@ -433,8 +610,14 @@ class OvernightCandidateReport:
             ),
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            evaluated_at_utc=str(payload["evaluated_at_utc"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            evaluated_at_utc=_normalize_utc_timestamp(
+                payload.get("evaluated_at_utc"),
+                field_name="evaluated_at_utc",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
