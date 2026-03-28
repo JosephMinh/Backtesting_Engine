@@ -67,6 +67,12 @@ def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
     return value
 
 
+def _require_present(payload: dict[str, Any], *, field_name: str) -> object:
+    if field_name not in payload:
+        raise ValueError(f"{field_name}: missing required field")
+    return payload[field_name]
+
+
 def _require_non_empty_string(value: object, *, field_name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{field_name}: must be a non-empty string")
@@ -225,7 +231,7 @@ class RecoveryFenceRequest:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RecoveryFenceRequest":
         payload = _require_mapping(payload, field_name="recovery_fence_request")
-        session_payload = payload.get("fresh_session_packet")
+        session_payload = _require_present(payload, field_name="fresh_session_packet")
         return cls(
             recovery_run_id=_require_non_empty_string(
                 payload["recovery_run_id"],
@@ -327,10 +333,7 @@ class RecoveryFenceRequest:
                 field_name="signed_recovery_hash",
             ),
             schema_version=_require_schema_version(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                ),
+                _require_present(payload, field_name="schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -418,10 +421,7 @@ class GracefulShutdownRecord:
                 field_name="signed_shutdown_hash",
             ),
             schema_version=_require_schema_version(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                ),
+                _require_present(payload, field_name="schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -529,10 +529,7 @@ class DegradationAssessment:
                 field_name="signed_assessment_hash",
             ),
             schema_version=_require_schema_version(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                ),
+                _require_present(payload, field_name="schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -612,7 +609,7 @@ class LedgerCloseArtifact:
                 field_name="reviewed_or_waived",
             ),
             review_or_waiver_id=_require_optional_non_empty_string(
-                payload.get("review_or_waiver_id"),
+                _require_present(payload, field_name="review_or_waiver_id"),
                 field_name="review_or_waiver_id",
             ),
             next_session_eligibility=NextSessionEligibility(
@@ -648,10 +645,7 @@ class LedgerCloseArtifact:
                 field_name="signed_ledger_hash",
             ),
             schema_version=_require_schema_version(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                ),
+                _require_present(payload, field_name="schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -740,7 +734,7 @@ class RestoreDrillArtifact:
                 field_name="broker_reconciliation_clean",
             ),
             reviewed_waiver_id=_require_optional_non_empty_string(
-                payload.get("reviewed_waiver_id"),
+                _require_present(payload, field_name="reviewed_waiver_id"),
                 field_name="reviewed_waiver_id",
             ),
             rpo_target_minutes=_require_int(
@@ -780,10 +774,7 @@ class RestoreDrillArtifact:
                 field_name="signed_restore_hash",
             ),
             schema_version=_require_schema_version(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                ),
+                _require_present(payload, field_name="schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -815,40 +806,47 @@ class RecoveryValidationReport:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RecoveryValidationReport":
         payload = _require_mapping(payload, field_name="recovery_validation_report")
-        if "artifact_id" not in payload:
-            raise ValueError("artifact_id: field is required")
         return cls(
-            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            case_id=_require_non_empty_string(
+                _require_present(payload, field_name="case_id"),
+                field_name="case_id",
+            ),
             artifact_kind=_require_non_empty_string(
-                payload["artifact_kind"],
+                _require_present(payload, field_name="artifact_kind"),
                 field_name="artifact_kind",
             ),
             artifact_id=_require_optional_non_empty_string(
-                payload.get("artifact_id"),
+                _require_present(payload, field_name="artifact_id"),
                 field_name="artifact_id",
             ),
             status=_require_enum_value(
-                payload["status"],
+                _require_present(payload, field_name="status"),
                 field_name="status",
                 enum_type=PacketStatus,
                 description="packet status",
             ),
-            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
-            context=_require_mapping(payload["context"], field_name="context"),
+            reason_code=_require_non_empty_string(
+                _require_present(payload, field_name="reason_code"),
+                field_name="reason_code",
+            ),
+            context=_require_mapping(
+                _require_present(payload, field_name="context"),
+                field_name="context",
+            ),
             missing_fields=_require_string_sequence(
-                payload["missing_fields"],
+                _require_present(payload, field_name="missing_fields"),
                 field_name="missing_fields",
             ),
             explanation=_require_non_empty_string(
-                payload["explanation"],
+                _require_present(payload, field_name="explanation"),
                 field_name="explanation",
             ),
             remediation=_require_non_empty_string(
-                payload["remediation"],
+                _require_present(payload, field_name="remediation"),
                 field_name="remediation",
             ),
             timestamp=_normalize_utc_timestamp(
-                payload["timestamp"],
+                _require_present(payload, field_name="timestamp"),
                 field_name="timestamp",
             ),
         )

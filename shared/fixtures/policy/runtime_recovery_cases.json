@@ -46,7 +46,8 @@
         "operator_reason_bundle": [
           "watchdog restart entered recovering and replayed the latest verified snapshot"
         ],
-        "signed_recovery_hash": "recovery_hash_live_20260327_001"
+        "signed_recovery_hash": "recovery_hash_live_20260327_001",
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "RECOVERY_FENCE_RECOVERING_AND_GOVERNED"
@@ -76,7 +77,8 @@
         "operator_reason_bundle": [
           "restart attempted to resume entries before asserting the recovery fence"
         ],
-        "signed_recovery_hash": "recovery_hash_live_20260327_002"
+        "signed_recovery_hash": "recovery_hash_live_20260327_002",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "RECOVERY_FENCE_NO_NEW_ENTRIES_REQUIRED"
@@ -106,7 +108,8 @@
         "operator_reason_bundle": [
           "order-intent replay remained ambiguous after reconnect"
         ],
-        "signed_recovery_hash": "recovery_hash_live_20260327_003"
+        "signed_recovery_hash": "recovery_hash_live_20260327_003",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "RECOVERY_FENCE_AMBIGUOUS_STATE_REQUIRES_SAFE_DISPOSITION"
@@ -136,7 +139,8 @@
         "operator_reason_bundle": [
           "daily reset occurred but no fresh session packet was issued"
         ],
-        "signed_recovery_hash": "recovery_hash_live_20260327_004"
+        "signed_recovery_hash": "recovery_hash_live_20260327_004",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "RECOVERY_FENCE_SESSION_PACKET_REQUIRED_AFTER_RESET"
@@ -159,7 +163,8 @@
         "operator_reason_bundle": [
           "runtime stopped entries and persisted restart-safe artifacts"
         ],
-        "signed_shutdown_hash": "shutdown_hash_live_20260327_001"
+        "signed_shutdown_hash": "shutdown_hash_live_20260327_001",
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "GRACEFUL_SHUTDOWN_PERSISTED_FOR_RESTART"
@@ -180,7 +185,8 @@
         "operator_reason_bundle": [
           "restart readiness was claimed before artifact verification completed"
         ],
-        "signed_shutdown_hash": "shutdown_hash_live_20260327_002"
+        "signed_shutdown_hash": "shutdown_hash_live_20260327_002",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "GRACEFUL_SHUTDOWN_RESTART_ARTIFACTS_REQUIRED"
@@ -207,7 +213,8 @@
         "operator_reason_bundle": [
           "stale-quote rate forced a restrict posture pending fresher data"
         ],
-        "signed_assessment_hash": "degradation_hash_live_20260327_001"
+        "signed_assessment_hash": "degradation_hash_live_20260327_001",
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "DEGRADATION_ACTION_MATCHES_SIGNAL_SEVERITY"
@@ -232,7 +239,8 @@
         "operator_reason_bundle": [
           "intraday mismatch exceeded tolerance but posture was left too weak"
         ],
-        "signed_assessment_hash": "degradation_hash_live_20260327_002"
+        "signed_assessment_hash": "degradation_hash_live_20260327_002",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "DEGRADATION_MISMATCH_REQUIRES_STRONG_ACTION"
@@ -257,7 +265,8 @@
         "operator_reason_bundle": [
           "parity and stale-quote drift incorrectly left the system in allow posture"
         ],
-        "signed_assessment_hash": "degradation_hash_live_20260327_003"
+        "signed_assessment_hash": "degradation_hash_live_20260327_003",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "DEGRADATION_MODERATE_SIGNAL_REQUIRES_RESTRICTION"
@@ -285,7 +294,8 @@
         "operator_reason_bundle": [
           "authoritative statement discrepancy was reviewed and waived before next session"
         ],
-        "signed_ledger_hash": "ledger_hash_live_20260327_001"
+        "signed_ledger_hash": "ledger_hash_live_20260327_001",
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "LEDGER_CLOSE_ELIGIBILITY_GOVERNED"
@@ -311,7 +321,8 @@
         "operator_reason_bundle": [
           "next session was left eligible before the discrepancy was reviewed"
         ],
-        "signed_ledger_hash": "ledger_hash_live_20260327_002"
+        "signed_ledger_hash": "ledger_hash_live_20260327_002",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "LEDGER_CLOSE_REVIEW_OR_WAIVER_REQUIRED"
@@ -342,7 +353,8 @@
         "operator_reason_bundle": [
           "restore drill rebuilt to a clean host and re-entered recovering within target"
         ],
-        "signed_restore_hash": "restore_hash_live_20260327_001"
+        "signed_restore_hash": "restore_hash_live_20260327_001",
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "RESTORE_DRILL_RECOVERABLE_AND_GOVERNED"
@@ -371,7 +383,8 @@
         "operator_reason_bundle": [
           "restore drill relied on same-host backup material"
         ],
-        "signed_restore_hash": "restore_hash_live_20260327_002"
+        "signed_restore_hash": "restore_hash_live_20260327_002",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "RESTORE_DRILL_OFF_HOST_RECOVERY_REQUIRED"
@@ -400,7 +413,8 @@
         "operator_reason_bundle": [
           "restore drill ended with a dirty broker reconciliation and no waiver"
         ],
-        "signed_restore_hash": "restore_hash_live_20260327_003"
+        "signed_restore_hash": "restore_hash_live_20260327_003",
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "RESTORE_DRILL_RECONCILIATION_REVIEW_REQUIRED"

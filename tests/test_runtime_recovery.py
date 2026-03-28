@@ -92,12 +92,27 @@ class RuntimeRecoveryContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "entered_recovering_state: must be boolean"):
             RecoveryFenceRequest.from_dict(recovery_payload)
 
+        recovery_payload = deepcopy(fixtures["recovery_fence_cases"][0]["payload"])
+        recovery_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version: missing required field"):
+            RecoveryFenceRequest.from_dict(recovery_payload)
+
+        recovery_payload = deepcopy(fixtures["recovery_fence_cases"][0]["payload"])
+        recovery_payload.pop("fresh_session_packet")
+        with self.assertRaisesRegex(ValueError, "fresh_session_packet: missing required field"):
+            RecoveryFenceRequest.from_dict(recovery_payload)
+
         shutdown_payload = deepcopy(fixtures["graceful_shutdown_cases"][0]["payload"])
         shutdown_payload["schema_version"] = 2
         with self.assertRaisesRegex(
             ValueError,
             "schema_version: unsupported schema version 2; expected 1",
         ):
+            GracefulShutdownRecord.from_dict(shutdown_payload)
+
+        shutdown_payload = deepcopy(fixtures["graceful_shutdown_cases"][0]["payload"])
+        shutdown_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version: missing required field"):
             GracefulShutdownRecord.from_dict(shutdown_payload)
 
         degradation_payload = deepcopy(fixtures["degradation_cases"][0]["payload"])
@@ -108,6 +123,11 @@ class RuntimeRecoveryContractTest(unittest.TestCase):
         ):
             DegradationAssessment.from_dict(degradation_payload)
 
+        degradation_payload = deepcopy(fixtures["degradation_cases"][0]["payload"])
+        degradation_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version: missing required field"):
+            DegradationAssessment.from_dict(degradation_payload)
+
         ledger_payload = deepcopy(fixtures["ledger_close_cases"][0]["payload"])
         ledger_payload["next_session_eligibility"] = "resume"
         with self.assertRaisesRegex(
@@ -116,9 +136,29 @@ class RuntimeRecoveryContractTest(unittest.TestCase):
         ):
             LedgerCloseArtifact.from_dict(ledger_payload)
 
+        ledger_payload = deepcopy(fixtures["ledger_close_cases"][0]["payload"])
+        ledger_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version: missing required field"):
+            LedgerCloseArtifact.from_dict(ledger_payload)
+
+        ledger_payload = deepcopy(fixtures["ledger_close_cases"][0]["payload"])
+        ledger_payload.pop("review_or_waiver_id")
+        with self.assertRaisesRegex(ValueError, "review_or_waiver_id: missing required field"):
+            LedgerCloseArtifact.from_dict(ledger_payload)
+
         restore_payload = deepcopy(fixtures["restore_drill_cases"][0]["payload"])
         restore_payload["rpo_target_minutes"] = True
         with self.assertRaisesRegex(ValueError, "rpo_target_minutes: must be an integer"):
+            RestoreDrillArtifact.from_dict(restore_payload)
+
+        restore_payload = deepcopy(fixtures["restore_drill_cases"][0]["payload"])
+        restore_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version: missing required field"):
+            RestoreDrillArtifact.from_dict(restore_payload)
+
+        restore_payload = deepcopy(fixtures["restore_drill_cases"][0]["payload"])
+        restore_payload.pop("reviewed_waiver_id")
+        with self.assertRaisesRegex(ValueError, "reviewed_waiver_id: missing required field"):
             RestoreDrillArtifact.from_dict(restore_payload)
 
     def test_recovery_fixture_cases_emit_expected_reports(self) -> None:
@@ -232,8 +272,13 @@ class RuntimeRecoveryContractTest(unittest.TestCase):
 
         missing_artifact_id = deepcopy(payload)
         missing_artifact_id.pop("artifact_id")
-        with self.assertRaisesRegex(ValueError, "artifact_id: field is required"):
+        with self.assertRaisesRegex(ValueError, "artifact_id: missing required field"):
             RecoveryValidationReport.from_dict(missing_artifact_id)
+
+        missing_context = deepcopy(payload)
+        missing_context.pop("context")
+        with self.assertRaisesRegex(ValueError, "context: missing required field"):
+            RecoveryValidationReport.from_dict(missing_context)
 
         invalid_timestamp = deepcopy(payload)
         invalid_timestamp["timestamp"] = "2026-03-28T00:00:00"
