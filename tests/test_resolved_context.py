@@ -384,7 +384,7 @@ class ResolvedContextContractTest(unittest.TestCase):
         payload_without_schema.pop("schema_version")
         with self.assertRaisesRegex(
             ValueError,
-            "resolved_context_bundle: schema_version must be an integer",
+            "resolved_context_bundle: missing required field 'schema_version'",
         ):
             ResolvedContextBundle.from_dict(payload_without_schema)
 
@@ -395,6 +395,31 @@ class ResolvedContextContractTest(unittest.TestCase):
             "resolved_context_bundle: schema_version must be an integer",
         ):
             ResolvedContextBundle.from_dict(payload_with_bool_schema)
+
+        payload_with_unsupported_schema = dict(payload)
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved_context_bundle: schema_version must be 1",
+        ):
+            ResolvedContextBundle.from_dict(payload_with_unsupported_schema)
+
+    def test_bundle_loader_rejects_non_object_payload(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved_context_bundle: payload must be an object",
+        ):
+            ResolvedContextBundle.from_dict([])  # type: ignore[arg-type]
+
+    def test_bundle_loader_requires_serialized_nullable_field_presence(self) -> None:
+        payload = make_bundle().to_dict()
+        payload.pop("portability_policy_resolution_id")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved_context_bundle: missing required field 'portability_policy_resolution_id'",
+        ):
+            ResolvedContextBundle.from_dict(payload)
 
     def test_bundle_loader_rejects_noncanonical_observation_cutoff(self) -> None:
         payload = make_bundle().to_dict()
@@ -429,7 +454,7 @@ class ResolvedContextContractTest(unittest.TestCase):
         payload_without_schema.pop("schema_version")
         with self.assertRaisesRegex(
             ValueError,
-            "execution_profile_release: schema_version must be an integer",
+            "execution_profile_release: missing required field 'schema_version'",
         ):
             ExecutionProfileRelease.from_dict(payload_without_schema)
 
@@ -440,6 +465,31 @@ class ResolvedContextContractTest(unittest.TestCase):
             "execution_profile_release: schema_version must be an integer",
         ):
             ExecutionProfileRelease.from_dict(payload_with_bool_schema)
+
+        payload_with_unsupported_schema = dict(payload)
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "execution_profile_release: schema_version must be 1",
+        ):
+            ExecutionProfileRelease.from_dict(payload_with_unsupported_schema)
+
+    def test_execution_profile_loader_rejects_non_object_payload(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "execution_profile_release: payload must be an object",
+        ):
+            ExecutionProfileRelease.from_dict([])  # type: ignore[arg-type]
+
+    def test_execution_profile_loader_requires_serialized_sequence_presence(self) -> None:
+        payload = make_execution_profile_release().to_dict()
+        payload.pop("adverse_selection_penalties")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "execution_profile_release: missing required field 'adverse_selection_penalties'",
+        ):
+            ExecutionProfileRelease.from_dict(payload)
 
     def test_harness_loader_rejects_bool_seed_and_truthy_flags(self) -> None:
         payload = make_simulation_harness().to_dict()
@@ -472,7 +522,7 @@ class ResolvedContextContractTest(unittest.TestCase):
         payload_without_schema.pop("schema_version")
         with self.assertRaisesRegex(
             ValueError,
-            "historical_simulation_harness: schema_version must be an integer",
+            "historical_simulation_harness: missing required field 'schema_version'",
         ):
             HistoricalSimulationHarness.from_dict(payload_without_schema)
 
@@ -483,6 +533,57 @@ class ResolvedContextContractTest(unittest.TestCase):
             "historical_simulation_harness: schema_version must be an integer",
         ):
             HistoricalSimulationHarness.from_dict(payload_with_bool_schema)
+
+        payload_with_unsupported_schema = dict(payload)
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "historical_simulation_harness: schema_version must be 1",
+        ):
+            HistoricalSimulationHarness.from_dict(payload_with_unsupported_schema)
+
+    def test_harness_loader_rejects_non_object_payload(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "historical_simulation_harness: payload must be an object",
+        ):
+            HistoricalSimulationHarness.from_dict([])  # type: ignore[arg-type]
+
+    def test_harness_loader_requires_serialized_default_field_presence(self) -> None:
+        payload = make_simulation_harness().to_dict()
+        payload.pop("uses_custom_historical_engine")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "historical_simulation_harness: missing required field 'uses_custom_historical_engine'",
+        ):
+            HistoricalSimulationHarness.from_dict(payload)
+
+    def test_binding_loader_requires_serialized_default_field_presence(self) -> None:
+        payload = make_binding(ContextBindingSurface.REPLAY_FIXTURE).to_dict()
+        payload.pop("mutable_reference_reads")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "context_artifact_binding: missing required field 'mutable_reference_reads'",
+        ):
+            ContextArtifactBindingRequest.from_dict(payload)
+
+        payload = make_binding(ContextBindingSurface.REPLAY_FIXTURE).to_dict()
+        payload.pop("mutable_execution_overrides")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "context_artifact_binding: missing required field 'mutable_execution_overrides'",
+        ):
+            ContextArtifactBindingRequest.from_dict(payload)
+
+    def test_binding_loader_rejects_non_object_payload(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "context_artifact_binding: payload must be an object",
+        ):
+            ContextArtifactBindingRequest.from_dict([])  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

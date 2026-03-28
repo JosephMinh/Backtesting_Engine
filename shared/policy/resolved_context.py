@@ -109,39 +109,69 @@ class ResolvedContextBundle:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ResolvedContextBundle":
+        payload = _require_mapping(payload, label="resolved_context_bundle")
         return cls(
-            bundle_id=str(payload["bundle_id"]),
-            source_dataset_release_id=str(payload["source_dataset_release_id"]),
+            bundle_id=_require_string(payload["bundle_id"], field_name="bundle_id"),
+            source_dataset_release_id=_require_string(
+                payload["source_dataset_release_id"],
+                field_name="source_dataset_release_id",
+            ),
             observation_cutoff_utc=_normalize_observation_cutoff(
                 payload["observation_cutoff_utc"]
             ),
-            compiled_session_schedule_ids=tuple(
-                str(item) for item in payload["compiled_session_schedule_ids"]
+            compiled_session_schedule_ids=_require_string_sequence(
+                payload["compiled_session_schedule_ids"],
+                field_name="compiled_session_schedule_ids",
             ),
-            compiled_session_anchor_ids=tuple(
-                str(item) for item in payload["compiled_session_anchor_ids"]
+            compiled_session_anchor_ids=_require_string_sequence(
+                payload["compiled_session_anchor_ids"],
+                field_name="compiled_session_anchor_ids",
             ),
-            resolved_reference_record_hashes=tuple(
-                str(item) for item in payload["resolved_reference_record_hashes"]
+            resolved_reference_record_hashes=_require_string_sequence(
+                payload["resolved_reference_record_hashes"],
+                field_name="resolved_reference_record_hashes",
             ),
-            quality_mask_ids=tuple(str(item) for item in payload["quality_mask_ids"]),
-            protected_zone_mask_ids=tuple(
-                str(item) for item in payload["protected_zone_mask_ids"]
+            quality_mask_ids=_require_string_sequence(
+                payload["quality_mask_ids"],
+                field_name="quality_mask_ids",
             ),
-            event_window_ids=tuple(str(item) for item in payload["event_window_ids"]),
-            roll_map_id=str(payload["roll_map_id"]),
-            delivery_fence_ids=tuple(str(item) for item in payload["delivery_fence_ids"]),
-            dependency_pin_ids=tuple(str(item) for item in payload["dependency_pin_ids"]),
-            content_hash=str(payload["content_hash"]),
-            compiler_id=str(payload["compiler_id"]),
-            compiler_protocol_version=str(payload["compiler_protocol_version"]),
-            portability_policy_resolution_id=(
-                str(payload["portability_policy_resolution_id"])
-                if payload.get("portability_policy_resolution_id")
-                else None
+            protected_zone_mask_ids=_require_string_sequence(
+                payload["protected_zone_mask_ids"],
+                field_name="protected_zone_mask_ids",
+            ),
+            event_window_ids=_require_string_sequence(
+                payload["event_window_ids"],
+                field_name="event_window_ids",
+            ),
+            roll_map_id=_require_string(payload["roll_map_id"], field_name="roll_map_id"),
+            delivery_fence_ids=_require_string_sequence(
+                payload["delivery_fence_ids"],
+                field_name="delivery_fence_ids",
+            ),
+            dependency_pin_ids=_require_string_sequence(
+                payload["dependency_pin_ids"],
+                field_name="dependency_pin_ids",
+            ),
+            content_hash=_require_string(payload["content_hash"], field_name="content_hash"),
+            compiler_id=_require_string(payload["compiler_id"], field_name="compiler_id"),
+            compiler_protocol_version=_require_string(
+                payload["compiler_protocol_version"],
+                field_name="compiler_protocol_version",
+            ),
+            portability_policy_resolution_id=_require_optional_string(
+                _require_present(
+                    payload,
+                    "portability_policy_resolution_id",
+                    label="resolved_context_bundle",
+                ),
+                field_name="portability_policy_resolution_id",
             ),
             schema_version=_require_schema_version(
-                payload.get("schema_version"),
+                _require_present(
+                    payload,
+                    "schema_version",
+                    label="resolved_context_bundle",
+                ),
                 label="resolved_context_bundle",
             ),
         )
@@ -186,8 +216,9 @@ class ExecutionProfileRelease:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ExecutionProfileRelease":
+        payload = _require_mapping(payload, label="execution_profile_release")
         return cls(
-            release_id=str(payload["release_id"]),
+            release_id=_require_string(payload["release_id"], field_name="release_id"),
             profile_class=ExecutionProfileClass(payload["profile_class"]),
             promotion_grade=_require_bool(
                 payload["promotion_grade"],
@@ -196,29 +227,73 @@ class ExecutionProfileRelease:
             historical_execution_kernel=HistoricalExecutionKernel(
                 payload["historical_execution_kernel"]
             ),
-            kernel_components=tuple(str(item) for item in payload["kernel_components"]),
-            shared_signal_kernel_binding=str(payload["shared_signal_kernel_binding"]),
-            conditioning_dimensions=tuple(
-                str(item) for item in payload["conditioning_dimensions"]
+            kernel_components=_require_string_sequence(
+                payload["kernel_components"],
+                field_name="kernel_components",
             ),
-            data_profile_release_id=str(payload["data_profile_release_id"]),
-            order_type_assumptions=tuple(str(item) for item in payload["order_type_assumptions"]),
-            slippage_surface_ids=tuple(str(item) for item in payload["slippage_surface_ids"]),
-            fill_rules=tuple(str(item) for item in payload["fill_rules"]),
-            latency_assumptions=tuple(str(item) for item in payload["latency_assumptions"]),
-            adverse_selection_penalties=tuple(
-                str(item) for item in payload.get("adverse_selection_penalties", ())
+            shared_signal_kernel_binding=_require_string(
+                payload["shared_signal_kernel_binding"],
+                field_name="shared_signal_kernel_binding",
             ),
-            quote_absence_policy=str(payload["quote_absence_policy"]),
-            spread_spike_policy=str(payload["spread_spike_policy"]),
-            degraded_bar_policy=str(payload["degraded_bar_policy"]),
-            calibration_evidence_ids=tuple(
-                str(item) for item in payload["calibration_evidence_ids"]
+            conditioning_dimensions=_require_string_sequence(
+                payload["conditioning_dimensions"],
+                field_name="conditioning_dimensions",
             ),
-            artifact_root_hash=str(payload["artifact_root_hash"]),
+            data_profile_release_id=_require_string(
+                payload["data_profile_release_id"],
+                field_name="data_profile_release_id",
+            ),
+            order_type_assumptions=_require_string_sequence(
+                payload["order_type_assumptions"],
+                field_name="order_type_assumptions",
+            ),
+            slippage_surface_ids=_require_string_sequence(
+                payload["slippage_surface_ids"],
+                field_name="slippage_surface_ids",
+            ),
+            fill_rules=_require_string_sequence(
+                payload["fill_rules"],
+                field_name="fill_rules",
+            ),
+            latency_assumptions=_require_string_sequence(
+                payload["latency_assumptions"],
+                field_name="latency_assumptions",
+            ),
+            adverse_selection_penalties=_require_string_sequence(
+                _require_present(
+                    payload,
+                    "adverse_selection_penalties",
+                    label="execution_profile_release",
+                ),
+                field_name="adverse_selection_penalties",
+            ),
+            quote_absence_policy=_require_string(
+                payload["quote_absence_policy"],
+                field_name="quote_absence_policy",
+            ),
+            spread_spike_policy=_require_string(
+                payload["spread_spike_policy"],
+                field_name="spread_spike_policy",
+            ),
+            degraded_bar_policy=_require_string(
+                payload["degraded_bar_policy"],
+                field_name="degraded_bar_policy",
+            ),
+            calibration_evidence_ids=_require_string_sequence(
+                payload["calibration_evidence_ids"],
+                field_name="calibration_evidence_ids",
+            ),
+            artifact_root_hash=_require_string(
+                payload["artifact_root_hash"],
+                field_name="artifact_root_hash",
+            ),
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
             schema_version=_require_schema_version(
-                payload.get("schema_version"),
+                _require_present(
+                    payload,
+                    "schema_version",
+                    label="execution_profile_release",
+                ),
                 label="execution_profile_release",
             ),
         )
@@ -253,34 +328,51 @@ class HistoricalSimulationHarness:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "HistoricalSimulationHarness":
+        payload = _require_mapping(payload, label="historical_simulation_harness")
         return cls(
-            case_id=str(payload["case_id"]),
+            case_id=_require_string(payload["case_id"], field_name="case_id"),
             historical_execution_kernel=HistoricalExecutionKernel(
                 payload["historical_execution_kernel"]
             ),
-            execution_profile_release_id=str(payload["execution_profile_release_id"]),
+            execution_profile_release_id=_require_string(
+                payload["execution_profile_release_id"],
+                field_name="execution_profile_release_id",
+            ),
             profile_class=ExecutionProfileClass(payload["profile_class"]),
-            release_reference_ids=tuple(str(item) for item in payload["release_reference_ids"]),
+            release_reference_ids=_require_string_sequence(
+                payload["release_reference_ids"],
+                field_name="release_reference_ids",
+            ),
             random_seeds=tuple(
                 _require_int(item, field_name="random_seeds[]")
                 for item in payload["random_seeds"]
             ),
-            retained_run_log_ids=tuple(str(item) for item in payload["retained_run_log_ids"]),
-            shared_signal_kernel_binding=str(payload["shared_signal_kernel_binding"]),
+            retained_run_log_ids=_require_string_sequence(
+                payload["retained_run_log_ids"],
+                field_name="retained_run_log_ids",
+            ),
+            shared_signal_kernel_binding=_require_string(
+                payload["shared_signal_kernel_binding"],
+                field_name="shared_signal_kernel_binding",
+            ),
             uses_high_level_backtest_api=_require_bool(
                 payload["uses_high_level_backtest_api"],
                 field_name="uses_high_level_backtest_api",
             ),
-            uses_custom_historical_engine=(
-                _require_bool(
-                    payload["uses_custom_historical_engine"],
-                    field_name="uses_custom_historical_engine",
-                )
-                if "uses_custom_historical_engine" in payload
-                else False
+            uses_custom_historical_engine=_require_bool(
+                _require_present(
+                    payload,
+                    "uses_custom_historical_engine",
+                    label="historical_simulation_harness",
+                ),
+                field_name="uses_custom_historical_engine",
             ),
             schema_version=_require_schema_version(
-                payload.get("schema_version"),
+                _require_present(
+                    payload,
+                    "schema_version",
+                    label="historical_simulation_harness",
+                ),
                 label="historical_simulation_harness",
             ),
         )
@@ -311,18 +403,41 @@ class ContextArtifactBindingRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ContextArtifactBindingRequest":
+        payload = _require_mapping(payload, label="context_artifact_binding")
         return cls(
-            case_id=str(payload["case_id"]),
+            case_id=_require_string(payload["case_id"], field_name="case_id"),
             surface_name=ContextBindingSurface(payload["surface_name"]),
-            resolved_context_bundle_id=str(payload["resolved_context_bundle_id"]),
-            resolved_context_content_hash=str(payload["resolved_context_content_hash"]),
-            execution_profile_release_id=str(payload["execution_profile_release_id"]),
-            execution_profile_artifact_hash=str(payload["execution_profile_artifact_hash"]),
-            mutable_reference_reads=tuple(
-                str(item) for item in payload.get("mutable_reference_reads", ())
+            resolved_context_bundle_id=_require_string(
+                payload["resolved_context_bundle_id"],
+                field_name="resolved_context_bundle_id",
             ),
-            mutable_execution_overrides=tuple(
-                str(item) for item in payload.get("mutable_execution_overrides", ())
+            resolved_context_content_hash=_require_string(
+                payload["resolved_context_content_hash"],
+                field_name="resolved_context_content_hash",
+            ),
+            execution_profile_release_id=_require_string(
+                payload["execution_profile_release_id"],
+                field_name="execution_profile_release_id",
+            ),
+            execution_profile_artifact_hash=_require_string(
+                payload["execution_profile_artifact_hash"],
+                field_name="execution_profile_artifact_hash",
+            ),
+            mutable_reference_reads=_require_string_sequence(
+                _require_present(
+                    payload,
+                    "mutable_reference_reads",
+                    label="context_artifact_binding",
+                ),
+                field_name="mutable_reference_reads",
+            ),
+            mutable_execution_overrides=_require_string_sequence(
+                _require_present(
+                    payload,
+                    "mutable_execution_overrides",
+                    label="context_artifact_binding",
+                ),
+                field_name="mutable_execution_overrides",
             ),
         )
 
@@ -466,9 +581,46 @@ def _require_int(value: object, *, field_name: str) -> int:
     return value
 
 
+def _require_present(payload: dict[str, Any], field_name: str, *, label: str) -> object:
+    if field_name not in payload:
+        raise ValueError(f"{label}: missing required field '{field_name}'")
+    return payload[field_name]
+
+
+def _require_mapping(value: object, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label}: payload must be an object")
+    return value
+
+
+def _require_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_optional_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    normalized: list[str] = []
+    for item in value:
+        normalized.append(_require_string(item, field_name=f"{field_name}[]"))
+    return tuple(normalized)
+
+
 def _require_schema_version(value: object, *, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{label}: schema_version must be an integer")
+    if value != SUPPORTED_CONTEXT_SCHEMA_VERSION:
+        raise ValueError(
+            f"{label}: schema_version must be {SUPPORTED_CONTEXT_SCHEMA_VERSION}"
+        )
     return value
 
 
