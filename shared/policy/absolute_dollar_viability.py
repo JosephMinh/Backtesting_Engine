@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
+
+from shared.policy.account_fit_gate import AccountFitStatus
 
 SUPPORTED_ABSOLUTE_DOLLAR_VIABILITY_SCHEMA_VERSION = 1
 ABSOLUTE_DOLLAR_CHECK_IDS = (
@@ -57,10 +60,15 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
 
 
 def _as_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be numeric")
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{field_name}: must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be numeric")
+    return parsed
 
 
 def _as_non_negative_float(value: object, *, field_name: str) -> float:
@@ -71,7 +79,9 @@ def _as_non_negative_float(value: object, *, field_name: str) -> float:
 
 
 def _as_positive_int(value: object, *, field_name: str) -> int:
-    parsed = int(value)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name}: must be positive")
+    parsed = value
     if parsed < 1:
         raise ValueError(f"{field_name}: must be positive")
     return parsed
@@ -85,6 +95,26 @@ def _as_optional_non_negative_float(
     if value in (None, ""):
         return None
     return _as_non_negative_float(value, field_name=field_name)
+
+
+def _require_boolean(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _normalize_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name}: must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
 
 
 def _jsonable(value: Any) -> Any:
@@ -205,7 +235,7 @@ class AbsoluteDollarViabilityRequest:
             source_fully_loaded_economics_evaluation_id=str(
                 payload["source_fully_loaded_economics_evaluation_id"]
             ),
-            account_fit_status=str(payload["account_fit_status"]),
+            account_fit_status=AccountFitStatus(str(payload["account_fit_status"])).value,
             approved_starting_equity_usd=_as_positive_int(
                 payload["approved_starting_equity_usd"],
                 field_name="approved_starting_equity_usd",
@@ -243,11 +273,12 @@ class AbsoluteDollarViabilityRequest:
             lower_touch_alternative_operator_hours_per_month=(
                 lower_touch_alternative_operator_hours_per_month
             ),
-            schema_version=int(
+            schema_version=_as_positive_int(
                 payload.get(
                     "schema_version",
                     SUPPORTED_ABSOLUTE_DOLLAR_VIABILITY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -276,10 +307,16 @@ class BenchmarkComparison:
         return cls(
             benchmark_id=str(payload["benchmark_id"]),
             title=str(payload["title"]),
-            benchmark_monthly_usd=float(payload["benchmark_monthly_usd"]),
-            candidate_monthly_net_usd=float(payload["candidate_monthly_net_usd"]),
-            excess_usd=float(payload["excess_usd"]),
-            passed=bool(payload["passed"]),
+            benchmark_monthly_usd=_as_float(
+                payload["benchmark_monthly_usd"],
+                field_name="benchmark_monthly_usd",
+            ),
+            candidate_monthly_net_usd=_as_float(
+                payload["candidate_monthly_net_usd"],
+                field_name="candidate_monthly_net_usd",
+            ),
+            excess_usd=_as_float(payload["excess_usd"], field_name="excess_usd"),
+            passed=_require_boolean(payload["passed"], field_name="passed"),
             reason_code=(
                 str(payload["reason_code"])
                 if payload.get("reason_code") not in (None, "")
@@ -304,8 +341,14 @@ class SensitivityScenario:
         return cls(
             scenario_id=str(payload["scenario_id"]),
             title=str(payload["title"]),
-            monthly_net_usd=float(payload["monthly_net_usd"]),
-            delta_vs_baseline_usd=float(payload["delta_vs_baseline_usd"]),
+            monthly_net_usd=_as_float(
+                payload["monthly_net_usd"],
+                field_name="monthly_net_usd",
+            ),
+            delta_vs_baseline_usd=_as_float(
+                payload["delta_vs_baseline_usd"],
+                field_name="delta_vs_baseline_usd",
+            ),
             narrative=str(payload["narrative"]),
         )
 
@@ -329,7 +372,7 @@ class AbsoluteDollarCheckResult:
         return cls(
             check_id=str(payload["check_id"]),
             title=str(payload["title"]),
-            passed=bool(payload["passed"]),
+            passed=_require_boolean(payload["passed"], field_name="passed"),
             reason_code=(
                 str(payload["reason_code"])
                 if payload.get("reason_code") not in (None, "")
@@ -337,12 +380,12 @@ class AbsoluteDollarCheckResult:
             ),
             diagnostic=str(payload["diagnostic"]),
             actual_usd=(
-                float(payload["actual_usd"])
+                _as_float(payload["actual_usd"], field_name="actual_usd")
                 if payload.get("actual_usd") is not None
                 else None
             ),
             threshold_usd=(
-                float(payload["threshold_usd"])
+                _as_float(payload["threshold_usd"], field_name="threshold_usd")
                 if payload.get("threshold_usd") is not None
                 else None
             ),
@@ -412,8 +455,8 @@ class AbsoluteDollarViabilityReport:
             evaluation_id=str(payload["evaluation_id"]),
             candidate_id=str(payload["candidate_id"]),
             strategy_family_id=str(payload["strategy_family_id"]),
-            status=str(payload["status"]),
-            decision=str(payload["decision"]),
+            status=AbsoluteDollarViabilityStatus(str(payload["status"])).value,
+            decision=AbsoluteDollarDecision(str(payload["decision"])).value,
             reason_code=str(payload["reason_code"]),
             product_profile_id=str(payload["product_profile_id"]),
             account_profile_id=str(payload["account_profile_id"]),
@@ -424,56 +467,101 @@ class AbsoluteDollarViabilityReport:
                 if payload.get("thresholds") is not None
                 else None
             ),
-            approved_starting_equity_usd=int(payload["approved_starting_equity_usd"]),
-            committed_margin_usd=float(payload["committed_margin_usd"]),
-            free_cash_usd=float(payload["free_cash_usd"]),
-            conservative_monthly_net_usd=float(payload["conservative_monthly_net_usd"]),
-            passive_gold_benchmark_monthly_usd=float(
-                payload["passive_gold_benchmark_monthly_usd"]
+            approved_starting_equity_usd=_as_positive_int(
+                payload["approved_starting_equity_usd"],
+                field_name="approved_starting_equity_usd",
             ),
-            cash_benchmark_monthly_usd=float(payload["cash_benchmark_monthly_usd"]),
-            monthly_excess_vs_passive_gold_usd=float(
-                payload["monthly_excess_vs_passive_gold_usd"]
+            committed_margin_usd=_as_float(
+                payload["committed_margin_usd"],
+                field_name="committed_margin_usd",
             ),
-            monthly_excess_vs_cash_usd=float(payload["monthly_excess_vs_cash_usd"]),
-            downside_low_turnover_monthly_net_usd=float(
-                payload["downside_low_turnover_monthly_net_usd"]
+            free_cash_usd=_as_float(payload["free_cash_usd"], field_name="free_cash_usd"),
+            conservative_monthly_net_usd=_as_float(
+                payload["conservative_monthly_net_usd"],
+                field_name="conservative_monthly_net_usd",
+            ),
+            passive_gold_benchmark_monthly_usd=_as_float(
+                payload["passive_gold_benchmark_monthly_usd"],
+                field_name="passive_gold_benchmark_monthly_usd",
+            ),
+            cash_benchmark_monthly_usd=_as_float(
+                payload["cash_benchmark_monthly_usd"],
+                field_name="cash_benchmark_monthly_usd",
+            ),
+            monthly_excess_vs_passive_gold_usd=_as_float(
+                payload["monthly_excess_vs_passive_gold_usd"],
+                field_name="monthly_excess_vs_passive_gold_usd",
+            ),
+            monthly_excess_vs_cash_usd=_as_float(
+                payload["monthly_excess_vs_cash_usd"],
+                field_name="monthly_excess_vs_cash_usd",
+            ),
+            downside_low_turnover_monthly_net_usd=_as_float(
+                payload["downside_low_turnover_monthly_net_usd"],
+                field_name="downside_low_turnover_monthly_net_usd",
             ),
             operator_maintenance_hours_per_month=(
-                float(payload["operator_maintenance_hours_per_month"])
+                _as_float(
+                    payload["operator_maintenance_hours_per_month"],
+                    field_name="operator_maintenance_hours_per_month",
+                )
                 if payload.get("operator_maintenance_hours_per_month") is not None
                 else None
             ),
             net_per_operator_maintenance_hour_usd=(
-                float(payload["net_per_operator_maintenance_hour_usd"])
+                _as_float(
+                    payload["net_per_operator_maintenance_hour_usd"],
+                    field_name="net_per_operator_maintenance_hour_usd",
+                )
                 if payload.get("net_per_operator_maintenance_hour_usd") is not None
                 else None
             ),
             lower_touch_alternative_monthly_net_usd=(
-                float(payload["lower_touch_alternative_monthly_net_usd"])
+                _as_float(
+                    payload["lower_touch_alternative_monthly_net_usd"],
+                    field_name="lower_touch_alternative_monthly_net_usd",
+                )
                 if payload.get("lower_touch_alternative_monthly_net_usd") is not None
                 else None
             ),
             lower_touch_alternative_operator_hours_per_month=(
-                float(payload["lower_touch_alternative_operator_hours_per_month"])
+                _as_float(
+                    payload["lower_touch_alternative_operator_hours_per_month"],
+                    field_name="lower_touch_alternative_operator_hours_per_month",
+                )
                 if payload.get("lower_touch_alternative_operator_hours_per_month")
                 is not None
                 else None
             ),
             lower_touch_alternative_net_per_hour_usd=(
-                float(payload["lower_touch_alternative_net_per_hour_usd"])
+                _as_float(
+                    payload["lower_touch_alternative_net_per_hour_usd"],
+                    field_name="lower_touch_alternative_net_per_hour_usd",
+                )
                 if payload.get("lower_touch_alternative_net_per_hour_usd") is not None
                 else None
             ),
-            lower_touch_dominates=bool(payload["lower_touch_dominates"]),
+            lower_touch_dominates=_require_boolean(
+                payload["lower_touch_dominates"],
+                field_name="lower_touch_dominates",
+            ),
             conservative_return_on_committed_margin=(
-                float(payload["conservative_return_on_committed_margin"])
+                _as_float(
+                    payload["conservative_return_on_committed_margin"],
+                    field_name="conservative_return_on_committed_margin",
+                )
                 if payload.get("conservative_return_on_committed_margin") is not None
                 else None
             ),
-            worst_session_loss_usd=float(payload["worst_session_loss_usd"]),
+            worst_session_loss_usd=_as_float(
+                payload["worst_session_loss_usd"],
+                field_name="worst_session_loss_usd",
+            ),
             worst_session_loss_fraction_of_free_cash=(
-                float(payload["worst_session_loss_fraction_of_free_cash"])
+                _as_float(
+                    payload["worst_session_loss_fraction_of_free_cash"],
+                    field_name="worst_session_loss_fraction_of_free_cash",
+                )
                 if payload.get("worst_session_loss_fraction_of_free_cash") is not None
                 else None
             ),
@@ -492,7 +580,10 @@ class AbsoluteDollarViabilityReport:
             ),
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            timestamp=_normalize_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod

@@ -144,6 +144,75 @@ class AbsoluteDollarViabilityContractTests(unittest.TestCase):
         ):
             AbsoluteDollarViabilityReport.from_json("not-json")
 
+    def test_request_loader_rejects_boolean_schema_version(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "keep_when_monthly_net_is_material_and_beats_required_benchmarks"
+        )
+        payload_with_bool_schema = dict(case["request"])
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            AbsoluteDollarViabilityRequest.from_dict(payload_with_bool_schema)
+
+    def test_request_loader_rejects_boolean_and_non_finite_numeric_values(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "keep_when_monthly_net_is_material_and_beats_required_benchmarks"
+        )
+
+        bool_equity_payload = dict(case["request"])
+        bool_equity_payload["approved_starting_equity_usd"] = True
+        with self.assertRaisesRegex(ValueError, "approved_starting_equity_usd"):
+            AbsoluteDollarViabilityRequest.from_dict(bool_equity_payload)
+
+        nan_margin_payload = dict(case["request"])
+        nan_margin_payload["committed_margin_usd"] = float("nan")
+        with self.assertRaisesRegex(ValueError, "committed_margin_usd"):
+            AbsoluteDollarViabilityRequest.from_dict(nan_margin_payload)
+
+    def test_request_loader_rejects_invalid_account_fit_status(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "keep_when_monthly_net_is_material_and_beats_required_benchmarks"
+        )
+        invalid_status_payload = dict(case["request"])
+        invalid_status_payload["account_fit_status"] = True
+        with self.assertRaisesRegex(ValueError, "True"):
+            AbsoluteDollarViabilityRequest.from_dict(invalid_status_payload)
+
+    def test_report_loader_rejects_invalid_status_bool_coercion_and_missing_timestamp(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "keep_when_monthly_net_is_material_and_beats_required_benchmarks"
+        )
+        report_payload = evaluate_absolute_dollar_viability(
+            AbsoluteDollarViabilityRequest.from_dict(dict(case["request"]))
+        ).to_dict()
+
+        invalid_status_payload = dict(report_payload)
+        invalid_status_payload["status"] = "green"
+        with self.assertRaisesRegex(ValueError, "green"):
+            AbsoluteDollarViabilityReport.from_dict(invalid_status_payload)
+
+        bool_lower_touch_payload = dict(report_payload)
+        bool_lower_touch_payload["lower_touch_dominates"] = "false"
+        with self.assertRaisesRegex(ValueError, "lower_touch_dominates"):
+            AbsoluteDollarViabilityReport.from_dict(bool_lower_touch_payload)
+
+        missing_timestamp_payload = dict(report_payload)
+        missing_timestamp_payload.pop("timestamp")
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            AbsoluteDollarViabilityReport.from_dict(missing_timestamp_payload)
+
+        naive_timestamp_payload = dict(report_payload)
+        naive_timestamp_payload["timestamp"] = "2026-03-28T01:05:00"
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            AbsoluteDollarViabilityReport.from_dict(naive_timestamp_payload)
+
 
 if __name__ == "__main__":
     unittest.main()
