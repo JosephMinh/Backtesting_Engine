@@ -229,12 +229,60 @@ class FamilyPreregistrationJsonValidationTests(unittest.TestCase):
                 }
             )
 
+    def test_numeric_fields_reject_boolean_values(self) -> None:
+        with self.assertRaisesRegex(ValueError, "lower_bound must be finite"):
+            build_preregistration(
+                {
+                    "preliminary_parameter_ranges": [
+                        {
+                            "parameter_id": "lookback",
+                            "lower_bound": True,
+                            "upper_bound": 10,
+                            "rationale": "invalid bool bound",
+                        }
+                    ]
+                }
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "tuning_trial_limit must be a positive integer",
+        ):
+            build_preregistration(
+                {
+                    "budget_limits": {
+                        "tuning_trial_limit": True,
+                    }
+                }
+            )
+
+    def test_timestamp_fields_require_timezone_aware_strings(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp fields must be timezone-aware UTC-normalizable strings",
+        ):
+            build_preregistration({"created_at_utc": "2026-03-28T00:00:00"})
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp fields must be timezone-aware UTC-normalizable strings",
+        ):
+            build_budget_request({"evaluated_at_utc": "2026-03-28T00:00:00"})
+
     def test_budget_report_loader_rejects_truthy_string_flags(self) -> None:
         payload = evaluate_family_budget_decision(build_budget_request()).to_dict()
         payload["deep_budget_requested"] = "false"
         with self.assertRaisesRegex(
             ValueError,
             "deep_budget_requested must be a boolean",
+        ):
+            FamilyBudgetDecisionReport.from_dict(payload)
+
+        payload = evaluate_family_budget_decision(build_budget_request()).to_dict()
+        payload["authorized_budget_usd"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "authorized_budget_usd must be finite",
         ):
             FamilyBudgetDecisionReport.from_dict(payload)
 

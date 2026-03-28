@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -48,11 +49,13 @@ def _utcnow() -> str:
 
 
 def _normalize_timestamp(value: str) -> str:
-    return (
-        datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-        .astimezone(datetime.timezone.utc)
-        .isoformat()
-    )
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError("timestamp fields must be timezone-aware UTC-normalizable strings") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp fields must be timezone-aware UTC-normalizable strings")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
 
 
 def _jsonable(value: Any) -> Any:
@@ -87,6 +90,24 @@ def _require_schema_version(value: object, *, label: str) -> int:
     return value
 
 
+def _require_finite_number(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be finite")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be finite") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name} must be finite")
+    return parsed
+
+
+def _require_positive_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return value
+
+
 @unique
 class FamilyGovernanceStatus(str, Enum):
     PASS = "pass"  # nosec B105 - policy status literal, not a credential
@@ -117,8 +138,14 @@ class ParameterRange:
     def from_dict(cls, payload: dict[str, Any]) -> "ParameterRange":
         return cls(
             parameter_id=str(payload["parameter_id"]),
-            lower_bound=float(payload["lower_bound"]),
-            upper_bound=float(payload["upper_bound"]),
+            lower_bound=_require_finite_number(
+                payload["lower_bound"],
+                field_name="lower_bound",
+            ),
+            upper_bound=_require_finite_number(
+                payload["upper_bound"],
+                field_name="upper_bound",
+            ),
             rationale=str(payload["rationale"]),
         )
 
@@ -139,15 +166,29 @@ class FamilyBudgetLimits:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FamilyBudgetLimits":
         return cls(
-            historical_data_spend_limit_usd=float(
-                payload["historical_data_spend_limit_usd"]
+            historical_data_spend_limit_usd=_require_finite_number(
+                payload["historical_data_spend_limit_usd"],
+                field_name="historical_data_spend_limit_usd",
             ),
-            compute_spend_limit_usd=float(payload["compute_spend_limit_usd"]),
-            tuning_trial_limit=int(payload["tuning_trial_limit"]),
-            operator_review_hours_limit=float(payload["operator_review_hours_limit"]),
-            exploratory_budget_limit_usd=float(payload["exploratory_budget_limit_usd"]),
-            continuation_budget_limit_usd=float(
-                payload["continuation_budget_limit_usd"]
+            compute_spend_limit_usd=_require_finite_number(
+                payload["compute_spend_limit_usd"],
+                field_name="compute_spend_limit_usd",
+            ),
+            tuning_trial_limit=_require_positive_int(
+                payload["tuning_trial_limit"],
+                field_name="tuning_trial_limit",
+            ),
+            operator_review_hours_limit=_require_finite_number(
+                payload["operator_review_hours_limit"],
+                field_name="operator_review_hours_limit",
+            ),
+            exploratory_budget_limit_usd=_require_finite_number(
+                payload["exploratory_budget_limit_usd"],
+                field_name="exploratory_budget_limit_usd",
+            ),
+            continuation_budget_limit_usd=_require_finite_number(
+                payload["continuation_budget_limit_usd"],
+                field_name="continuation_budget_limit_usd",
             ),
             deep_budget_requires_viability=_require_bool(
                 payload.get("deep_budget_requires_viability", True)
@@ -420,7 +461,10 @@ class FamilyPreregistrationReport:
             status=str(payload["status"]),
             decision=str(payload["decision"]),
             reason_code=str(payload["reason_code"]),
-            deep_budget_threshold_usd=float(payload["deep_budget_threshold_usd"]),
+            deep_budget_threshold_usd=_require_finite_number(
+                payload["deep_budget_threshold_usd"],
+                field_name="deep_budget_threshold_usd",
+            ),
             triggered_check_ids=tuple(
                 str(item) for item in payload["triggered_check_ids"]
             ),
@@ -494,7 +538,10 @@ class FamilyBudgetDecisionReport:
             status=str(payload["status"]),
             decision=str(payload["decision"]),
             reason_code=str(payload["reason_code"]),
-            authorized_budget_usd=float(payload["authorized_budget_usd"]),
+            authorized_budget_usd=_require_finite_number(
+                payload["authorized_budget_usd"],
+                field_name="authorized_budget_usd",
+            ),
             deep_budget_requested=_require_bool(
                 payload["deep_budget_requested"],
                 field_name="deep_budget_requested",
