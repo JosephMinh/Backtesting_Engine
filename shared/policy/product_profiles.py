@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any
@@ -330,6 +331,14 @@ def account_risk_profiles_by_id() -> dict[str, AccountRiskProfile]:
     return {profile.profile_id: profile for profile in ACCOUNT_RISK_PROFILES}
 
 
+def _is_open_unit_fraction(value: object) -> bool:
+    if isinstance(value, bool):
+        return False
+    if not isinstance(value, int | float):
+        return False
+    return math.isfinite(value) and 0 < value < 1
+
+
 def validate_profile_catalogs() -> list[str]:
     errors: list[str] = []
 
@@ -361,20 +370,20 @@ def validate_profile_catalogs() -> list[str]:
             errors.append(f"{profile.profile_id}: approved_starting_equity_usd must be positive")
         if not profile.approved_symbols:
             errors.append(f"{profile.profile_id}: approved_symbols must not be empty")
-        if profile.max_initial_margin_fraction <= 0 or profile.max_initial_margin_fraction >= 1:
+        if not _is_open_unit_fraction(profile.max_initial_margin_fraction):
             errors.append(f"{profile.profile_id}: max_initial_margin_fraction must be within (0, 1)")
         if (
-            profile.max_maintenance_margin_fraction <= profile.max_initial_margin_fraction
-            or profile.max_maintenance_margin_fraction >= 1
+            not _is_open_unit_fraction(profile.max_maintenance_margin_fraction)
+            or profile.max_maintenance_margin_fraction <= profile.max_initial_margin_fraction
         ):
             errors.append(
                 f"{profile.profile_id}: max_maintenance_margin_fraction must exceed initial and stay below 1"
             )
-        if profile.daily_loss_lockout_fraction <= 0 or profile.daily_loss_lockout_fraction >= 1:
+        if not _is_open_unit_fraction(profile.daily_loss_lockout_fraction):
             errors.append(f"{profile.profile_id}: daily_loss_lockout_fraction must be within (0, 1)")
-        if profile.max_drawdown_fraction <= 0 or profile.max_drawdown_fraction >= 1:
+        if not _is_open_unit_fraction(profile.max_drawdown_fraction):
             errors.append(f"{profile.profile_id}: max_drawdown_fraction must be within (0, 1)")
-        if profile.overnight_gap_stress_fraction <= 0 or profile.overnight_gap_stress_fraction >= 1:
+        if not _is_open_unit_fraction(profile.overnight_gap_stress_fraction):
             errors.append(f"{profile.profile_id}: overnight_gap_stress_fraction must be within (0, 1)")
         if profile.default_operating_posture not in profile.allowed_operating_postures:
             errors.append(
@@ -498,10 +507,7 @@ def validate_profile_binding(request: ProfileBindingRequest) -> ProfileBindingRe
             "expected": {"minimum": 1, "approved_starting_size": approved_starting_size, "maximum": max_position_size},
         }
 
-    if (
-        request.requested_initial_margin_fraction <= 0
-        or request.requested_initial_margin_fraction >= 1
-    ):
+    if not _is_open_unit_fraction(request.requested_initial_margin_fraction):
         differences["requested_initial_margin_fraction"] = {
             "actual": request.requested_initial_margin_fraction,
             "expected": {"minimum_exclusive": 0, "maximum_exclusive": 1},
@@ -512,10 +518,7 @@ def validate_profile_binding(request: ProfileBindingRequest) -> ProfileBindingRe
             "expected": account.max_initial_margin_fraction,
         }
 
-    if (
-        request.requested_maintenance_margin_fraction <= 0
-        or request.requested_maintenance_margin_fraction >= 1
-    ):
+    if not _is_open_unit_fraction(request.requested_maintenance_margin_fraction):
         differences["requested_maintenance_margin_fraction"] = {
             "actual": request.requested_maintenance_margin_fraction,
             "expected": {"minimum_exclusive": 0, "maximum_exclusive": 1},

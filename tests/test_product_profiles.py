@@ -1,4 +1,5 @@
 import json
+import math
 import unittest
 from pathlib import Path
 
@@ -218,6 +219,69 @@ class ProductProfileContractTest(unittest.TestCase):
         self.assertIn(
             "requested_maintenance_margin_fraction",
             inverted_margins.differences,
+        )
+
+    def test_binding_rejects_non_finite_margin_requests(self) -> None:
+        nan_initial = validate_profile_binding(
+            ProfileBindingRequest(
+                case_id="nan_initial_margin",
+                product_profile_id="oneoz_comex_v1",
+                account_profile_id="solo_small_gold_ibkr_5000_v1",
+                requested_lane=ProductLane.LIVE,
+                requested_symbol="1OZ",
+                requested_broker="IBKR",
+                requested_data_profile_release_id="ibkr_1oz_comex_bars_1m_v1",
+                requested_contract_count=1,
+                requested_initial_margin_fraction=math.nan,
+                requested_maintenance_margin_fraction=0.3,
+                requested_operating_posture=OperatingPosture.INTRADAY_FLAT_DEFAULT,
+                overnight_requested=False,
+                broker_contract_descriptor=BrokerContractDescriptor(
+                    symbol="1OZ",
+                    exchange="COMEX",
+                    currency="USD",
+                    contract_size_oz=1,
+                    minimum_price_fluctuation_usd_per_oz=0.25,
+                    settlement_type="cash_settled",
+                    session_calendar_id="comex_metals_globex_v1",
+                ),
+            )
+        )
+        self.assertEqual(BindingStatus.INCOMPATIBLE.value, nan_initial.status)
+        self.assertIn(
+            "requested_initial_margin_fraction",
+            nan_initial.differences,
+        )
+
+        nan_maintenance = validate_profile_binding(
+            ProfileBindingRequest(
+                case_id="nan_maintenance_margin",
+                product_profile_id="oneoz_comex_v1",
+                account_profile_id="solo_small_gold_ibkr_5000_v1",
+                requested_lane=ProductLane.LIVE,
+                requested_symbol="1OZ",
+                requested_broker="IBKR",
+                requested_data_profile_release_id="ibkr_1oz_comex_bars_1m_v1",
+                requested_contract_count=1,
+                requested_initial_margin_fraction=0.2,
+                requested_maintenance_margin_fraction=math.nan,
+                requested_operating_posture=OperatingPosture.INTRADAY_FLAT_DEFAULT,
+                overnight_requested=False,
+                broker_contract_descriptor=BrokerContractDescriptor(
+                    symbol="1OZ",
+                    exchange="COMEX",
+                    currency="USD",
+                    contract_size_oz=1,
+                    minimum_price_fluctuation_usd_per_oz=0.25,
+                    settlement_type="cash_settled",
+                    session_calendar_id="comex_metals_globex_v1",
+                ),
+            )
+        )
+        self.assertEqual(BindingStatus.INCOMPATIBLE.value, nan_maintenance.status)
+        self.assertIn(
+            "requested_maintenance_margin_fraction",
+            nan_maintenance.differences,
         )
 
     def test_catalog_counts_remain_narrow_and_explicit(self) -> None:
