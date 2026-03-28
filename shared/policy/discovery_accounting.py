@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -33,12 +35,18 @@ def _utcnow() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-def _normalize_timestamp(value: str) -> str:
-    return (
-        datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-        .astimezone(datetime.timezone.utc)
-        .isoformat()
-    )
+def _normalize_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name} must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
 
 
 def _jsonable(value: Any) -> Any:
@@ -67,6 +75,24 @@ def _require_bool(value: object, *, field_name: str) -> bool:
     return value
 
 
+def _require_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_optional_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
 def _require_int(value: object, *, field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{field_name} must be an integer")
@@ -76,7 +102,56 @@ def _require_int(value: object, *, field_name: str) -> int:
 def _require_schema_version(value: object, *, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{label}: schema_version must be an integer")
+    if value != SUPPORTED_DISCOVERY_ACCOUNTING_SCHEMA_VERSION:
+        raise ValueError(
+            f"{label}: unsupported schema version {value}; "
+            f"expected {SUPPORTED_DISCOVERY_ACCOUNTING_SCHEMA_VERSION}"
+        )
     return value
+
+
+def _require_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be numeric")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name} must be numeric")
+    return parsed
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    items: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError(f"{field_name} must be a sequence of strings")
+        items.append(item)
+    return tuple(items)
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field_name} must be a mapping")
+    return dict(value)
+
+
+def _require_mapping_sequence(
+    value: object,
+    *,
+    field_name: str,
+) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name} must be a sequence of mappings")
+    items: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{field_name} must be a sequence of mappings")
+        items.append(dict(item))
+    return tuple(items)
 
 
 @unique
@@ -107,11 +182,26 @@ class NullComparisonDelta:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "NullComparisonDelta":
         return cls(
-            metric_id=str(payload["metric_id"]),
-            baseline_value=float(payload["baseline_value"]),
-            observed_value=float(payload["observed_value"]),
-            delta_value=float(payload["delta_value"]),
-            interpretation=str(payload["interpretation"]),
+            metric_id=_require_non_empty_string(
+                payload["metric_id"],
+                field_name="null_comparison_delta.metric_id",
+            ),
+            baseline_value=_require_float(
+                payload["baseline_value"],
+                field_name="null_comparison_delta.baseline_value",
+            ),
+            observed_value=_require_float(
+                payload["observed_value"],
+                field_name="null_comparison_delta.observed_value",
+            ),
+            delta_value=_require_float(
+                payload["delta_value"],
+                field_name="null_comparison_delta.delta_value",
+            ),
+            interpretation=_require_string(
+                payload["interpretation"],
+                field_name="null_comparison_delta.interpretation",
+            ),
         )
 
 
@@ -133,15 +223,30 @@ class NullSuiteEntry:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "NullSuiteEntry":
         return cls(
-            null_model_id=str(payload["null_model_id"]),
-            study_id=str(payload["study_id"]),
+            null_model_id=_require_non_empty_string(
+                payload["null_model_id"],
+                field_name="null_suite_entry.null_model_id",
+            ),
+            study_id=_require_non_empty_string(
+                payload["study_id"],
+                field_name="null_suite_entry.study_id",
+            ),
             completed=_require_bool(payload["completed"], field_name="completed"),
             sample_count=_require_int(payload["sample_count"], field_name="sample_count"),
-            retained_artifact_ids=tuple(str(item) for item in payload["retained_artifact_ids"]),
-            retained_log_ids=tuple(str(item) for item in payload["retained_log_ids"]),
+            retained_artifact_ids=_require_string_sequence(
+                payload["retained_artifact_ids"],
+                field_name="null_suite_entry.retained_artifact_ids",
+            ),
+            retained_log_ids=_require_string_sequence(
+                payload["retained_log_ids"],
+                field_name="null_suite_entry.retained_log_ids",
+            ),
             diagnostic_deltas=tuple(
-                NullComparisonDelta.from_dict(dict(item))
-                for item in payload["diagnostic_deltas"]
+                NullComparisonDelta.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["diagnostic_deltas"],
+                    field_name="null_suite_entry.diagnostic_deltas",
+                )
             ),
         )
 
@@ -167,9 +272,18 @@ class FamilyDiscoveryLedgerEntry:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FamilyDiscoveryLedgerEntry":
         return cls(
-            family_id=str(payload["family_id"]),
-            subfamily_id=str(payload["subfamily_id"]),
-            research_run_ids=tuple(str(item) for item in payload["research_run_ids"]),
+            family_id=_require_non_empty_string(
+                payload["family_id"],
+                field_name="family_discovery_ledger_entry.family_id",
+            ),
+            subfamily_id=_require_non_empty_string(
+                payload["subfamily_id"],
+                field_name="family_discovery_ledger_entry.subfamily_id",
+            ),
+            research_run_ids=_require_string_sequence(
+                payload["research_run_ids"],
+                field_name="family_discovery_ledger_entry.research_run_ids",
+            ),
             promotable_trial_count=_require_int(
                 payload["promotable_trial_count"],
                 field_name="promotable_trial_count",
@@ -178,13 +292,34 @@ class FamilyDiscoveryLedgerEntry:
                 payload["null_comparison_count"],
                 field_name="null_comparison_count",
             ),
-            historical_data_spend_usd=float(payload["historical_data_spend_usd"]),
-            compute_spend_usd=float(payload["compute_spend_usd"]),
-            operator_review_hours=float(payload["operator_review_hours"]),
-            requested_next_budget_usd=float(payload["requested_next_budget_usd"]),
-            retained_log_ids=tuple(str(item) for item in payload["retained_log_ids"]),
-            correlation_id=str(payload["correlation_id"]),
-            diagnostic_delta_ids=tuple(str(item) for item in payload["diagnostic_delta_ids"]),
+            historical_data_spend_usd=_require_float(
+                payload["historical_data_spend_usd"],
+                field_name="family_discovery_ledger_entry.historical_data_spend_usd",
+            ),
+            compute_spend_usd=_require_float(
+                payload["compute_spend_usd"],
+                field_name="family_discovery_ledger_entry.compute_spend_usd",
+            ),
+            operator_review_hours=_require_float(
+                payload["operator_review_hours"],
+                field_name="family_discovery_ledger_entry.operator_review_hours",
+            ),
+            requested_next_budget_usd=_require_float(
+                payload["requested_next_budget_usd"],
+                field_name="family_discovery_ledger_entry.requested_next_budget_usd",
+            ),
+            retained_log_ids=_require_string_sequence(
+                payload["retained_log_ids"],
+                field_name="family_discovery_ledger_entry.retained_log_ids",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="family_discovery_ledger_entry.correlation_id",
+            ),
+            diagnostic_delta_ids=_require_string_sequence(
+                payload["diagnostic_delta_ids"],
+                field_name="family_discovery_ledger_entry.diagnostic_delta_ids",
+            ),
         )
 
 
@@ -208,10 +343,16 @@ class ProgramDiscoveryLedger:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ProgramDiscoveryLedger":
         return cls(
-            ledger_id=str(payload["ledger_id"]),
+            ledger_id=_require_non_empty_string(
+                payload["ledger_id"],
+                field_name="program_discovery_ledger.ledger_id",
+            ),
             family_entries=tuple(
-                FamilyDiscoveryLedgerEntry.from_dict(dict(item))
-                for item in payload["family_entries"]
+                FamilyDiscoveryLedgerEntry.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["family_entries"],
+                    field_name="program_discovery_ledger.family_entries",
+                )
             ),
             cumulative_promotable_trial_count=_require_int(
                 payload["cumulative_promotable_trial_count"],
@@ -221,13 +362,26 @@ class ProgramDiscoveryLedger:
                 payload["cumulative_null_comparison_count"],
                 field_name="cumulative_null_comparison_count",
             ),
-            cumulative_data_spend_usd=float(payload["cumulative_data_spend_usd"]),
-            cumulative_compute_spend_usd=float(payload["cumulative_compute_spend_usd"]),
-            cumulative_operator_review_hours=float(payload["cumulative_operator_review_hours"]),
-            continuation_decision_record_ids=tuple(
-                str(item) for item in payload["continuation_decision_record_ids"]
+            cumulative_data_spend_usd=_require_float(
+                payload["cumulative_data_spend_usd"],
+                field_name="program_discovery_ledger.cumulative_data_spend_usd",
             ),
-            recorded_at_utc=_normalize_timestamp(str(payload["recorded_at_utc"])),
+            cumulative_compute_spend_usd=_require_float(
+                payload["cumulative_compute_spend_usd"],
+                field_name="program_discovery_ledger.cumulative_compute_spend_usd",
+            ),
+            cumulative_operator_review_hours=_require_float(
+                payload["cumulative_operator_review_hours"],
+                field_name="program_discovery_ledger.cumulative_operator_review_hours",
+            ),
+            continuation_decision_record_ids=_require_string_sequence(
+                payload["continuation_decision_record_ids"],
+                field_name="program_discovery_ledger.continuation_decision_record_ids",
+            ),
+            recorded_at_utc=_normalize_timestamp(
+                payload["recorded_at_utc"],
+                field_name="program_discovery_ledger.recorded_at_utc",
+            ),
         )
 
 
@@ -260,25 +414,52 @@ class DiscoveryAccountingRequest:
     def from_dict(cls, payload: dict[str, Any]) -> "DiscoveryAccountingRequest":
         continuation_payload = payload.get("continuation_decision")
         return cls(
-            case_id=str(payload["case_id"]),
+            case_id=_require_non_empty_string(
+                payload["case_id"],
+                field_name="discovery_accounting_request.case_id",
+            ),
             preregistration=StrategyFamilyPreregistration.from_dict(
-                dict(payload["preregistration"])
+                _require_mapping(
+                    payload["preregistration"],
+                    field_name="discovery_accounting_request.preregistration",
+                )
             ),
-            family_ledger=FamilyDiscoveryLedgerEntry.from_dict(dict(payload["family_ledger"])),
+            family_ledger=FamilyDiscoveryLedgerEntry.from_dict(
+                _require_mapping(
+                    payload["family_ledger"],
+                    field_name="discovery_accounting_request.family_ledger",
+                )
+            ),
             null_suite_entries=tuple(
-                NullSuiteEntry.from_dict(dict(item))
-                for item in payload["null_suite_entries"]
+                NullSuiteEntry.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["null_suite_entries"],
+                    field_name="discovery_accounting_request.null_suite_entries",
+                )
             ),
-            program_ledger=ProgramDiscoveryLedger.from_dict(dict(payload["program_ledger"])),
+            program_ledger=ProgramDiscoveryLedger.from_dict(
+                _require_mapping(
+                    payload["program_ledger"],
+                    field_name="discovery_accounting_request.program_ledger",
+                )
+            ),
             continuation_decision=(
                 None
                 if continuation_payload is None
-                else FamilyDecisionRecord.from_dict(dict(continuation_payload))
+                else FamilyDecisionRecord.from_dict(
+                    _require_mapping(
+                        continuation_payload,
+                        field_name="discovery_accounting_request.continuation_decision",
+                    )
+                )
             ),
             evaluated_at_utc=(
                 None
                 if payload.get("evaluated_at_utc") is None
-                else _normalize_timestamp(str(payload["evaluated_at_utc"]))
+                else _normalize_timestamp(
+                    payload["evaluated_at_utc"],
+                    field_name="discovery_accounting_request.evaluated_at_utc",
+                )
             ),
             schema_version=_require_schema_version(
                 payload.get("schema_version"),
@@ -310,11 +491,23 @@ class DiscoveryAccountingCheckResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DiscoveryAccountingCheckResult":
         return cls(
-            check_id=str(payload["check_id"]),
+            check_id=_require_non_empty_string(
+                payload["check_id"],
+                field_name="discovery_accounting_check_result.check_id",
+            ),
             passed=_require_bool(payload["passed"], field_name="passed"),
-            reason_code=str(payload["reason_code"]),
-            diagnostic=str(payload["diagnostic"]),
-            evidence=dict(payload.get("evidence", {})),
+            reason_code=_require_string(
+                payload["reason_code"],
+                field_name="discovery_accounting_check_result.reason_code",
+            ),
+            diagnostic=_require_string(
+                payload["diagnostic"],
+                field_name="discovery_accounting_check_result.diagnostic",
+            ),
+            evidence=_require_mapping(
+                payload.get("evidence", {}),
+                field_name="discovery_accounting_check_result.evidence",
+            ),
         )
 
 
@@ -331,10 +524,22 @@ class DiscoveryAccountingLogEntry:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DiscoveryAccountingLogEntry":
         return cls(
-            stage=str(payload["stage"]),
-            reason_code=str(payload["reason_code"]),
-            message=str(payload["message"]),
-            references=tuple(str(item) for item in payload.get("references", ())),
+            stage=_require_string(
+                payload["stage"],
+                field_name="discovery_accounting_log_entry.stage",
+            ),
+            reason_code=_require_string(
+                payload["reason_code"],
+                field_name="discovery_accounting_log_entry.reason_code",
+            ),
+            message=_require_string(
+                payload["message"],
+                field_name="discovery_accounting_log_entry.message",
+            ),
+            references=_require_string_sequence(
+                payload.get("references", ()),
+                field_name="discovery_accounting_log_entry.references",
+            ),
         )
 
 
@@ -388,50 +593,100 @@ class DiscoveryAccountingReport:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DiscoveryAccountingReport":
         return cls(
-            case_id=str(payload["case_id"]),
-            family_id=str(payload["family_id"]),
-            subfamily_id=str(payload["subfamily_id"]),
-            status=str(payload["status"]),
-            decision=str(payload["decision"]),
-            reason_code=str(payload["reason_code"]),
-            exploratory_budget_limit_usd=float(payload["exploratory_budget_limit_usd"]),
-            continuation_budget_limit_usd=float(payload["continuation_budget_limit_usd"]),
-            family_total_spend_usd=float(payload["family_total_spend_usd"]),
+            case_id=_require_non_empty_string(
+                payload["case_id"],
+                field_name="discovery_accounting_report.case_id",
+            ),
+            family_id=_require_non_empty_string(
+                payload["family_id"],
+                field_name="discovery_accounting_report.family_id",
+            ),
+            subfamily_id=_require_non_empty_string(
+                payload["subfamily_id"],
+                field_name="discovery_accounting_report.subfamily_id",
+            ),
+            status=DiscoveryAccountingStatus(
+                _require_string(
+                    payload["status"],
+                    field_name="discovery_accounting_report.status",
+                )
+            ).value,
+            decision=DiscoveryAccountingDecision(
+                _require_string(
+                    payload["decision"],
+                    field_name="discovery_accounting_report.decision",
+                )
+            ).value,
+            reason_code=_require_string(
+                payload["reason_code"],
+                field_name="discovery_accounting_report.reason_code",
+            ),
+            exploratory_budget_limit_usd=_require_float(
+                payload["exploratory_budget_limit_usd"],
+                field_name="discovery_accounting_report.exploratory_budget_limit_usd",
+            ),
+            continuation_budget_limit_usd=_require_float(
+                payload["continuation_budget_limit_usd"],
+                field_name="discovery_accounting_report.continuation_budget_limit_usd",
+            ),
+            family_total_spend_usd=_require_float(
+                payload["family_total_spend_usd"],
+                field_name="discovery_accounting_report.family_total_spend_usd",
+            ),
             family_promotable_trial_count=_require_int(
                 payload["family_promotable_trial_count"],
                 field_name="family_promotable_trial_count",
             ),
-            program_total_spend_usd=float(payload["program_total_spend_usd"]),
+            program_total_spend_usd=_require_float(
+                payload["program_total_spend_usd"],
+                field_name="discovery_accounting_report.program_total_spend_usd",
+            ),
             program_promotable_trial_count=_require_int(
                 payload["program_promotable_trial_count"],
                 field_name="program_promotable_trial_count",
             ),
-            remaining_exploratory_budget_usd=float(
-                payload["remaining_exploratory_budget_usd"]
+            remaining_exploratory_budget_usd=_require_float(
+                payload["remaining_exploratory_budget_usd"],
+                field_name="discovery_accounting_report.remaining_exploratory_budget_usd",
             ),
-            completed_null_model_ids=tuple(
-                str(item) for item in payload["completed_null_model_ids"]
+            completed_null_model_ids=_require_string_sequence(
+                payload["completed_null_model_ids"],
+                field_name="discovery_accounting_report.completed_null_model_ids",
             ),
-            triggered_check_ids=tuple(str(item) for item in payload["triggered_check_ids"]),
+            triggered_check_ids=_require_string_sequence(
+                payload["triggered_check_ids"],
+                field_name="discovery_accounting_report.triggered_check_ids",
+            ),
             check_results=tuple(
-                DiscoveryAccountingCheckResult.from_dict(dict(item))
-                for item in payload["check_results"]
+                DiscoveryAccountingCheckResult.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["check_results"],
+                    field_name="discovery_accounting_report.check_results",
+                )
             ),
             decision_log=tuple(
-                DiscoveryAccountingLogEntry.from_dict(dict(item))
-                for item in payload["decision_log"]
+                DiscoveryAccountingLogEntry.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["decision_log"],
+                    field_name="discovery_accounting_report.decision_log",
+                )
             ),
-            continuation_decision_record_id=(
-                None
-                if payload.get("continuation_decision_record_id") is None
-                else str(payload["continuation_decision_record_id"])
+            continuation_decision_record_id=_require_optional_string(
+                payload.get("continuation_decision_record_id"),
+                field_name="discovery_accounting_report.continuation_decision_record_id",
             ),
             guardrail_trace=(
                 None
                 if payload.get("guardrail_trace") is None
-                else dict(payload["guardrail_trace"])
+                else _require_mapping(
+                    payload["guardrail_trace"],
+                    field_name="discovery_accounting_report.guardrail_trace",
+                )
             ),
-            evaluated_at_utc=_normalize_timestamp(str(payload["evaluated_at_utc"])),
+            evaluated_at_utc=_normalize_timestamp(
+                payload["evaluated_at_utc"],
+                field_name="discovery_accounting_report.evaluated_at_utc",
+            ),
         )
 
     def to_json(self) -> str:

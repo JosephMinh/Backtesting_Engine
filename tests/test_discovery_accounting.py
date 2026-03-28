@@ -178,6 +178,14 @@ class DiscoveryAccountingEdgeCaseTests(unittest.TestCase):
         ):
             DiscoveryAccountingRequest.from_dict(payload)
 
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_request: unsupported schema version 2; expected 1",
+        ):
+            DiscoveryAccountingRequest.from_dict(payload)
+
     def test_persisted_bool_and_count_fields_reject_truthy_coercion(self) -> None:
         with self.assertRaisesRegex(ValueError, "completed must be a boolean"):
             build_request(
@@ -216,6 +224,40 @@ class DiscoveryAccountingEdgeCaseTests(unittest.TestCase):
                 }
             )
 
+    def test_request_loader_rejects_bad_identifier_sequence_and_timestamp_shapes(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_request.case_id must be a non-empty string",
+        ):
+            build_request({"case_id": False})
+
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload["null_suite_entries"] = [dict(item) for item in payload["null_suite_entries"]]
+        payload["null_suite_entries"][0]["retained_artifact_ids"] = "artifact-random"
+        with self.assertRaisesRegex(
+            ValueError,
+            "null_suite_entry.retained_artifact_ids must be a sequence of strings",
+        ):
+            DiscoveryAccountingRequest.from_dict(payload)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "program_discovery_ledger.recorded_at_utc must be a timezone-aware ISO-8601 timestamp",
+        ):
+            build_request(
+                {
+                    "program_ledger": {
+                        "recorded_at_utc": "2026-03-28T00:00:00",
+                    }
+                }
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_request.null_suite_entries must be a sequence of mappings",
+        ):
+            build_request({"null_suite_entries": "not-a-sequence"})
+
     def test_report_loader_rejects_truthy_string_check_results(self) -> None:
         payload = evaluate_discovery_accounting(build_request()).to_dict()
         payload["check_results"][0]["passed"] = "true"
@@ -236,6 +278,33 @@ class DiscoveryAccountingEdgeCaseTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "program_promotable_trial_count must be an integer",
+        ):
+            DiscoveryAccountingReport.from_dict(payload)
+
+    def test_report_loader_rejects_invalid_status_decision_and_timestamp(self) -> None:
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["status"] = "green"
+        with self.assertRaises(ValueError):
+            DiscoveryAccountingReport.from_dict(payload)
+
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["decision"] = "ship_it"
+        with self.assertRaises(ValueError):
+            DiscoveryAccountingReport.from_dict(payload)
+
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["evaluated_at_utc"] = "2026-03-28T00:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_report.evaluated_at_utc must be a timezone-aware ISO-8601 timestamp",
+        ):
+            DiscoveryAccountingReport.from_dict(payload)
+
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["guardrail_trace"] = "not-a-mapping"
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_report.guardrail_trace must be a mapping",
         ):
             DiscoveryAccountingReport.from_dict(payload)
 
