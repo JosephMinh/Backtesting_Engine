@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import json
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import Enum, unique
 from typing import Iterable
 
@@ -18,8 +18,17 @@ def _decimal(value: Decimal | str | int | float | None) -> Decimal:
     if value is None:
         return ZERO
     if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value))
+        parsed = value
+    else:
+        if isinstance(value, bool):
+            raise ValueError("decimal fields must be finite decimal-compatible values")
+        try:
+            parsed = Decimal(str(value))
+        except (InvalidOperation, ValueError) as exc:
+            raise ValueError("decimal fields must be finite decimal-compatible values") from exc
+    if not parsed.is_finite():
+        raise ValueError("decimal fields must be finite decimal-compatible values")
+    return parsed
 
 
 def _decimal_or_none(value: Decimal | str | int | float | None) -> Decimal | None:
@@ -54,6 +63,70 @@ def _require_bool(value: object, *, field_name: str) -> bool:
     return value
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    return value
+
+
+def _require_present(
+    payload: dict[str, object],
+    key: str,
+    *,
+    field_name: str,
+) -> object:
+    if key not in payload:
+        raise ValueError(f"{field_name} missing required field")
+    return payload[key]
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of non-empty strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[{index}]")
+        for index, item in enumerate(value)
+    )
+
+
+def _require_mapping_sequence(value: object, *, field_name: str) -> tuple[dict[str, object], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of objects")
+    return tuple(
+        _require_mapping(item, field_name=f"{field_name}[{index}]")
+        for index, item in enumerate(value)
+    )
+
+
+def _require_string_mapping(value: object, *, field_name: str) -> dict[str, str]:
+    mapping = _require_mapping(value, field_name=field_name)
+    normalized: dict[str, str] = {}
+    for key, item in mapping.items():
+        normalized_key = _require_non_empty_string(key, field_name=f"{field_name}.key")
+        if not isinstance(item, str):
+            raise ValueError(f"{field_name}.{normalized_key} must be a string")
+        normalized[normalized_key] = item
+    return normalized
+
+
 def _require_int(value: object, *, field_name: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{field_name} must be an integer")
@@ -63,6 +136,8 @@ def _require_int(value: object, *, field_name: str) -> int:
 def _require_schema_version(value: object, *, label: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{label}: schema_version must be an integer")
+    if value != SUPPORTED_LEDGER_SCHEMA_VERSION:
+        raise ValueError(f"{label}: unsupported schema_version")
     return value
 
 
@@ -89,6 +164,17 @@ def _require_close_status(value: object) -> str:
         return LedgerCloseStatus(value).value
     except ValueError as exc:
         raise ValueError("status must be a valid ledger close status") from exc
+
+
+def _require_event_class(value: object, *, field_name: str) -> str:
+    if isinstance(value, LedgerEventClass):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a valid ledger event class")
+    try:
+        return LedgerEventClass(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid ledger event class") from exc
 
 
 @unique
@@ -189,46 +275,104 @@ class LedgerEvent:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "LedgerEvent":
+        payload = _require_mapping(payload, field_name="ledger_event")
         return cls(
-            sequence_id=_require_int(payload["sequence_id"], field_name="sequence_id"),
-            event_id=str(payload["event_id"]),
-            event_class=LedgerEventClass(str(payload["event_class"])),
-            account_id=str(payload["account_id"]),
-            symbol=str(payload["symbol"]),
+            sequence_id=_require_int(
+                _require_present(payload, "sequence_id", field_name="sequence_id"),
+                field_name="sequence_id",
+            ),
+            event_id=_require_non_empty_string(
+                _require_present(payload, "event_id", field_name="event_id"),
+                field_name="event_id",
+            ),
+            event_class=LedgerEventClass(
+                _require_event_class(
+                    _require_present(payload, "event_class", field_name="event_class"),
+                    field_name="event_class",
+                )
+            ),
+            account_id=_require_non_empty_string(
+                _require_present(payload, "account_id", field_name="account_id"),
+                field_name="account_id",
+            ),
+            symbol=_require_non_empty_string(
+                _require_present(payload, "symbol", field_name="symbol"),
+                field_name="symbol",
+            ),
             occurred_at=_normalize_utc_timestamp(
-                payload["occurred_at"],
+                _require_present(payload, "occurred_at", field_name="occurred_at"),
                 field_name="occurred_at",
             ),
-            description=str(payload["description"]),
-            correlation_id=str(payload.get("correlation_id", "")),
-            reference_event_id=(
-                None
-                if payload.get("reference_event_id") is None
-                else str(payload["reference_event_id"])
+            description=_require_non_empty_string(
+                _require_present(payload, "description", field_name="description"),
+                field_name="description",
             ),
-            discrepancy_id=(
-                None if payload.get("discrepancy_id") is None else str(payload["discrepancy_id"])
+            correlation_id=_require_string(
+                _require_present(payload, "correlation_id", field_name="correlation_id"),
+                field_name="correlation_id",
             ),
-            position_delta_contracts=_decimal(payload.get("position_delta_contracts")),
-            cash_delta_usd=_decimal(payload.get("cash_delta_usd")),
-            realized_pnl_delta_usd=_decimal(payload.get("realized_pnl_delta_usd")),
-            fee_delta_usd=_decimal(payload.get("fee_delta_usd")),
-            commission_delta_usd=_decimal(payload.get("commission_delta_usd")),
+            reference_event_id=_optional_non_empty_string(
+                _require_present(payload, "reference_event_id", field_name="reference_event_id"),
+                field_name="reference_event_id",
+            ),
+            discrepancy_id=_optional_non_empty_string(
+                _require_present(payload, "discrepancy_id", field_name="discrepancy_id"),
+                field_name="discrepancy_id",
+            ),
+            position_delta_contracts=_decimal(
+                _require_present(
+                    payload,
+                    "position_delta_contracts",
+                    field_name="position_delta_contracts",
+                )
+            ),
+            cash_delta_usd=_decimal(
+                _require_present(payload, "cash_delta_usd", field_name="cash_delta_usd")
+            ),
+            realized_pnl_delta_usd=_decimal(
+                _require_present(
+                    payload,
+                    "realized_pnl_delta_usd",
+                    field_name="realized_pnl_delta_usd",
+                )
+            ),
+            fee_delta_usd=_decimal(
+                _require_present(payload, "fee_delta_usd", field_name="fee_delta_usd")
+            ),
+            commission_delta_usd=_decimal(
+                _require_present(
+                    payload,
+                    "commission_delta_usd",
+                    field_name="commission_delta_usd",
+                )
+            ),
             authoritative_position_contracts=_decimal_or_none(
-                payload.get("authoritative_position_contracts")
+                _require_present(
+                    payload,
+                    "authoritative_position_contracts",
+                    field_name="authoritative_position_contracts",
+                )
             ),
             authoritative_initial_margin_requirement_usd=_decimal_or_none(
-                payload.get("authoritative_initial_margin_requirement_usd")
+                _require_present(
+                    payload,
+                    "authoritative_initial_margin_requirement_usd",
+                    field_name="authoritative_initial_margin_requirement_usd",
+                )
             ),
             authoritative_maintenance_margin_requirement_usd=_decimal_or_none(
-                payload.get("authoritative_maintenance_margin_requirement_usd")
+                _require_present(
+                    payload,
+                    "authoritative_maintenance_margin_requirement_usd",
+                    field_name="authoritative_maintenance_margin_requirement_usd",
+                )
             ),
-            metadata={
-                str(key): str(value)
-                for key, value in dict(payload.get("metadata", {})).items()
-            },
+            metadata=_require_string_mapping(
+                _require_present(payload, "metadata", field_name="metadata"),
+                field_name="metadata",
+            ),
             schema_version=_require_schema_version(
-                payload.get("schema_version"),
+                _require_present(payload, "schema_version", field_name="schema_version"),
                 label="ledger_event",
             ),
         )
@@ -257,6 +401,7 @@ class LedgerTotals:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "LedgerTotals":
+        payload = _require_mapping(payload, field_name="ledger_totals")
         return cls(
             position_contracts=_decimal(payload["position_contracts"]),
             cash_balance_usd=_decimal(payload["cash_balance_usd"]),
@@ -291,23 +436,37 @@ class BrokerAuthoritativeSnapshot:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "BrokerAuthoritativeSnapshot":
+        payload = _require_mapping(payload, field_name="broker_authoritative_snapshot")
         return cls(
-            position_contracts=_decimal_or_none(payload.get("position_contracts")),
+            position_contracts=_decimal_or_none(
+                _require_present(payload, "position_contracts", field_name="position_contracts")
+            ),
             initial_margin_requirement_usd=_decimal_or_none(
-                payload.get("initial_margin_requirement_usd")
+                _require_present(
+                    payload,
+                    "initial_margin_requirement_usd",
+                    field_name="initial_margin_requirement_usd",
+                )
             ),
             maintenance_margin_requirement_usd=_decimal_or_none(
-                payload.get("maintenance_margin_requirement_usd")
+                _require_present(
+                    payload,
+                    "maintenance_margin_requirement_usd",
+                    field_name="maintenance_margin_requirement_usd",
+                )
             ),
-            position_event_id=(
-                None if payload.get("position_event_id") is None else str(payload["position_event_id"])
+            position_event_id=_optional_non_empty_string(
+                _require_present(payload, "position_event_id", field_name="position_event_id"),
+                field_name="position_event_id",
             ),
-            margin_event_id=(
-                None if payload.get("margin_event_id") is None else str(payload["margin_event_id"])
+            margin_event_id=_optional_non_empty_string(
+                _require_present(payload, "margin_event_id", field_name="margin_event_id"),
+                field_name="margin_event_id",
             ),
             source_timestamp=(
                 None
-                if payload.get("source_timestamp") is None
+                if _require_present(payload, "source_timestamp", field_name="source_timestamp")
+                is None
                 else _normalize_utc_timestamp(
                     payload["source_timestamp"],
                     field_name="source_timestamp",
@@ -341,18 +500,39 @@ class LedgerDifference:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "LedgerDifference":
+        payload = _require_mapping(payload, field_name="ledger_difference")
         return cls(
-            metric=str(payload["metric"]),
-            as_booked=_decimal_or_none(payload.get("as_booked")),
-            as_reconciled=_decimal_or_none(payload.get("as_reconciled")),
-            authoritative=_decimal_or_none(payload.get("authoritative")),
+            metric=_require_non_empty_string(
+                _require_present(payload, "metric", field_name="metric"),
+                field_name="metric",
+            ),
+            as_booked=_decimal_or_none(
+                _require_present(payload, "as_booked", field_name="as_booked")
+            ),
+            as_reconciled=_decimal_or_none(
+                _require_present(payload, "as_reconciled", field_name="as_reconciled")
+            ),
+            authoritative=_decimal_or_none(
+                _require_present(payload, "authoritative", field_name="authoritative")
+            ),
             booked_vs_reconciled_delta=_decimal_or_none(
-                payload.get("booked_vs_reconciled_delta")
+                _require_present(
+                    payload,
+                    "booked_vs_reconciled_delta",
+                    field_name="booked_vs_reconciled_delta",
+                )
             ),
             reconciled_vs_authoritative_delta=_decimal_or_none(
-                payload.get("reconciled_vs_authoritative_delta")
+                _require_present(
+                    payload,
+                    "reconciled_vs_authoritative_delta",
+                    field_name="reconciled_vs_authoritative_delta",
+                )
             ),
-            explanation=str(payload["explanation"]),
+            explanation=_require_non_empty_string(
+                _require_present(payload, "explanation", field_name="explanation"),
+                field_name="explanation",
+            ),
         )
 
 
@@ -375,16 +555,32 @@ class AppendOnlyIntegrityReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "AppendOnlyIntegrityReport":
+        payload = _require_mapping(payload, field_name="append_only_integrity")
         return cls(
-            valid=_require_bool(payload["valid"], field_name="valid"),
-            reason_code=str(payload["reason_code"]),
-            explanation=str(payload["explanation"]),
-            duplicate_event_id=(
-                None if payload.get("duplicate_event_id") is None else str(payload["duplicate_event_id"])
+            valid=_require_bool(
+                _require_present(payload, "valid", field_name="valid"),
+                field_name="valid",
+            ),
+            reason_code=_require_non_empty_string(
+                _require_present(payload, "reason_code", field_name="reason_code"),
+                field_name="reason_code",
+            ),
+            explanation=_require_non_empty_string(
+                _require_present(payload, "explanation", field_name="explanation"),
+                field_name="explanation",
+            ),
+            duplicate_event_id=_optional_non_empty_string(
+                _require_present(payload, "duplicate_event_id", field_name="duplicate_event_id"),
+                field_name="duplicate_event_id",
             ),
             violating_sequence_id=(
                 None
-                if payload.get("violating_sequence_id") is None
+                if _require_present(
+                    payload,
+                    "violating_sequence_id",
+                    field_name="violating_sequence_id",
+                )
+                is None
                 else _require_int(
                     payload["violating_sequence_id"],
                     field_name="violating_sequence_id",
@@ -439,30 +635,69 @@ class LedgerCloseArtifact:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "LedgerCloseArtifact":
+        payload = _require_mapping(payload, field_name="ledger_close_artifact")
         return cls(
-            close_id=str(payload["close_id"]),
-            account_id=str(payload["account_id"]),
-            symbol=str(payload["symbol"]),
+            close_id=_require_non_empty_string(payload["close_id"], field_name="close_id"),
+            account_id=_require_non_empty_string(payload["account_id"], field_name="account_id"),
+            symbol=_require_non_empty_string(payload["symbol"], field_name="symbol"),
             status=_require_close_status(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            append_only_integrity=AppendOnlyIntegrityReport.from_dict(
-                dict(payload["append_only_integrity"])
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
             ),
-            event_classes_present=tuple(str(item) for item in payload["event_classes_present"]),
-            trace_event_ids=tuple(str(item) for item in payload["trace_event_ids"]),
-            as_booked_totals=LedgerTotals.from_dict(dict(payload["as_booked_totals"])),
-            as_reconciled_totals=LedgerTotals.from_dict(dict(payload["as_reconciled_totals"])),
+            append_only_integrity=AppendOnlyIntegrityReport.from_dict(
+                _require_mapping(
+                    payload["append_only_integrity"],
+                    field_name="append_only_integrity",
+                )
+            ),
+            event_classes_present=tuple(
+                _require_event_class(item, field_name=f"event_classes_present[{index}]")
+                for index, item in enumerate(
+                    _require_string_sequence(
+                        payload["event_classes_present"],
+                        field_name="event_classes_present",
+                    )
+                )
+            ),
+            trace_event_ids=_require_string_sequence(
+                payload["trace_event_ids"],
+                field_name="trace_event_ids",
+            ),
+            as_booked_totals=LedgerTotals.from_dict(
+                _require_mapping(payload["as_booked_totals"], field_name="as_booked_totals")
+            ),
+            as_reconciled_totals=LedgerTotals.from_dict(
+                _require_mapping(
+                    payload["as_reconciled_totals"],
+                    field_name="as_reconciled_totals",
+                )
+            ),
             broker_authoritative_snapshot=BrokerAuthoritativeSnapshot.from_dict(
-                dict(payload["broker_authoritative_snapshot"])
+                _require_mapping(
+                    payload["broker_authoritative_snapshot"],
+                    field_name="broker_authoritative_snapshot",
+                )
             ),
             differences=tuple(
-                LedgerDifference.from_dict(dict(item)) for item in payload["differences"]
+                LedgerDifference.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["differences"],
+                    field_name="differences",
+                )
             ),
-            unresolved_discrepancy_ids=tuple(
-                str(item) for item in payload["unresolved_discrepancy_ids"]
+            unresolved_discrepancy_ids=_require_string_sequence(
+                payload["unresolved_discrepancy_ids"],
+                field_name="unresolved_discrepancy_ids",
             ),
-            restatement_event_ids=tuple(str(item) for item in payload["restatement_event_ids"]),
-            explanation=str(payload["explanation"]),
+            restatement_event_ids=_require_string_sequence(
+                payload["restatement_event_ids"],
+                field_name="restatement_event_ids",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
             timestamp=_normalize_utc_timestamp(
                 payload["timestamp"],
                 field_name="timestamp",

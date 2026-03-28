@@ -273,7 +273,7 @@ class LedgerCloseTests(unittest.TestCase):
 
         payload_without_schema = dict(payload)
         payload_without_schema.pop("schema_version")
-        with self.assertRaisesRegex(ValueError, "ledger_event: schema_version must be an integer"):
+        with self.assertRaisesRegex(ValueError, "schema_version missing required field"):
             LedgerEvent.from_dict(payload_without_schema)
 
         payload_with_bool_schema = dict(payload)
@@ -281,10 +281,47 @@ class LedgerCloseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ledger_event: schema_version must be an integer"):
             LedgerEvent.from_dict(payload_with_bool_schema)
 
+        payload_with_unsupported_schema = dict(payload)
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "ledger_event: unsupported schema_version",
+        ):
+            LedgerEvent.from_dict(payload_with_unsupported_schema)
+
     def test_ledger_event_loader_rejects_boolean_sequence_id(self) -> None:
         payload = ledger_event(1, "evt_sequence", LedgerEventClass.BOOKED_FILL).to_dict()
         payload["sequence_id"] = False
         with self.assertRaisesRegex(ValueError, "sequence_id must be an integer"):
+            LedgerEvent.from_dict(payload)
+
+    def test_ledger_event_loader_rejects_non_object_metadata_and_nonfinite_decimals(self) -> None:
+        payload = ledger_event(1, "evt_metadata", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload["metadata"] = {"source": True}
+        with self.assertRaisesRegex(ValueError, "metadata.source must be a string"):
+            LedgerEvent.from_dict(payload)
+
+        payload = ledger_event(1, "evt_decimal", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload["cash_delta_usd"] = "nan"
+        with self.assertRaisesRegex(
+            ValueError,
+            "decimal fields must be finite decimal-compatible values",
+        ):
+            LedgerEvent.from_dict(payload)
+
+    def test_ledger_event_loader_rejects_non_object_payloads(self) -> None:
+        with self.assertRaisesRegex(ValueError, "ledger_event must be an object"):
+            LedgerEvent.from_dict([])
+
+    def test_ledger_event_loader_rejects_missing_serialized_fields(self) -> None:
+        payload = ledger_event(1, "evt_missing", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload.pop("cash_delta_usd")
+        with self.assertRaisesRegex(ValueError, "cash_delta_usd missing required field"):
+            LedgerEvent.from_dict(payload)
+
+        payload = ledger_event(1, "evt_missing_meta", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload.pop("metadata")
+        with self.assertRaisesRegex(ValueError, "metadata missing required field"):
             LedgerEvent.from_dict(payload)
 
     def test_ledger_event_loader_rejects_naive_occurred_at(self) -> None:
@@ -340,6 +377,14 @@ class LedgerCloseTests(unittest.TestCase):
             "ledger_close_artifact: schema_version must be an integer",
         ):
             LedgerCloseArtifact.from_dict(payload_with_bool_schema)
+
+        payload_with_unsupported_schema = dict(payload)
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(
+            ValueError,
+            "ledger_close_artifact: unsupported schema_version",
+        ):
+            LedgerCloseArtifact.from_dict(payload_with_unsupported_schema)
 
     def test_close_artifact_loader_rejects_invalid_status(self) -> None:
         artifact = evaluate_accounting_ledger_close(
@@ -416,6 +461,82 @@ class LedgerCloseTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "source_timestamp must be a timezone-aware ISO-8601 timestamp",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+    def test_close_artifact_loader_rejects_bad_event_class_sequences(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_bad_events",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(1, "evt_fill", LedgerEventClass.BOOKED_FILL),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload["event_classes_present"] = "booked_fill"
+        with self.assertRaisesRegex(
+            ValueError,
+            "event_classes_present must be a sequence of non-empty strings",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+        payload = artifact.to_dict()
+        payload["event_classes_present"] = ["not_a_real_event"]
+        with self.assertRaisesRegex(
+            ValueError,
+            "event_classes_present\\[0\\] must be a valid ledger event class",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+    def test_close_artifact_loader_rejects_missing_nested_nullable_fields(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_missing_nested",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(1, "evt_fill", LedgerEventClass.BOOKED_FILL),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload["append_only_integrity"].pop("duplicate_event_id")
+        with self.assertRaisesRegex(
+            ValueError,
+            "duplicate_event_id missing required field",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+        payload = artifact.to_dict()
+        payload["broker_authoritative_snapshot"].pop("position_event_id")
+        with self.assertRaisesRegex(
+            ValueError,
+            "position_event_id missing required field",
         ):
             LedgerCloseArtifact.from_dict(payload)
 
