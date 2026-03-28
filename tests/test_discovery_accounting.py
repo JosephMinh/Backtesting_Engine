@@ -161,6 +161,84 @@ class DiscoveryAccountingEdgeCaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             DiscoveryAccountingReport.from_json("[]")
 
+    def test_request_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_request: schema_version must be an integer",
+        ):
+            DiscoveryAccountingRequest.from_dict(payload)
+
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "discovery_accounting_request: schema_version must be an integer",
+        ):
+            DiscoveryAccountingRequest.from_dict(payload)
+
+    def test_persisted_bool_and_count_fields_reject_truthy_coercion(self) -> None:
+        with self.assertRaisesRegex(ValueError, "completed must be a boolean"):
+            build_request(
+                {
+                    "null_suite_entries": [
+                        {
+                            "null_model_id": "random_entry",
+                            "study_id": "study-random",
+                            "completed": "true",
+                            "sample_count": 100,
+                            "retained_artifact_ids": ["artifact-random"],
+                            "retained_log_ids": ["log-random"],
+                            "diagnostic_deltas": [
+                                {
+                                    "metric_id": "sharpe",
+                                    "baseline_value": 0.1,
+                                    "observed_value": 0.0,
+                                    "delta_value": -0.1,
+                                    "interpretation": "random baseline",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "promotable_trial_count must be an integer",
+        ):
+            build_request(
+                {
+                    "family_ledger": {
+                        "promotable_trial_count": True,
+                    }
+                }
+            )
+
+    def test_report_loader_rejects_truthy_string_check_results(self) -> None:
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["check_results"][0]["passed"] = "true"
+        with self.assertRaisesRegex(ValueError, "passed must be a boolean"):
+            DiscoveryAccountingReport.from_dict(payload)
+
+    def test_report_loader_rejects_boolean_count_fields(self) -> None:
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["family_promotable_trial_count"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "family_promotable_trial_count must be an integer",
+        ):
+            DiscoveryAccountingReport.from_dict(payload)
+
+        payload = evaluate_discovery_accounting(build_request()).to_dict()
+        payload["program_promotable_trial_count"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "program_promotable_trial_count must be an integer",
+        ):
+            DiscoveryAccountingReport.from_dict(payload)
+
 
 if __name__ == "__main__":
     unittest.main()

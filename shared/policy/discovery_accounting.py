@@ -61,6 +61,24 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
 @unique
 class DiscoveryAccountingStatus(str, Enum):
     PASS = "pass"  # nosec B105 - policy status literal, not a credential
@@ -117,8 +135,8 @@ class NullSuiteEntry:
         return cls(
             null_model_id=str(payload["null_model_id"]),
             study_id=str(payload["study_id"]),
-            completed=bool(payload["completed"]),
-            sample_count=int(payload["sample_count"]),
+            completed=_require_bool(payload["completed"], field_name="completed"),
+            sample_count=_require_int(payload["sample_count"], field_name="sample_count"),
             retained_artifact_ids=tuple(str(item) for item in payload["retained_artifact_ids"]),
             retained_log_ids=tuple(str(item) for item in payload["retained_log_ids"]),
             diagnostic_deltas=tuple(
@@ -152,8 +170,14 @@ class FamilyDiscoveryLedgerEntry:
             family_id=str(payload["family_id"]),
             subfamily_id=str(payload["subfamily_id"]),
             research_run_ids=tuple(str(item) for item in payload["research_run_ids"]),
-            promotable_trial_count=int(payload["promotable_trial_count"]),
-            null_comparison_count=int(payload["null_comparison_count"]),
+            promotable_trial_count=_require_int(
+                payload["promotable_trial_count"],
+                field_name="promotable_trial_count",
+            ),
+            null_comparison_count=_require_int(
+                payload["null_comparison_count"],
+                field_name="null_comparison_count",
+            ),
             historical_data_spend_usd=float(payload["historical_data_spend_usd"]),
             compute_spend_usd=float(payload["compute_spend_usd"]),
             operator_review_hours=float(payload["operator_review_hours"]),
@@ -189,8 +213,14 @@ class ProgramDiscoveryLedger:
                 FamilyDiscoveryLedgerEntry.from_dict(dict(item))
                 for item in payload["family_entries"]
             ),
-            cumulative_promotable_trial_count=int(payload["cumulative_promotable_trial_count"]),
-            cumulative_null_comparison_count=int(payload["cumulative_null_comparison_count"]),
+            cumulative_promotable_trial_count=_require_int(
+                payload["cumulative_promotable_trial_count"],
+                field_name="cumulative_promotable_trial_count",
+            ),
+            cumulative_null_comparison_count=_require_int(
+                payload["cumulative_null_comparison_count"],
+                field_name="cumulative_null_comparison_count",
+            ),
             cumulative_data_spend_usd=float(payload["cumulative_data_spend_usd"]),
             cumulative_compute_spend_usd=float(payload["cumulative_compute_spend_usd"]),
             cumulative_operator_review_hours=float(payload["cumulative_operator_review_hours"]),
@@ -250,7 +280,10 @@ class DiscoveryAccountingRequest:
                 if payload.get("evaluated_at_utc") is None
                 else _normalize_timestamp(str(payload["evaluated_at_utc"]))
             ),
-            schema_version=int(payload.get("schema_version", 1)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="discovery_accounting_request",
+            ),
         )
 
     def to_json(self) -> str:
@@ -278,7 +311,7 @@ class DiscoveryAccountingCheckResult:
     def from_dict(cls, payload: dict[str, Any]) -> "DiscoveryAccountingCheckResult":
         return cls(
             check_id=str(payload["check_id"]),
-            passed=bool(payload["passed"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
             reason_code=str(payload["reason_code"]),
             diagnostic=str(payload["diagnostic"]),
             evidence=dict(payload.get("evidence", {})),
@@ -364,9 +397,15 @@ class DiscoveryAccountingReport:
             exploratory_budget_limit_usd=float(payload["exploratory_budget_limit_usd"]),
             continuation_budget_limit_usd=float(payload["continuation_budget_limit_usd"]),
             family_total_spend_usd=float(payload["family_total_spend_usd"]),
-            family_promotable_trial_count=int(payload["family_promotable_trial_count"]),
+            family_promotable_trial_count=_require_int(
+                payload["family_promotable_trial_count"],
+                field_name="family_promotable_trial_count",
+            ),
             program_total_spend_usd=float(payload["program_total_spend_usd"]),
-            program_promotable_trial_count=int(payload["program_promotable_trial_count"]),
+            program_promotable_trial_count=_require_int(
+                payload["program_promotable_trial_count"],
+                field_name="program_promotable_trial_count",
+            ),
             remaining_exploratory_budget_usd=float(
                 payload["remaining_exploratory_budget_usd"]
             ),
