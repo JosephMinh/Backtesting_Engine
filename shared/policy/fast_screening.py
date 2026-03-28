@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -72,6 +73,108 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _parse_utc(value: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
+    if not parsed:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return parsed
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_int(
+    value: object,
+    *,
+    field_name: str,
+    minimum: int | None = None,
+) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if minimum is not None and value < minimum:
+        qualifier = "positive" if minimum == 1 else f">= {minimum}"
+        raise ValueError(f"{field_name}: must be {qualifier}")
+    return value
+
+
+def _require_finite_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be numeric")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name}: must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be finite")
+    return parsed
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of strings")
+    return tuple(_require_non_empty_string(item, field_name=field_name) for item in value)
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of objects")
+    return tuple(_require_mapping(item, field_name=field_name) for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _require_int(value, field_name=field_name, minimum=1)
+    if parsed != SUPPORTED_FAST_SCREENING_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {parsed}; "
+            f"expected {SUPPORTED_FAST_SCREENING_SCHEMA_VERSION}"
+        )
+    return parsed
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
+
+
 @unique
 class FastScreeningStatus(str, Enum):
     PASS = "pass"
@@ -113,23 +216,59 @@ class FastScreeningEquivalenceEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningEquivalenceEvidence":
+        payload = _require_mapping(payload, field_name="fast_screening_equivalence")
         return cls(
-            study_id=str(payload["study_id"]),
-            compared_engine=str(payload["compared_engine"]),
-            passed=bool(payload["passed"]),
-            checked_dimensions=tuple(str(item) for item in payload["checked_dimensions"]),
-            coverage_seed_count=int(payload["coverage_seed_count"]),
-            retained_run_log_ids=tuple(str(item) for item in payload["retained_run_log_ids"]),
-            retained_artifact_ids=tuple(str(item) for item in payload["retained_artifact_ids"]),
-            expected_vs_actual_diff_ids=tuple(
-                str(item) for item in payload["expected_vs_actual_diff_ids"]
+            study_id=_require_non_empty_string(payload["study_id"], field_name="study_id"),
+            compared_engine=_require_non_empty_string(
+                payload["compared_engine"],
+                field_name="compared_engine",
             ),
-            max_signal_mismatch_rate=float(payload["max_signal_mismatch_rate"]),
-            allowed_signal_mismatch_rate=float(payload["allowed_signal_mismatch_rate"]),
-            max_fill_rate_delta=float(payload["max_fill_rate_delta"]),
-            allowed_fill_rate_delta=float(payload["allowed_fill_rate_delta"]),
-            max_pnl_drift_bps=float(payload["max_pnl_drift_bps"]),
-            allowed_pnl_drift_bps=float(payload["allowed_pnl_drift_bps"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            checked_dimensions=_require_string_sequence(
+                payload["checked_dimensions"],
+                field_name="checked_dimensions",
+            ),
+            coverage_seed_count=_require_int(
+                payload["coverage_seed_count"],
+                field_name="coverage_seed_count",
+                minimum=1,
+            ),
+            retained_run_log_ids=_require_string_sequence(
+                payload["retained_run_log_ids"],
+                field_name="retained_run_log_ids",
+            ),
+            retained_artifact_ids=_require_string_sequence(
+                payload["retained_artifact_ids"],
+                field_name="retained_artifact_ids",
+            ),
+            expected_vs_actual_diff_ids=_require_string_sequence(
+                payload["expected_vs_actual_diff_ids"],
+                field_name="expected_vs_actual_diff_ids",
+            ),
+            max_signal_mismatch_rate=_require_finite_float(
+                payload["max_signal_mismatch_rate"],
+                field_name="max_signal_mismatch_rate",
+            ),
+            allowed_signal_mismatch_rate=_require_finite_float(
+                payload["allowed_signal_mismatch_rate"],
+                field_name="allowed_signal_mismatch_rate",
+            ),
+            max_fill_rate_delta=_require_finite_float(
+                payload["max_fill_rate_delta"],
+                field_name="max_fill_rate_delta",
+            ),
+            allowed_fill_rate_delta=_require_finite_float(
+                payload["allowed_fill_rate_delta"],
+                field_name="allowed_fill_rate_delta",
+            ),
+            max_pnl_drift_bps=_require_finite_float(
+                payload["max_pnl_drift_bps"],
+                field_name="max_pnl_drift_bps",
+            ),
+            allowed_pnl_drift_bps=_require_finite_float(
+                payload["allowed_pnl_drift_bps"],
+                field_name="allowed_pnl_drift_bps",
+            ),
         )
 
     @classmethod
@@ -156,16 +295,39 @@ class FastScreeningGovernance:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningGovernance":
+        payload = _require_mapping(payload, field_name="fast_screening_governance")
         return cls(
-            may_inform_continuation=bool(payload["may_inform_continuation"]),
-            may_inform_abandonment=bool(payload["may_inform_abandonment"]),
-            promotion_blocked=bool(payload["promotion_blocked"]),
-            requires_full_nautilus_screening=bool(payload["requires_full_nautilus_screening"]),
-            requires_full_validation=bool(payload["requires_full_validation"]),
-            requires_full_stress=bool(payload["requires_full_stress"]),
-            requires_null_comparison=bool(payload["requires_null_comparison"]),
-            other_allowed_actions=tuple(
-                str(item) for item in payload.get("other_allowed_actions", ())
+            may_inform_continuation=_require_bool(
+                payload["may_inform_continuation"],
+                field_name="may_inform_continuation",
+            ),
+            may_inform_abandonment=_require_bool(
+                payload["may_inform_abandonment"],
+                field_name="may_inform_abandonment",
+            ),
+            promotion_blocked=_require_bool(
+                payload["promotion_blocked"],
+                field_name="promotion_blocked",
+            ),
+            requires_full_nautilus_screening=_require_bool(
+                payload["requires_full_nautilus_screening"],
+                field_name="requires_full_nautilus_screening",
+            ),
+            requires_full_validation=_require_bool(
+                payload["requires_full_validation"],
+                field_name="requires_full_validation",
+            ),
+            requires_full_stress=_require_bool(
+                payload["requires_full_stress"],
+                field_name="requires_full_stress",
+            ),
+            requires_null_comparison=_require_bool(
+                payload["requires_null_comparison"],
+                field_name="requires_null_comparison",
+            ),
+            other_allowed_actions=_require_string_sequence(
+                payload.get("other_allowed_actions", ()),
+                field_name="other_allowed_actions",
             ),
         )
 
@@ -201,27 +363,62 @@ class FastScreeningRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningRequest":
+        payload = _require_mapping(payload, field_name="fast_screening_request")
+        if "schema_version" not in payload:
+            raise ValueError("schema_version: missing required field")
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            strategy_class_id=str(payload["strategy_class_id"]),
-            fast_path_engine=str(payload["fast_path_engine"]),
-            decision_basis=str(payload["decision_basis"]),
-            bar_interval_seconds=int(payload["bar_interval_seconds"]),
-            order_semantics=tuple(str(item) for item in payload["order_semantics"]),
-            order_management_mode=str(payload["order_management_mode"]),
-            requires_passive_queue_dependence=bool(
-                payload["requires_passive_queue_dependence"]
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
             ),
-            depends_on_portability_sensitive_microstructure=bool(
+            strategy_class_id=_require_non_empty_string(
+                payload["strategy_class_id"],
+                field_name="strategy_class_id",
+            ),
+            fast_path_engine=_require_non_empty_string(
+                payload["fast_path_engine"],
+                field_name="fast_path_engine",
+            ),
+            decision_basis=_require_non_empty_string(
+                payload["decision_basis"],
+                field_name="decision_basis",
+            ),
+            bar_interval_seconds=_require_int(
+                payload["bar_interval_seconds"],
+                field_name="bar_interval_seconds",
+                minimum=1,
+            ),
+            order_semantics=_require_string_sequence(
+                payload["order_semantics"],
+                field_name="order_semantics",
+            ),
+            order_management_mode=_require_non_empty_string(
+                payload["order_management_mode"],
+                field_name="order_management_mode",
+            ),
+            requires_passive_queue_dependence=_require_bool(
+                payload["requires_passive_queue_dependence"]
+                ,
+                field_name="requires_passive_queue_dependence",
+            ),
+            depends_on_portability_sensitive_microstructure=_require_bool(
                 payload["depends_on_portability_sensitive_microstructure"]
+                ,
+                field_name="depends_on_portability_sensitive_microstructure",
             ),
             equivalence_evidence=FastScreeningEquivalenceEvidence.from_dict(
-                dict(payload["equivalence_evidence"])
+                _require_mapping(
+                    payload["equivalence_evidence"],
+                    field_name="equivalence_evidence",
+                )
             ),
-            governance=FastScreeningGovernance.from_dict(dict(payload["governance"])),
-            schema_version=int(
-                payload.get("schema_version", SUPPORTED_FAST_SCREENING_SCHEMA_VERSION)
+            governance=FastScreeningGovernance.from_dict(
+                _require_mapping(payload["governance"], field_name="governance")
+            ),
+            schema_version=_require_schema_version(
+                payload["schema_version"],
+                field_name="schema_version",
             ),
         )
 
@@ -247,6 +444,29 @@ class FastScreeningCheckResult:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningCheckResult":
+        payload = _require_mapping(payload, field_name="fast_screening_check_result")
+        evidence = _require_mapping(payload.get("evidence", {}), field_name="evidence")
+        return cls(
+            check_id=_require_enum_value(
+                payload["check_id"],
+                field_name="check_id",
+                enum_type=FastScreeningCheckID,
+                description="fast-screening check id",
+            ),
+            check_name=_require_non_empty_string(payload["check_name"], field_name="check_name"),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            diagnostic=_require_non_empty_string(payload["diagnostic"], field_name="diagnostic"),
+            evidence=dict(evidence),
+            timestamp=_normalize_utc_timestamp(payload["timestamp"], field_name="timestamp"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "FastScreeningCheckResult":
+        return cls.from_dict(_decode_json_object(payload, label="fast_screening_check_result"))
 
 
 @dataclass(frozen=True)
@@ -278,6 +498,97 @@ class FastScreeningReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningReport":
+        payload = _require_mapping(payload, field_name="fast_screening_report")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(payload["candidate_id"], field_name="candidate_id"),
+            strategy_class_id=_require_non_empty_string(
+                payload["strategy_class_id"],
+                field_name="strategy_class_id",
+            ),
+            fast_path_engine=_require_non_empty_string(
+                payload["fast_path_engine"],
+                field_name="fast_path_engine",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=FastScreeningStatus,
+                description="fast-screening status",
+            ),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            fast_path_eligible=_require_bool(
+                payload["fast_path_eligible"],
+                field_name="fast_path_eligible",
+            ),
+            equivalence_certified=_require_bool(
+                payload["equivalence_certified"],
+                field_name="equivalence_certified",
+            ),
+            promotion_blocked=_require_bool(
+                payload["promotion_blocked"],
+                field_name="promotion_blocked",
+            ),
+            admissible_research_actions=list(
+                _require_string_sequence(
+                    payload["admissible_research_actions"],
+                    field_name="admissible_research_actions",
+                )
+            ),
+            required_follow_on_workflow=list(
+                _require_string_sequence(
+                    payload["required_follow_on_workflow"],
+                    field_name="required_follow_on_workflow",
+                )
+            ),
+            decision_trace=[
+                FastScreeningCheckResult.from_dict(item).to_dict()
+                for item in _require_object_sequence(
+                    payload["decision_trace"],
+                    field_name="decision_trace",
+                )
+            ],
+            failed_check_ids=list(
+                _require_string_sequence(
+                    payload["failed_check_ids"],
+                    field_name="failed_check_ids",
+                )
+            ),
+            retained_run_log_ids=list(
+                _require_string_sequence(
+                    payload["retained_run_log_ids"],
+                    field_name="retained_run_log_ids",
+                )
+            ),
+            retained_artifact_ids=list(
+                _require_string_sequence(
+                    payload["retained_artifact_ids"],
+                    field_name="retained_artifact_ids",
+                )
+            ),
+            expected_vs_actual_diff_ids=list(
+                _require_string_sequence(
+                    payload["expected_vs_actual_diff_ids"],
+                    field_name="expected_vs_actual_diff_ids",
+                )
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(payload["timestamp"], field_name="timestamp"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "FastScreeningReport":
+        return cls.from_dict(_decode_json_object(payload, label="fast_screening_report"))
 
 
 def _admissible_actions(governance: FastScreeningGovernance) -> list[str]:

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from shared.policy.fast_screening import (
     REQUIRED_FULL_NAUTILUS_FOLLOW_ON,
     FastScreeningCheckID,
+    FastScreeningReport,
     FastScreeningRequest,
     FastScreeningStatus,
     VALIDATION_ERRORS,
@@ -34,6 +36,52 @@ class FastScreeningContractTests(unittest.TestCase):
     def test_request_round_trip_serialization_preserves_payload(self) -> None:
         request = FastScreeningRequest.from_dict(load_cases()["cases"][0]["request"])
         self.assertEqual(request, FastScreeningRequest.from_json(request.to_json()))
+
+    def test_request_loader_rejects_invalid_boundary_values(self) -> None:
+        base_payload = deepcopy(load_cases()["cases"][0]["request"])
+        invalid_cases = (
+            (
+                "non_object_payload",
+                [],
+                "fast_screening_request: must be an object",
+            ),
+            (
+                "equivalence_passed_truthy_string",
+                lambda payload: payload["equivalence_evidence"].__setitem__("passed", "true"),
+                "passed: must be boolean",
+            ),
+            (
+                "coverage_seed_count_bool",
+                lambda payload: payload["equivalence_evidence"].__setitem__("coverage_seed_count", True),
+                "coverage_seed_count: must be an integer",
+            ),
+            (
+                "other_allowed_actions_string",
+                lambda payload: payload["governance"].__setitem__("other_allowed_actions", "continue"),
+                "other_allowed_actions: must be a list of strings",
+            ),
+            (
+                "schema_version_unsupported",
+                lambda payload: payload.__setitem__("schema_version", 2),
+                "schema_version: unsupported schema version 2; expected 1",
+            ),
+            (
+                "schema_version_missing",
+                lambda payload: payload.pop("schema_version"),
+                "schema_version: missing required field",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                if case_id == "non_object_payload":
+                    with self.assertRaisesRegex(ValueError, error):
+                        FastScreeningRequest.from_dict(mutate)
+                    continue
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    FastScreeningRequest.from_dict(payload)
 
     def test_fixture_cases_emit_expected_reports(self) -> None:
         for case in load_cases()["cases"]:
@@ -110,6 +158,51 @@ class FastScreeningContractTests(unittest.TestCase):
         self.assertTrue(report.retained_artifact_ids)
         self.assertTrue(report.expected_vs_actual_diff_ids)
         self.assertIn("Nautilus", report.explanation)
+
+    def test_report_round_trip_preserves_emitted_shape(self) -> None:
+        request = FastScreeningRequest.from_dict(load_cases()["cases"][0]["request"])
+        report = evaluate_fast_screening_path(request)
+        self.assertEqual(
+            report.to_dict(),
+            FastScreeningReport.from_json(report.to_json()).to_dict(),
+        )
+
+    def test_report_loader_rejects_invalid_boundary_values(self) -> None:
+        request = FastScreeningRequest.from_dict(load_cases()["cases"][0]["request"])
+        base_payload = evaluate_fast_screening_path(request).to_dict()
+        invalid_cases = (
+            (
+                "non_object_payload",
+                "[]",
+                "fast_screening_report: expected JSON object",
+            ),
+            (
+                "status_invalid",
+                lambda payload: payload.__setitem__("status", "ship"),
+                "status: must be a valid fast-screening status",
+            ),
+            (
+                "decision_trace_string",
+                lambda payload: payload.__setitem__("decision_trace", "trace"),
+                "decision_trace: must be a list of objects",
+            ),
+            (
+                "timestamp_naive",
+                lambda payload: payload.__setitem__("timestamp", "2026-03-28T00:00:00"),
+                "timestamp: must be timezone-aware",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                if case_id == "non_object_payload":
+                    with self.assertRaisesRegex(ValueError, error):
+                        FastScreeningReport.from_json(mutate)
+                    continue
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    FastScreeningReport.from_dict(payload)
 
     def test_invalid_request_shape_returns_invalid_status(self) -> None:
         request = FastScreeningRequest.from_dict(load_cases()["cases"][0]["request"])

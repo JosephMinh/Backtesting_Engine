@@ -55,7 +55,8 @@
           "requires_full_stress": true,
           "requires_null_comparison": true,
           "other_allowed_actions": []
-        }
+        },
+        "schema_version": 1
       },
       "expected_status": "pass",
       "expected_reason_code": "FAST_SCREENING_APPROVED",
@@ -121,7 +122,8 @@
           "requires_full_stress": true,
           "requires_null_comparison": true,
           "other_allowed_actions": []
-        }
+        },
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "FAST_SCREENING_BLOCKED",
@@ -183,7 +185,8 @@
           "requires_full_stress": true,
           "requires_null_comparison": true,
           "other_allowed_actions": []
-        }
+        },
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "FAST_SCREENING_BLOCKED",
@@ -253,7 +256,8 @@
           "other_allowed_actions": [
             "promotion"
           ]
-        }
+        },
+        "schema_version": 1
       },
       "expected_status": "violation",
       "expected_reason_code": "FAST_SCREENING_BLOCKED",
