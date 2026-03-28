@@ -103,7 +103,8 @@
         "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-001",
         "batch_reason_bundle": [
           "local_search_frontier_failed_robustness"
-        ]
+        ],
+        "schema_version": 1
       },
       "expected": {
         "status": "pass",
@@ -210,7 +211,8 @@
         "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-002",
         "batch_reason_bundle": [
           "robustness_reject"
-        ]
+        ],
+        "schema_version": 1
       },
       "expected": {
         "status": "invalid",
@@ -318,7 +320,8 @@
         "live_kernel_hash": "sha256:kernel-live",
         "replay_manifest_id": "replay-manifest-003",
         "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-003",
-        "batch_reason_bundle": []
+        "batch_reason_bundle": [],
+        "schema_version": 1
       },
       "expected": {
         "status": "violation",
@@ -441,7 +444,8 @@
         "replay_command": "uv run python -m python.research.replay --manifest replay-manifest-004",
         "batch_reason_bundle": [
           "freeze_candidate_bundle_ready"
-        ]
+        ],
+        "schema_version": 1
       },
       "expected": {
         "status": "pass",

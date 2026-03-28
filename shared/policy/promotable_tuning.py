@@ -93,6 +93,126 @@ def _utc_now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_present(payload: dict[str, object], *, field_name: str) -> object:
+    if field_name not in payload:
+        raise ValueError(f"{field_name} field is required")
+    return payload[field_name]
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_object_sequence(
+    value: object,
+    *,
+    field_name: str,
+) -> tuple[dict[str, object], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of objects")
+    return tuple(
+        _require_mapping(item, field_name=f"{field_name}[]")
+        for item in value
+    )
+
+
+def _require_boolean(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be a boolean")
+    return value
+
+
+def _require_integer(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    return value
+
+
+def _require_supported_schema_version(value: object, *, field_name: str) -> int:
+    version = _require_integer(value, field_name=field_name)
+    if version != SUPPORTED_PROMOTABLE_TUNING_SCHEMA_VERSION:
+        raise ValueError(f"{field_name}: unsupported schema_version")
+    return version
+
+
+def _require_number_or_none(value: object, *, field_name: str) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{field_name}: must be numeric or null")
+    return float(value)
+
+
+def _require_timestamp(value: object, *, field_name: str) -> str:
+    try:
+        normalized = datetime.datetime.fromisoformat(
+            _require_non_empty_string(value, field_name=field_name).replace("Z", "+00:00")
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name}: must be timezone-aware and ISO-8601 compatible") from exc
+    if normalized.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware and ISO-8601 compatible")
+    return normalized.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_tuning_stage(value: object, *, field_name: str) -> TuningStage:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid tuning stage")
+    try:
+        return TuningStage(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid tuning stage") from exc
+
+
+def _require_batch_outcome(value: object, *, field_name: str) -> TuningBatchOutcome:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid tuning batch outcome")
+    try:
+        return TuningBatchOutcome(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid tuning batch outcome") from exc
+
+
+def _require_trial_disposition(value: object, *, field_name: str) -> TrialDisposition:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid trial disposition")
+    try:
+        return TrialDisposition(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid trial disposition") from exc
+
+
+def _require_promotable_status(value: object, *, field_name: str) -> PromotableTuningStatus:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid promotable tuning status")
+    try:
+        return PromotableTuningStatus(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid promotable tuning status") from exc
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, Enum):
         return value.value
@@ -144,23 +264,43 @@ class PromotableTrialRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> PromotableTrialRecord:
-        objective_value = payload.get("objective_value")
+        payload = _require_mapping(payload, field_name="promotable_trial_record")
         return cls(
-            trial_id=str(payload["trial_id"]),
-            parameter_reference_id=str(payload["parameter_reference_id"]),
-            seed=int(payload["seed"]),
-            objective_definition=str(payload["objective_definition"]),
-            objective_value=(
-                None if objective_value is None else float(objective_value)
+            trial_id=_require_non_empty_string(
+                _require_present(payload, field_name="trial_id"),
+                field_name="trial_id",
             ),
-            disposition=TrialDisposition(str(payload["disposition"])),
+            parameter_reference_id=_require_non_empty_string(
+                _require_present(payload, field_name="parameter_reference_id"),
+                field_name="parameter_reference_id",
+            ),
+            seed=_require_integer(
+                _require_present(payload, field_name="seed"),
+                field_name="seed",
+            ),
+            objective_definition=_require_non_empty_string(
+                _require_present(payload, field_name="objective_definition"),
+                field_name="objective_definition",
+            ),
+            objective_value=_require_number_or_none(
+                _require_present(payload, field_name="objective_value"),
+                field_name="objective_value",
+            ),
+            disposition=_require_trial_disposition(
+                _require_present(payload, field_name="disposition"),
+                field_name="disposition",
+            ),
             pruning_reason=(
                 None
                 if payload.get("pruning_reason") is None
-                else str(payload["pruning_reason"])
+                else _require_non_empty_string(
+                    payload["pruning_reason"],
+                    field_name="pruning_reason",
+                )
             ),
-            retained_artifact_digests=tuple(
-                str(item) for item in payload.get("retained_artifact_digests", [])
+            retained_artifact_digests=_require_string_sequence(
+                payload.get("retained_artifact_digests", []),
+                field_name="retained_artifact_digests",
             ),
         )
 
@@ -214,53 +354,115 @@ class PromotableTuningRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> PromotableTuningRequest:
+        payload = _require_mapping(payload, field_name="promotable_tuning_request")
         return cls(
-            evaluation_id=str(payload["evaluation_id"]),
-            family_id=str(payload["family_id"]),
-            subfamily_id=str(payload["subfamily_id"]),
-            stage=TuningStage(str(payload["stage"])),
+            evaluation_id=_require_non_empty_string(
+                _require_present(payload, field_name="evaluation_id"),
+                field_name="evaluation_id",
+            ),
+            family_id=_require_non_empty_string(
+                _require_present(payload, field_name="family_id"),
+                field_name="family_id",
+            ),
+            subfamily_id=_require_non_empty_string(
+                _require_present(payload, field_name="subfamily_id"),
+                field_name="subfamily_id",
+            ),
+            stage=_require_tuning_stage(
+                _require_present(payload, field_name="stage"),
+                field_name="stage",
+            ),
             continuation_decision=FamilyDecisionRecord.from_dict(
-                dict(payload["continuation_decision"])
+                _require_mapping(
+                    _require_present(payload, field_name="continuation_decision"),
+                    field_name="continuation_decision",
+                )
             ),
-            research_run=ResearchRunRecord.from_dict(dict(payload["research_run"])),
+            research_run=ResearchRunRecord.from_dict(
+                _require_mapping(
+                    _require_present(payload, field_name="research_run"),
+                    field_name="research_run",
+                )
+            ),
             trials=tuple(
-                PromotableTrialRecord.from_dict(dict(item))
-                for item in payload["trials"]
+                PromotableTrialRecord.from_dict(item)
+                for item in _require_object_sequence(
+                    _require_present(payload, field_name="trials"),
+                    field_name="trials",
+                )
             ),
-            batch_outcome=TuningBatchOutcome(str(payload["batch_outcome"])),
-            structured_log_artifact_digests=tuple(
-                str(item) for item in payload.get("structured_log_artifact_digests", [])
+            batch_outcome=_require_batch_outcome(
+                _require_present(payload, field_name="batch_outcome"),
+                field_name="batch_outcome",
+            ),
+            structured_log_artifact_digests=_require_string_sequence(
+                payload.get("structured_log_artifact_digests", []),
+                field_name="structured_log_artifact_digests",
             ),
             prior_completed_stages=tuple(
-                TuningStage(str(item))
+                _require_tuning_stage(item, field_name="prior_completed_stages[]")
                 for item in payload.get("prior_completed_stages", [])
             ),
-            live_eligible=bool(payload.get("live_eligible", True)),
-            deep_promotable_tuning=bool(payload.get("deep_promotable_tuning", False)),
+            live_eligible=(
+                True
+                if payload.get("live_eligible") is None
+                else _require_boolean(payload["live_eligible"], field_name="live_eligible")
+            ),
+            deep_promotable_tuning=(
+                False
+                if payload.get("deep_promotable_tuning") is None
+                else _require_boolean(
+                    payload["deep_promotable_tuning"],
+                    field_name="deep_promotable_tuning",
+                )
+            ),
             real_region_reference=(
                 None
                 if payload.get("real_region_reference") is None
-                else str(payload["real_region_reference"])
+                else _require_non_empty_string(
+                    payload["real_region_reference"],
+                    field_name="real_region_reference",
+                )
             ),
-            research_kernel_hash=str(payload.get("research_kernel_hash", "")),
-            live_kernel_hash=str(payload.get("live_kernel_hash", "")),
+            research_kernel_hash=(
+                ""
+                if payload.get("research_kernel_hash") is None
+                else _require_non_empty_string(
+                    payload["research_kernel_hash"],
+                    field_name="research_kernel_hash",
+                )
+            ),
+            live_kernel_hash=(
+                ""
+                if payload.get("live_kernel_hash") is None
+                else _require_non_empty_string(
+                    payload["live_kernel_hash"],
+                    field_name="live_kernel_hash",
+                )
+            ),
             replay_manifest_id=(
                 None
                 if payload.get("replay_manifest_id") is None
-                else str(payload["replay_manifest_id"])
+                else _require_non_empty_string(
+                    payload["replay_manifest_id"],
+                    field_name="replay_manifest_id",
+                )
             ),
             replay_command=(
                 None
                 if payload.get("replay_command") is None
-                else str(payload["replay_command"])
-            ),
-            batch_reason_bundle=tuple(
-                str(item) for item in payload.get("batch_reason_bundle", [])
-            ),
-            schema_version=int(
-                payload.get(
-                    "schema_version", SUPPORTED_PROMOTABLE_TUNING_SCHEMA_VERSION
+                else _require_non_empty_string(
+                    payload["replay_command"],
+                    field_name="replay_command",
                 )
+            ),
+            batch_reason_bundle=_require_string_sequence(
+                payload.get("batch_reason_bundle", []),
+                field_name="batch_reason_bundle",
+            ),
+            schema_version=_require_supported_schema_version(
+                _require_present(payload, field_name="schema_version"),
+                field_name="schema_version",
             ),
         )
 
@@ -293,12 +495,28 @@ class PromotableTuningCheckResult:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> PromotableTuningCheckResult:
+        payload = _require_mapping(payload, field_name="promotable_tuning_check_result")
         return cls(
-            check_id=str(payload["check_id"]),
-            passed=bool(payload["passed"]),
-            reason_code=str(payload["reason_code"]),
-            explanation=str(payload["explanation"]),
-            context=dict(payload.get("context", {})),
+            check_id=_require_non_empty_string(
+                _require_present(payload, field_name="check_id"),
+                field_name="check_id",
+            ),
+            passed=_require_boolean(
+                _require_present(payload, field_name="passed"),
+                field_name="passed",
+            ),
+            reason_code=_require_non_empty_string(
+                _require_present(payload, field_name="reason_code"),
+                field_name="reason_code",
+            ),
+            explanation=_require_non_empty_string(
+                _require_present(payload, field_name="explanation"),
+                field_name="explanation",
+            ),
+            context=_require_mapping(
+                _require_present(payload, field_name="context"),
+                field_name="context",
+            ),
         )
 
 
@@ -351,40 +569,93 @@ class PromotableTuningReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> PromotableTuningReport:
-        finalist_trial_id = payload.get("finalist_trial_id")
+        payload = _require_mapping(payload, field_name="promotable_tuning_report")
         return cls(
-            evaluation_id=str(payload["evaluation_id"]),
-            family_id=str(payload["family_id"]),
-            subfamily_id=str(payload["subfamily_id"]),
-            stage=TuningStage(str(payload["stage"])),
-            status=PromotableTuningStatus(str(payload["status"])),
-            batch_outcome=TuningBatchOutcome(str(payload["batch_outcome"])),
-            continuation_approved=bool(payload["continuation_approved"]),
-            shared_kernel_gate_required=bool(payload["shared_kernel_gate_required"]),
-            shared_kernel_gate_passed=bool(payload["shared_kernel_gate_passed"]),
-            research_run_recorded=bool(payload["research_run_recorded"]),
-            replayable=bool(payload["replayable"]),
-            promotable_trial_ids=tuple(
-                str(item) for item in payload["promotable_trial_ids"]
+            evaluation_id=_require_non_empty_string(
+                _require_present(payload, field_name="evaluation_id"),
+                field_name="evaluation_id",
             ),
-            pruned_trial_ids=tuple(str(item) for item in payload["pruned_trial_ids"]),
+            family_id=_require_non_empty_string(
+                _require_present(payload, field_name="family_id"),
+                field_name="family_id",
+            ),
+            subfamily_id=_require_non_empty_string(
+                _require_present(payload, field_name="subfamily_id"),
+                field_name="subfamily_id",
+            ),
+            stage=_require_tuning_stage(
+                _require_present(payload, field_name="stage"),
+                field_name="stage",
+            ),
+            status=_require_promotable_status(
+                _require_present(payload, field_name="status"),
+                field_name="status",
+            ),
+            batch_outcome=_require_batch_outcome(
+                _require_present(payload, field_name="batch_outcome"),
+                field_name="batch_outcome",
+            ),
+            continuation_approved=_require_boolean(
+                _require_present(payload, field_name="continuation_approved"),
+                field_name="continuation_approved",
+            ),
+            shared_kernel_gate_required=_require_boolean(
+                _require_present(payload, field_name="shared_kernel_gate_required"),
+                field_name="shared_kernel_gate_required",
+            ),
+            shared_kernel_gate_passed=_require_boolean(
+                _require_present(payload, field_name="shared_kernel_gate_passed"),
+                field_name="shared_kernel_gate_passed",
+            ),
+            research_run_recorded=_require_boolean(
+                _require_present(payload, field_name="research_run_recorded"),
+                field_name="research_run_recorded",
+            ),
+            replayable=_require_boolean(
+                _require_present(payload, field_name="replayable"),
+                field_name="replayable",
+            ),
+            promotable_trial_ids=_require_string_sequence(
+                _require_present(payload, field_name="promotable_trial_ids"),
+                field_name="promotable_trial_ids",
+            ),
+            pruned_trial_ids=_require_string_sequence(
+                _require_present(payload, field_name="pruned_trial_ids"),
+                field_name="pruned_trial_ids",
+            ),
             finalist_trial_id=(
-                None if finalist_trial_id is None else str(finalist_trial_id)
+                None
+                if _require_present(payload, field_name="finalist_trial_id") is None
+                else _require_non_empty_string(
+                    payload["finalist_trial_id"],
+                    field_name="finalist_trial_id",
+                )
             ),
-            structured_log_artifact_digests=tuple(
-                str(item) for item in payload["structured_log_artifact_digests"]
+            structured_log_artifact_digests=_require_string_sequence(
+                _require_present(payload, field_name="structured_log_artifact_digests"),
+                field_name="structured_log_artifact_digests",
             ),
-            batch_reason_bundle=tuple(
-                str(item) for item in payload.get("batch_reason_bundle", [])
+            batch_reason_bundle=_require_string_sequence(
+                _require_present(payload, field_name="batch_reason_bundle"),
+                field_name="batch_reason_bundle",
             ),
             check_results=tuple(
-                PromotableTuningCheckResult.from_dict(dict(item))
-                for item in payload["check_results"]
+                PromotableTuningCheckResult.from_dict(item)
+                for item in _require_object_sequence(
+                    _require_present(payload, field_name="check_results"),
+                    field_name="check_results",
+                )
             ),
             research_run_report=ResearchStateMutationReport.from_dict(
-                dict(payload["research_run_report"])
+                _require_mapping(
+                    _require_present(payload, field_name="research_run_report"),
+                    field_name="research_run_report",
+                )
             ),
-            generated_at_utc=str(payload["generated_at_utc"]),
+            generated_at_utc=_require_timestamp(
+                _require_present(payload, field_name="generated_at_utc"),
+                field_name="generated_at_utc",
+            ),
         )
 
     def to_json(self) -> str:
