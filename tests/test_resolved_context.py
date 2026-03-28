@@ -377,6 +377,113 @@ class ResolvedContextContractTest(unittest.TestCase):
             mutable_execution_report.reason_code,
         )
 
+    def test_bundle_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = make_bundle().to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved_context_bundle: schema_version must be an integer",
+        ):
+            ResolvedContextBundle.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "resolved_context_bundle: schema_version must be an integer",
+        ):
+            ResolvedContextBundle.from_dict(payload_with_bool_schema)
+
+    def test_bundle_loader_rejects_noncanonical_observation_cutoff(self) -> None:
+        payload = make_bundle().to_dict()
+
+        payload_with_bool_cutoff = dict(payload)
+        payload_with_bool_cutoff["observation_cutoff_utc"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "observation_cutoff_utc must be a timezone-aware ISO-8601 timestamp",
+        ):
+            ResolvedContextBundle.from_dict(payload_with_bool_cutoff)
+
+        payload_with_naive_cutoff = dict(payload)
+        payload_with_naive_cutoff["observation_cutoff_utc"] = "2026-03-01T00:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "observation_cutoff_utc must be a timezone-aware ISO-8601 timestamp",
+        ):
+            ResolvedContextBundle.from_dict(payload_with_naive_cutoff)
+
+    def test_execution_profile_loader_rejects_truthy_boolean_coercions(self) -> None:
+        payload = make_execution_profile_release().to_dict()
+
+        payload["promotion_grade"] = "true"
+        with self.assertRaisesRegex(ValueError, "promotion_grade must be a boolean"):
+            ExecutionProfileRelease.from_dict(payload)
+
+    def test_execution_profile_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = make_execution_profile_release().to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "execution_profile_release: schema_version must be an integer",
+        ):
+            ExecutionProfileRelease.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "execution_profile_release: schema_version must be an integer",
+        ):
+            ExecutionProfileRelease.from_dict(payload_with_bool_schema)
+
+    def test_harness_loader_rejects_bool_seed_and_truthy_flags(self) -> None:
+        payload = make_simulation_harness().to_dict()
+
+        payload_with_bool_seed = dict(payload)
+        payload_with_bool_seed["random_seeds"] = [True, 29]
+        with self.assertRaisesRegex(ValueError, "random_seeds\\[\\] must be an integer"):
+            HistoricalSimulationHarness.from_dict(payload_with_bool_seed)
+
+        payload_with_truthy_flag = dict(payload)
+        payload_with_truthy_flag["uses_high_level_backtest_api"] = "false"
+        with self.assertRaisesRegex(
+            ValueError,
+            "uses_high_level_backtest_api must be a boolean",
+        ):
+            HistoricalSimulationHarness.from_dict(payload_with_truthy_flag)
+
+        payload_with_truthy_custom = dict(payload)
+        payload_with_truthy_custom["uses_custom_historical_engine"] = 1
+        with self.assertRaisesRegex(
+            ValueError,
+            "uses_custom_historical_engine must be a boolean",
+        ):
+            HistoricalSimulationHarness.from_dict(payload_with_truthy_custom)
+
+    def test_harness_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = make_simulation_harness().to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "historical_simulation_harness: schema_version must be an integer",
+        ):
+            HistoricalSimulationHarness.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "historical_simulation_harness: schema_version must be an integer",
+        ):
+            HistoricalSimulationHarness.from_dict(payload_with_bool_schema)
+
 
 if __name__ == "__main__":
     unittest.main()

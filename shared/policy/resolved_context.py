@@ -112,7 +112,9 @@ class ResolvedContextBundle:
         return cls(
             bundle_id=str(payload["bundle_id"]),
             source_dataset_release_id=str(payload["source_dataset_release_id"]),
-            observation_cutoff_utc=str(payload["observation_cutoff_utc"]),
+            observation_cutoff_utc=_normalize_observation_cutoff(
+                payload["observation_cutoff_utc"]
+            ),
             compiled_session_schedule_ids=tuple(
                 str(item) for item in payload["compiled_session_schedule_ids"]
             ),
@@ -138,7 +140,10 @@ class ResolvedContextBundle:
                 if payload.get("portability_policy_resolution_id")
                 else None
             ),
-            schema_version=int(payload.get("schema_version", SUPPORTED_CONTEXT_SCHEMA_VERSION)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="resolved_context_bundle",
+            ),
         )
 
     @classmethod
@@ -184,7 +189,10 @@ class ExecutionProfileRelease:
         return cls(
             release_id=str(payload["release_id"]),
             profile_class=ExecutionProfileClass(payload["profile_class"]),
-            promotion_grade=bool(payload["promotion_grade"]),
+            promotion_grade=_require_bool(
+                payload["promotion_grade"],
+                field_name="promotion_grade",
+            ),
             historical_execution_kernel=HistoricalExecutionKernel(
                 payload["historical_execution_kernel"]
             ),
@@ -209,7 +217,10 @@ class ExecutionProfileRelease:
             ),
             artifact_root_hash=str(payload["artifact_root_hash"]),
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
-            schema_version=int(payload.get("schema_version", SUPPORTED_CONTEXT_SCHEMA_VERSION)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="execution_profile_release",
+            ),
         )
 
     @classmethod
@@ -250,12 +261,28 @@ class HistoricalSimulationHarness:
             execution_profile_release_id=str(payload["execution_profile_release_id"]),
             profile_class=ExecutionProfileClass(payload["profile_class"]),
             release_reference_ids=tuple(str(item) for item in payload["release_reference_ids"]),
-            random_seeds=tuple(int(item) for item in payload["random_seeds"]),
+            random_seeds=tuple(
+                _require_int(item, field_name="random_seeds[]")
+                for item in payload["random_seeds"]
+            ),
             retained_run_log_ids=tuple(str(item) for item in payload["retained_run_log_ids"]),
             shared_signal_kernel_binding=str(payload["shared_signal_kernel_binding"]),
-            uses_high_level_backtest_api=bool(payload["uses_high_level_backtest_api"]),
-            uses_custom_historical_engine=bool(payload.get("uses_custom_historical_engine", False)),
-            schema_version=int(payload.get("schema_version", SUPPORTED_CONTEXT_SCHEMA_VERSION)),
+            uses_high_level_backtest_api=_require_bool(
+                payload["uses_high_level_backtest_api"],
+                field_name="uses_high_level_backtest_api",
+            ),
+            uses_custom_historical_engine=(
+                _require_bool(
+                    payload["uses_custom_historical_engine"],
+                    field_name="uses_custom_historical_engine",
+                )
+                if "uses_custom_historical_engine" in payload
+                else False
+            ),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="historical_simulation_harness",
+            ),
         )
 
     @classmethod
@@ -427,8 +454,39 @@ def _decode_context_json(payload: str, label: str) -> dict[str, Any]:
     return decoded
 
 
-def _normalize_observation_cutoff(observation_cutoff_utc: str) -> str:
-    cutoff = datetime.datetime.fromisoformat(observation_cutoff_utc)
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _normalize_observation_cutoff(observation_cutoff_utc: object) -> str:
+    if not isinstance(observation_cutoff_utc, str):
+        raise ValueError(
+            "observation_cutoff_utc must be a timezone-aware ISO-8601 timestamp"
+        )
+    try:
+        cutoff = datetime.datetime.fromisoformat(observation_cutoff_utc)
+    except ValueError as exc:
+        raise ValueError(
+            "observation_cutoff_utc must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if cutoff.tzinfo is None:
+        raise ValueError(
+            "observation_cutoff_utc must be a timezone-aware ISO-8601 timestamp"
+        )
     return canonicalize_persisted_timestamp(cutoff).isoformat()
 
 
