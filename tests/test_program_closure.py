@@ -5,12 +5,14 @@ import subprocess  # nosec B404 - trusted repo-local smoke script
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from shared.policy.program_closure import (
     ProgramClosureAction,
     ProgramClosureDecision,
     ProgramClosureReport,
+    ProgramClosureRequest,
     evaluate_program_closure_case,
     load_program_closure_fixture,
     validate_program_closure_contract,
@@ -128,6 +130,108 @@ class ProgramClosureContractTests(unittest.TestCase):
                 "PROGRAM_CLOSURE_POSTURE_RAISE_CAPITAL",
                 written_report["reason_code"],
             )
+
+    def test_request_loader_rejects_invalid_boundary_values(self) -> None:
+        fixture = load_program_closure_fixture()
+        base_payload = deepcopy(fixture["shared_request_defaults"])
+        case_payload = deepcopy(fixture["cases"][0])
+        base_payload["case_id"] = case_payload["case_id"]
+        base_payload.setdefault("review_id", f"program_closure_{case_payload['case_id']}")
+        for key, value in case_payload.get("overrides", {}).items():
+            base_payload[key] = deepcopy(value)
+        invalid_cases = (
+            (
+                "tradability_truthy_string",
+                lambda payload: payload.__setitem__("tradability_verified", "true"),
+                "tradability_verified: must be boolean",
+            ),
+            (
+                "approved_live_capital_bool",
+                lambda payload: payload.__setitem__("approved_live_capital_usd", True),
+                "approved_live_capital_usd: must be numeric",
+            ),
+            (
+                "approved_live_capital_nan",
+                lambda payload: payload.__setitem__("approved_live_capital_usd", "nan"),
+                "approved_live_capital_usd: must be finite",
+            ),
+            (
+                "case_id_bool",
+                lambda payload: payload.__setitem__("case_id", False),
+                "case_id: must be a non-empty string",
+            ),
+            (
+                "schema_version_bool",
+                lambda payload: payload.__setitem__("schema_version", True),
+                "schema_version: must be an integer",
+            ),
+            (
+                "schema_version_unsupported",
+                lambda payload: payload.__setitem__("schema_version", 2),
+                "schema_version: unsupported schema version 2; expected 1",
+            ),
+            (
+                "retained_artifact_ids_string",
+                lambda payload: payload.__setitem__("retained_artifact_ids", "artifact-1"),
+                "retained_artifact_ids: must be a list of strings",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    ProgramClosureRequest.from_dict(payload)
+
+    def test_report_loader_rejects_invalid_boundary_values(self) -> None:
+        base_payload = evaluate_program_closure_case(
+            "continue_when_all_program_closure_checks_clear"
+        ).to_dict()
+        invalid_cases = (
+            (
+                "decision_invalid",
+                lambda payload: payload.__setitem__("decision", "ship"),
+                "decision: must be a valid program closure decision",
+            ),
+            (
+                "recommended_action_invalid",
+                lambda payload: payload.__setitem__("recommended_action", "ship_now"),
+                "recommended_action: must be a valid program closure action",
+            ),
+            (
+                "trigger_reports_string",
+                lambda payload: payload.__setitem__("trigger_reports", "report"),
+                "trigger_reports: must be a list of objects",
+            ),
+            (
+                "trigger_id_invalid",
+                lambda payload: payload["trigger_reports"][0].__setitem__("trigger_id", "bad"),
+                "trigger_id: must be a valid program closure trigger id",
+            ),
+            (
+                "timestamp_naive",
+                lambda payload: payload.__setitem__("timestamp", "2026-03-28T00:00:00"),
+                "timestamp: must be timezone-aware",
+            ),
+            (
+                "schema_version_bool",
+                lambda payload: payload.__setitem__("schema_version", False),
+                "schema_version: must be an integer",
+            ),
+            (
+                "schema_version_unsupported",
+                lambda payload: payload.__setitem__("schema_version", 2),
+                "schema_version: unsupported schema version 2; expected 1",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    ProgramClosureReport.from_dict(payload)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from functools import lru_cache
@@ -76,6 +77,22 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return decoded
 
 
+def _parse_utc(timestamp: str) -> _dt.datetime:
+    return _dt.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware")
+    return parsed.astimezone(_dt.timezone.utc).isoformat()
+
+
 def _as_bool(value: object, *, field_name: str) -> bool:
     if isinstance(value, bool):
         return value
@@ -83,10 +100,15 @@ def _as_bool(value: object, *, field_name: str) -> bool:
 
 
 def _as_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be numeric")
     try:
-        return float(value)
+        parsed = float(value)
     except (TypeError, ValueError) as exc:
         raise ValueError(f"{field_name}: must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be finite")
+    return parsed
 
 
 def _as_non_negative_float(value: object, *, field_name: str) -> float:
@@ -97,19 +119,61 @@ def _as_non_negative_float(value: object, *, field_name: str) -> float:
 
 
 def _as_non_empty_string(value: object, *, field_name: str) -> str:
-    parsed = str(value).strip()
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
     if not parsed:
-        raise ValueError(f"{field_name}: must be non-empty")
+        raise ValueError(f"{field_name}: must be a non-empty string")
     return parsed
 
 
 def _as_tuple_of_strings(value: object, *, field_name: str) -> tuple[str, ...]:
     if value in (None, ""):
         return ()
-    if not isinstance(value, (list, tuple)):
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
         raise ValueError(f"{field_name}: must be a list of strings")
     items = tuple(_as_non_empty_string(item, field_name=field_name) for item in value)
     return items
+
+
+def _as_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _as_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of objects")
+    return tuple(_as_mapping(item, field_name=field_name) for item in value)
+
+
+def _as_schema_version(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if value != SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {value}; "
+            f"expected {SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION}"
+        )
+    return value
+
+
+def _as_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
 
 
 def _jsonable(value: Any) -> Any:
@@ -304,11 +368,13 @@ class ProgramClosureRequest:
                 payload.get("operator_notes", ()),
                 field_name="operator_notes",
             ),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION,
+            schema_version=(
+                _as_schema_version(
+                    payload["schema_version"],
+                    field_name="schema_version",
                 )
+                if "schema_version" in payload
+                else SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION
             ),
         )
 
@@ -331,11 +397,14 @@ class ProgramClosureTriggerReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ProgramClosureTriggerReport":
-        evidence = payload.get("evidence", {})
-        if not isinstance(evidence, dict):
-            raise ValueError("evidence: must be an object")
+        evidence = _as_mapping(payload.get("evidence", {}), field_name="evidence")
         return cls(
-            trigger_id=_as_non_empty_string(payload["trigger_id"], field_name="trigger_id"),
+            trigger_id=_as_enum_value(
+                payload["trigger_id"],
+                field_name="trigger_id",
+                enum_type=ProgramClosureTriggerId,
+                description="program closure trigger id",
+            ),
             trigger_name=_as_non_empty_string(
                 payload["trigger_name"],
                 field_name="trigger_name",
@@ -383,16 +452,24 @@ class ProgramClosureReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ProgramClosureReport":
-        source_evidence_ids = payload.get("source_evidence_ids", {})
-        if not isinstance(source_evidence_ids, dict):
-            raise ValueError("source_evidence_ids: must be an object")
+        source_evidence_ids = _as_mapping(
+            payload.get("source_evidence_ids", {}),
+            field_name="source_evidence_ids",
+        )
         return cls(
             case_id=_as_non_empty_string(payload["case_id"], field_name="case_id"),
             review_id=_as_non_empty_string(payload["review_id"], field_name="review_id"),
-            decision=_as_non_empty_string(payload["decision"], field_name="decision"),
-            recommended_action=_as_non_empty_string(
+            decision=_as_enum_value(
+                payload["decision"],
+                field_name="decision",
+                enum_type=ProgramClosureDecision,
+                description="program closure decision",
+            ),
+            recommended_action=_as_enum_value(
                 payload["recommended_action"],
                 field_name="recommended_action",
+                enum_type=ProgramClosureAction,
+                description="program closure action",
             ),
             reason_code=_as_non_empty_string(payload["reason_code"], field_name="reason_code"),
             triggered_rule_ids=_as_tuple_of_strings(
@@ -400,11 +477,17 @@ class ProgramClosureReport:
                 field_name="triggered_rule_ids",
             ),
             trigger_reports=tuple(
-                ProgramClosureTriggerReport.from_dict(dict(item))
-                for item in payload.get("trigger_reports", ())
+                ProgramClosureTriggerReport.from_dict(item)
+                for item in _as_object_sequence(
+                    payload.get("trigger_reports", ()),
+                    field_name="trigger_reports",
+                )
             ),
             source_evidence_ids={
-                str(key): _as_non_empty_string(value, field_name="source_evidence_ids")
+                _as_non_empty_string(key, field_name="source_evidence_ids"): _as_non_empty_string(
+                    value,
+                    field_name="source_evidence_ids",
+                )
                 for key, value in source_evidence_ids.items()
             },
             retained_artifact_ids=_as_tuple_of_strings(
@@ -415,13 +498,18 @@ class ProgramClosureReport:
                 payload["operator_rationale"],
                 field_name="operator_rationale",
             ),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION,
+            schema_version=(
+                _as_schema_version(
+                    payload["schema_version"],
+                    field_name="schema_version",
                 )
+                if "schema_version" in payload
+                else SUPPORTED_PROGRAM_CLOSURE_SCHEMA_VERSION
             ),
-            timestamp=_as_non_empty_string(payload["timestamp"], field_name="timestamp"),
+            timestamp=_normalize_utc_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
