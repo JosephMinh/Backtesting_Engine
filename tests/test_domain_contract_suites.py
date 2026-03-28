@@ -10,6 +10,7 @@ from pathlib import Path
 from shared.policy.verification.domain_contract_suites import (
     VALIDATION_ERRORS,
     DomainContractSuiteReport,
+    DomainContractSuiteRun,
     DomainContractSuiteStatus,
     build_sample_domain_contract_suite_run,
     domain_contract_suite_ids,
@@ -169,6 +170,87 @@ class DomainContractSuiteRegistryTest(unittest.TestCase):
             ),
         )
         self.assertEqual(report, DomainContractSuiteReport.from_json(report.to_json()))
+
+    def test_run_loader_rejects_missing_or_unsupported_schema_version(self) -> None:
+        run_payload = build_sample_domain_contract_suite_run(
+            "broker_semantics_contracts",
+            run_id="broker_semantics_suite_boundary",
+            fixture_case_id="broker_semantics_boundary",
+        ).to_dict()
+
+        missing_schema_payload = dict(run_payload)
+        missing_schema_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            DomainContractSuiteRun.from_dict(missing_schema_payload)
+
+        unsupported_schema_payload = dict(run_payload)
+        unsupported_schema_payload["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "unsupported schema_version 2"):
+            DomainContractSuiteRun.from_dict(unsupported_schema_payload)
+
+    def test_public_loaders_reject_non_object_payloads(self) -> None:
+        with self.assertRaisesRegex(ValueError, "domain_contract_suite_run"):
+            DomainContractSuiteRun.from_dict([])  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(ValueError, "domain_contract_suite_report"):
+            DomainContractSuiteReport.from_dict([])  # type: ignore[arg-type]
+
+    def test_run_loader_rejects_fail_open_artifact_and_sequence_shapes(self) -> None:
+        run_payload = build_sample_domain_contract_suite_run(
+            "policy_engine_decision_traces",
+            run_id="policy_engine_suite_boundary",
+            fixture_case_id="policy_engine_boundary",
+        ).to_dict()
+
+        invalid_fixture_sources = dict(run_payload)
+        invalid_fixture_sources["fixture_sources"] = "CERTIFIED_RELEASE"
+        with self.assertRaisesRegex(ValueError, "fixture_sources"):
+            DomainContractSuiteRun.from_dict(invalid_fixture_sources)
+
+        invalid_artifacts = dict(run_payload)
+        invalid_artifacts["artifacts"] = [False]
+        with self.assertRaisesRegex(ValueError, "artifacts"):
+            DomainContractSuiteRun.from_dict(invalid_artifacts)
+
+    def test_report_loader_rejects_invalid_status_and_naive_timestamp(self) -> None:
+        report = evaluate_domain_contract_suite_run(
+            "report-boundary",
+            build_sample_domain_contract_suite_run(
+                "release_schema_and_artifact_lifecycle",
+                run_id="release_schema_suite_boundary",
+                fixture_case_id="release_schema_boundary",
+            ),
+        ).to_dict()
+
+        invalid_status = dict(report)
+        invalid_status["status"] = "green"
+        with self.assertRaisesRegex(ValueError, "green"):
+            DomainContractSuiteReport.from_dict(invalid_status)
+
+        naive_timestamp = dict(report)
+        naive_timestamp["timestamp"] = "2026-03-28T02:22:00"
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            DomainContractSuiteReport.from_dict(naive_timestamp)
+
+    def test_report_loader_rejects_missing_optional_id_and_missing_field_sequence_keys(self) -> None:
+        report = evaluate_domain_contract_suite_run(
+            "report-boundary-presence",
+            build_sample_domain_contract_suite_run(
+                "release_schema_and_artifact_lifecycle",
+                run_id="release_schema_suite_presence",
+                fixture_case_id="release_schema_presence",
+            ),
+        ).to_dict()
+
+        missing_suite_id = dict(report)
+        missing_suite_id.pop("suite_id")
+        with self.assertRaisesRegex(ValueError, "suite_id"):
+            DomainContractSuiteReport.from_dict(missing_suite_id)
+
+        missing_missing_fields = dict(report)
+        missing_missing_fields.pop("missing_fields")
+        with self.assertRaisesRegex(ValueError, "missing_fields"):
+            DomainContractSuiteReport.from_dict(missing_missing_fields)
 
 
 if __name__ == "__main__":

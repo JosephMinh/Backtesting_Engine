@@ -35,6 +35,68 @@ class DomainContractSuiteStatus(str, Enum):
     VIOLATION = "violation"
 
 
+def _require_mapping(value: object, *, field_name: str) -> Mapping[str, object]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_field(payload: Mapping[str, object], key: str, *, field_name: str) -> object:
+    if key not in payload:
+        raise ValueError(f"{field_name}: field is required")
+    return payload[key]
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_object_sequence(
+    value: object, *, field_name: str
+) -> tuple[Mapping[str, object], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of objects")
+    return tuple(_require_mapping(item, field_name=f"{field_name}[]") for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name}: must be an integer")
+    if value != SUPPORTED_DOMAIN_CONTRACT_SUITE_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema_version {value}; expected "
+            f"{SUPPORTED_DOMAIN_CONTRACT_SUITE_SCHEMA_VERSION}"
+        )
+    return value
+
+
+def _require_timestamp(value: object, *, field_name: str) -> str:
+    timestamp = _require_non_empty_string(value, field_name=field_name)
+    try:
+        parsed = datetime.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    return timestamp
+
+
 @dataclass(frozen=True)
 class DomainContractSuiteSpec:
     suite_id: str
@@ -76,12 +138,22 @@ class DomainContractSuiteArtifact:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "DomainContractSuiteArtifact":
+        payload = _require_mapping(payload, field_name="domain_contract_suite_artifact")
         return cls(
-            artifact_id=str(payload["artifact_id"]),
-            artifact_role=str(payload["artifact_role"]),
-            relative_path=str(payload["relative_path"]),
-            sha256=str(payload["sha256"]),
-            content_type=str(payload["content_type"]),
+            artifact_id=_require_non_empty_string(payload["artifact_id"], field_name="artifact_id"),
+            artifact_role=_require_non_empty_string(
+                payload["artifact_role"],
+                field_name="artifact_role",
+            ),
+            relative_path=_require_non_empty_string(
+                payload["relative_path"],
+                field_name="relative_path",
+            ),
+            sha256=_require_non_empty_string(payload["sha256"], field_name="sha256"),
+            content_type=_require_non_empty_string(
+                payload["content_type"],
+                field_name="content_type",
+            ),
         )
 
 
@@ -111,34 +183,55 @@ class DomainContractSuiteRun:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "DomainContractSuiteRun":
+        payload = _require_mapping(payload, field_name="domain_contract_suite_run")
         structured_log = payload.get("structured_log")
         if not isinstance(structured_log, Mapping):
             raise ValueError("domain_contract_suite_run: structured_log must be a mapping")
         return cls(
-            suite_id=str(payload["suite_id"]),
-            run_id=str(payload["run_id"]),
-            correlation_id=str(payload["correlation_id"]),
-            decision_trace_id=str(payload["decision_trace_id"]),
-            fixture_case_id=str(payload["fixture_case_id"]),
-            fixture_manifest_id=str(payload["fixture_manifest_id"]),
-            fixture_sources=tuple(
-                FixtureSource(str(item)) for item in payload["fixture_sources"]
+            suite_id=_require_non_empty_string(payload["suite_id"], field_name="suite_id"),
+            run_id=_require_non_empty_string(payload["run_id"], field_name="run_id"),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
             ),
-            test_modules=tuple(str(item) for item in payload["test_modules"]),
-            expected_vs_actual_diff_artifact_ids=tuple(
-                str(item) for item in payload["expected_vs_actual_diff_artifact_ids"]
+            decision_trace_id=_require_non_empty_string(
+                payload["decision_trace_id"],
+                field_name="decision_trace_id",
+            ),
+            fixture_case_id=_require_non_empty_string(
+                payload["fixture_case_id"],
+                field_name="fixture_case_id",
+            ),
+            fixture_manifest_id=_require_non_empty_string(
+                payload["fixture_manifest_id"],
+                field_name="fixture_manifest_id",
+            ),
+            fixture_sources=tuple(
+                FixtureSource(item)
+                for item in _require_string_sequence(
+                    payload["fixture_sources"],
+                    field_name="fixture_sources",
+                )
+            ),
+            test_modules=_require_string_sequence(
+                payload["test_modules"],
+                field_name="test_modules",
+            ),
+            expected_vs_actual_diff_artifact_ids=_require_string_sequence(
+                payload["expected_vs_actual_diff_artifact_ids"],
+                field_name="expected_vs_actual_diff_artifact_ids",
             ),
             artifacts=tuple(
                 DomainContractSuiteArtifact.from_dict(item)
-                for item in payload["artifacts"]
-                if isinstance(item, Mapping)
+                for item in _require_object_sequence(
+                    payload["artifacts"],
+                    field_name="artifacts",
+                )
             ),
             structured_log=_tupleize_json_collections(dict(structured_log)),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_DOMAIN_CONTRACT_SUITE_SCHEMA_VERSION,
-                )
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                field_name="schema_version",
             ),
         )
 
@@ -168,20 +261,41 @@ class DomainContractSuiteReport:
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> "DomainContractSuiteReport":
-        context = payload.get("context")
+        payload = _require_mapping(payload, field_name="domain_contract_suite_report")
+        context = _require_field(payload, "context", field_name="context")
         if not isinstance(context, Mapping):
             raise ValueError("domain_contract_suite_report: context must be a mapping")
         return cls(
-            case_id=str(payload["case_id"]),
-            suite_id=str(payload["suite_id"]) if payload.get("suite_id") else None,
-            run_id=str(payload["run_id"]) if payload.get("run_id") else None,
-            status=str(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            missing_fields=tuple(str(item) for item in payload.get("missing_fields", ())),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            suite_id=_require_optional_non_empty_string(
+                _require_field(payload, "suite_id", field_name="suite_id"),
+                field_name="suite_id",
+            ),
+            run_id=_require_optional_non_empty_string(
+                _require_field(payload, "run_id", field_name="run_id"),
+                field_name="run_id",
+            ),
+            status=DomainContractSuiteStatus(
+                _require_non_empty_string(payload["status"], field_name="status")
+            ).value,
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            missing_fields=_require_string_sequence(
+                _require_field(payload, "missing_fields", field_name="missing_fields"),
+                field_name="missing_fields",
+            ),
             context=_tupleize_json_collections(dict(context)),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
-            timestamp=str(payload["timestamp"]),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_require_timestamp(payload["timestamp"], field_name="timestamp"),
         )
 
     @classmethod
