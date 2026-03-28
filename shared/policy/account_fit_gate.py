@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -41,14 +42,22 @@ def _utcnow() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-def _parse_utc(value: str) -> datetime.datetime:
-    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(
-        datetime.timezone.utc
-    )
+def _parse_utc(value: object, *, field_name: str) -> datetime.datetime:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name}: must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc)
 
 
-def _normalize_timestamp(value: str) -> str:
-    return _parse_utc(value).isoformat()
+def _normalize_timestamp(value: object, *, field_name: str) -> str:
+    return _parse_utc(value, field_name=field_name).isoformat()
 
 
 def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
@@ -62,17 +71,41 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
 
 
 def _as_non_negative_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be non-negative")
     parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be non-negative")
     if parsed < 0.0:
         raise ValueError(f"{field_name}: must be non-negative")
     return parsed
 
 
 def _as_positive_int(value: object, *, field_name: str) -> int:
-    parsed = int(value)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name}: must be positive")
+    parsed = value
     if parsed < 1:
         raise ValueError(f"{field_name}: must be positive")
     return parsed
+
+
+def _require_boolean(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
 
 
 def _jsonable(value: Any) -> Any:
@@ -121,14 +154,31 @@ class BrokerMarginSnapshot:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "BrokerMarginSnapshot":
-        captured_at_utc = _normalize_timestamp(str(payload["captured_at_utc"]))
-        valid_to_utc = _normalize_timestamp(str(payload["valid_to_utc"]))
-        if _parse_utc(captured_at_utc) > _parse_utc(valid_to_utc):
+        captured_at_utc = _normalize_timestamp(
+            payload["captured_at_utc"],
+            field_name="margin_snapshot.captured_at_utc",
+        )
+        valid_to_utc = _normalize_timestamp(
+            payload["valid_to_utc"],
+            field_name="margin_snapshot.valid_to_utc",
+        )
+        if _parse_utc(
+            captured_at_utc, field_name="margin_snapshot.captured_at_utc"
+        ) > _parse_utc(valid_to_utc, field_name="margin_snapshot.valid_to_utc"):
             raise ValueError("margin_snapshot.valid_to_utc: must not precede captured_at_utc")
         return cls(
-            snapshot_id=str(payload["snapshot_id"]),
-            broker=str(payload["broker"]),
-            symbol=str(payload["symbol"]),
+            snapshot_id=_require_non_empty_string(
+                payload["snapshot_id"],
+                field_name="margin_snapshot.snapshot_id",
+            ),
+            broker=_require_non_empty_string(
+                payload["broker"],
+                field_name="margin_snapshot.broker",
+            ),
+            symbol=_require_non_empty_string(
+                payload["symbol"],
+                field_name="margin_snapshot.symbol",
+            ),
             initial_margin_requirement_usd=_as_non_negative_float(
                 payload["initial_margin_requirement_usd"],
                 field_name="initial_margin_requirement_usd",
@@ -165,17 +215,39 @@ class FeeScheduleArtifact:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FeeScheduleArtifact":
-        captured_at_utc = _normalize_timestamp(str(payload["captured_at_utc"]))
-        valid_from_utc = _normalize_timestamp(str(payload["valid_from_utc"]))
-        valid_to_utc = _normalize_timestamp(str(payload["valid_to_utc"]))
-        if _parse_utc(valid_from_utc) > _parse_utc(valid_to_utc):
+        captured_at_utc = _normalize_timestamp(
+            payload["captured_at_utc"],
+            field_name="fee_schedule.captured_at_utc",
+        )
+        valid_from_utc = _normalize_timestamp(
+            payload["valid_from_utc"],
+            field_name="fee_schedule.valid_from_utc",
+        )
+        valid_to_utc = _normalize_timestamp(
+            payload["valid_to_utc"],
+            field_name="fee_schedule.valid_to_utc",
+        )
+        if _parse_utc(
+            valid_from_utc, field_name="fee_schedule.valid_from_utc"
+        ) > _parse_utc(valid_to_utc, field_name="fee_schedule.valid_to_utc"):
             raise ValueError("fee_schedule.valid_to_utc: must not precede valid_from_utc")
-        if _parse_utc(captured_at_utc) > _parse_utc(valid_to_utc):
+        if _parse_utc(
+            captured_at_utc, field_name="fee_schedule.captured_at_utc"
+        ) > _parse_utc(valid_to_utc, field_name="fee_schedule.valid_to_utc"):
             raise ValueError("fee_schedule.valid_to_utc: must not precede captured_at_utc")
         return cls(
-            snapshot_id=str(payload["snapshot_id"]),
-            broker=str(payload["broker"]),
-            symbol=str(payload["symbol"]),
+            snapshot_id=_require_non_empty_string(
+                payload["snapshot_id"],
+                field_name="fee_schedule.snapshot_id",
+            ),
+            broker=_require_non_empty_string(
+                payload["broker"],
+                field_name="fee_schedule.broker",
+            ),
+            symbol=_require_non_empty_string(
+                payload["symbol"],
+                field_name="fee_schedule.symbol",
+            ),
             commission_per_contract_side_usd=_as_non_negative_float(
                 payload["commission_per_contract_side_usd"],
                 field_name="commission_per_contract_side_usd",
@@ -210,23 +282,51 @@ class AccountFitThresholds:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitThresholds":
         return cls(
-            source_product_profile_id=str(payload["source_product_profile_id"]),
-            source_account_profile_id=str(payload["source_account_profile_id"]),
-            execution_symbol=str(payload["execution_symbol"]),
-            approved_starting_equity_usd=int(payload["approved_starting_equity_usd"]),
+            source_product_profile_id=_require_non_empty_string(
+                payload["source_product_profile_id"],
+                field_name="source_product_profile_id",
+            ),
+            source_account_profile_id=_require_non_empty_string(
+                payload["source_account_profile_id"],
+                field_name="source_account_profile_id",
+            ),
+            execution_symbol=_require_non_empty_string(
+                payload["execution_symbol"],
+                field_name="execution_symbol",
+            ),
+            approved_starting_equity_usd=_as_positive_int(
+                payload["approved_starting_equity_usd"],
+                field_name="approved_starting_equity_usd",
+            ),
             approved_symbols=tuple(str(item) for item in payload["approved_symbols"]),
             max_position_size=(
-                int(payload["max_position_size"])
+                _as_positive_int(
+                    payload["max_position_size"],
+                    field_name="max_position_size",
+                )
                 if payload.get("max_position_size") is not None
                 else None
             ),
-            max_initial_margin_fraction=float(payload["max_initial_margin_fraction"]),
-            max_maintenance_margin_fraction=float(
-                payload["max_maintenance_margin_fraction"]
+            max_initial_margin_fraction=_as_non_negative_float(
+                payload["max_initial_margin_fraction"],
+                field_name="max_initial_margin_fraction",
             ),
-            daily_loss_lockout_fraction=float(payload["daily_loss_lockout_fraction"]),
-            max_drawdown_fraction=float(payload["max_drawdown_fraction"]),
-            overnight_gap_stress_fraction=float(payload["overnight_gap_stress_fraction"]),
+            max_maintenance_margin_fraction=_as_non_negative_float(
+                payload["max_maintenance_margin_fraction"],
+                field_name="max_maintenance_margin_fraction",
+            ),
+            daily_loss_lockout_fraction=_as_non_negative_float(
+                payload["daily_loss_lockout_fraction"],
+                field_name="daily_loss_lockout_fraction",
+            ),
+            max_drawdown_fraction=_as_non_negative_float(
+                payload["max_drawdown_fraction"],
+                field_name="max_drawdown_fraction",
+            ),
+            overnight_gap_stress_fraction=_as_non_negative_float(
+                payload["overnight_gap_stress_fraction"],
+                field_name="overnight_gap_stress_fraction",
+            ),
         )
 
 
@@ -260,17 +360,31 @@ class AccountFitRequest:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitRequest":
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            promotion_target=str(payload["promotion_target"]),
-            product_profile_id=str(payload["product_profile_id"]),
-            account_profile_id=str(payload["account_profile_id"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            promotion_target=PromotionTarget(str(payload["promotion_target"])).value,
+            product_profile_id=_require_non_empty_string(
+                payload["product_profile_id"],
+                field_name="product_profile_id",
+            ),
+            account_profile_id=_require_non_empty_string(
+                payload["account_profile_id"],
+                field_name="account_profile_id",
+            ),
             requested_contract_count=_as_positive_int(
                 payload["requested_contract_count"],
                 field_name="requested_contract_count",
             ),
-            requested_operating_posture=str(payload["requested_operating_posture"]),
-            overnight_requested=bool(payload["overnight_requested"]),
+            requested_operating_posture=OperatingPosture(
+                str(payload["requested_operating_posture"])
+            ).value,
+            overnight_requested=_require_boolean(
+                payload["overnight_requested"],
+                field_name="overnight_requested",
+            ),
             expected_daily_loss_usd=_as_non_negative_float(
                 payload["expected_daily_loss_usd"],
                 field_name="expected_daily_loss_usd",
@@ -288,15 +402,19 @@ class AccountFitRequest:
             ),
             fee_schedule=FeeScheduleArtifact.from_dict(dict(payload["fee_schedule"])),
             evaluated_at_utc=(
-                _normalize_timestamp(str(payload["evaluated_at_utc"]))
+                _normalize_timestamp(
+                    payload["evaluated_at_utc"],
+                    field_name="evaluated_at_utc",
+                )
                 if payload.get("evaluated_at_utc") not in (None, "")
                 else None
             ),
-            schema_version=int(
+            schema_version=_as_positive_int(
                 payload.get(
                     "schema_version",
                     SUPPORTED_ACCOUNT_FIT_GATE_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -325,32 +443,44 @@ class AccountFitCheckResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitCheckResult":
         return cls(
-            check_id=str(payload["check_id"]),
-            title=str(payload["title"]),
-            applied=bool(payload["applied"]),
-            passed=bool(payload["passed"]),
+            check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
+            applied=_require_boolean(payload["applied"], field_name="applied"),
+            passed=_require_boolean(payload["passed"], field_name="passed"),
             reason_code=(
                 str(payload["reason_code"])
                 if payload.get("reason_code") not in (None, "")
                 else None
             ),
             actual_fraction=(
-                float(payload["actual_fraction"])
+                _as_non_negative_float(
+                    payload["actual_fraction"],
+                    field_name="actual_fraction",
+                )
                 if payload.get("actual_fraction") is not None
                 else None
             ),
             threshold_fraction=(
-                float(payload["threshold_fraction"])
+                _as_non_negative_float(
+                    payload["threshold_fraction"],
+                    field_name="threshold_fraction",
+                )
                 if payload.get("threshold_fraction") is not None
                 else None
             ),
             actual_usd=(
-                float(payload["actual_usd"])
+                _as_non_negative_float(
+                    payload["actual_usd"],
+                    field_name="actual_usd",
+                )
                 if payload.get("actual_usd") is not None
                 else None
             ),
             threshold_usd=(
-                float(payload["threshold_usd"])
+                _as_non_negative_float(
+                    payload["threshold_usd"],
+                    field_name="threshold_usd",
+                )
                 if payload.get("threshold_usd") is not None
                 else None
             ),
@@ -407,19 +537,45 @@ class AccountFitReport:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitReport":
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            status=str(payload["status"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            status=AccountFitStatus(str(payload["status"])).value,
             reason_code=str(payload["reason_code"]),
-            promotion_target=str(payload["promotion_target"]),
-            product_profile_id=str(payload["product_profile_id"]),
-            account_profile_id=str(payload["account_profile_id"]),
-            execution_symbol=str(payload["execution_symbol"]),
-            requested_contract_count=int(payload["requested_contract_count"]),
-            requested_operating_posture=str(payload["requested_operating_posture"]),
-            overnight_requested=bool(payload["overnight_requested"]),
-            threshold_source_ids=tuple(str(item) for item in payload["threshold_source_ids"]),
-            artifact_ids=tuple(str(item) for item in payload["artifact_ids"]),
+            promotion_target=PromotionTarget(str(payload["promotion_target"])).value,
+            product_profile_id=_require_non_empty_string(
+                payload["product_profile_id"],
+                field_name="product_profile_id",
+            ),
+            account_profile_id=_require_non_empty_string(
+                payload["account_profile_id"],
+                field_name="account_profile_id",
+            ),
+            execution_symbol=_require_non_empty_string(
+                payload["execution_symbol"],
+                field_name="execution_symbol",
+            ),
+            requested_contract_count=_as_positive_int(
+                payload["requested_contract_count"],
+                field_name="requested_contract_count",
+            ),
+            requested_operating_posture=OperatingPosture(
+                str(payload["requested_operating_posture"])
+            ).value,
+            overnight_requested=_require_boolean(
+                payload["overnight_requested"],
+                field_name="overnight_requested",
+            ),
+            threshold_source_ids=tuple(
+                _require_non_empty_string(item, field_name="threshold_source_ids[]")
+                for item in payload["threshold_source_ids"]
+            ),
+            artifact_ids=tuple(
+                _require_non_empty_string(item, field_name="artifact_ids[]")
+                for item in payload["artifact_ids"]
+            ),
             thresholds=(
                 AccountFitThresholds.from_dict(dict(payload["thresholds"]))
                 if payload.get("thresholds") is not None
@@ -435,26 +591,44 @@ class AccountFitReport:
                 if payload.get("fee_schedule") is not None
                 else None
             ),
-            round_turn_fees_usd=float(payload["round_turn_fees_usd"]),
-            expected_daily_loss_usd=float(payload["expected_daily_loss_usd"]),
-            expected_max_drawdown_usd=float(payload["expected_max_drawdown_usd"]),
-            expected_overnight_gap_stress_usd=float(
-                payload["expected_overnight_gap_stress_usd"]
+            round_turn_fees_usd=_as_non_negative_float(
+                payload["round_turn_fees_usd"],
+                field_name="round_turn_fees_usd",
             ),
-            failed_check_ids=tuple(str(item) for item in payload["failed_check_ids"]),
+            expected_daily_loss_usd=_as_non_negative_float(
+                payload["expected_daily_loss_usd"],
+                field_name="expected_daily_loss_usd",
+            ),
+            expected_max_drawdown_usd=_as_non_negative_float(
+                payload["expected_max_drawdown_usd"],
+                field_name="expected_max_drawdown_usd",
+            ),
+            expected_overnight_gap_stress_usd=_as_non_negative_float(
+                payload["expected_overnight_gap_stress_usd"],
+                field_name="expected_overnight_gap_stress_usd",
+            ),
+            failed_check_ids=tuple(
+                _require_non_empty_string(item, field_name="failed_check_ids[]")
+                for item in payload["failed_check_ids"]
+            ),
             check_results=tuple(
                 AccountFitCheckResult.from_dict(dict(item))
                 for item in payload["check_results"]
             ),
-            allowed_execution_symbol=(
-                str(payload["allowed_execution_symbol"])
-                if payload.get("allowed_execution_symbol") not in (None, "")
-                else None
+            allowed_execution_symbol=_optional_non_empty_string(
+                payload.get("allowed_execution_symbol"),
+                field_name="allowed_execution_symbol",
             ),
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            evaluated_at_utc=str(payload["evaluated_at_utc"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            evaluated_at_utc=_normalize_timestamp(
+                payload["evaluated_at_utc"],
+                field_name="evaluated_at_utc",
+            ),
+            timestamp=_normalize_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
@@ -484,25 +658,39 @@ class AccountFitExecutionDecision:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitExecutionDecision":
         return cls(
-            candidate_id=str(payload["candidate_id"]),
-            status=str(payload["status"]),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            status=AccountFitStatus(str(payload["status"])).value,
             reason_code=str(payload["reason_code"]),
             allowed_execution_symbols=tuple(
-                str(item) for item in payload["allowed_execution_symbols"]
+                _require_non_empty_string(
+                    item,
+                    field_name="allowed_execution_symbols[]",
+                )
+                for item in payload["allowed_execution_symbols"]
             ),
-            selected_execution_symbol=(
-                str(payload["selected_execution_symbol"])
-                if payload.get("selected_execution_symbol") not in (None, "")
-                else None
+            selected_execution_symbol=_optional_non_empty_string(
+                payload.get("selected_execution_symbol"),
+                field_name="selected_execution_symbol",
             ),
-            source_case_ids=tuple(str(item) for item in payload["source_case_ids"]),
+            source_case_ids=tuple(
+                _require_non_empty_string(item, field_name="source_case_ids[]")
+                for item in payload["source_case_ids"]
+            ),
             report_status_by_symbol={
-                str(key): str(value)
+                _require_non_empty_string(key, field_name="report_status_by_symbol{}"): (
+                    AccountFitStatus(str(value)).value
+                )
                 for key, value in dict(payload["report_status_by_symbol"]).items()
             },
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            timestamp=_normalize_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
@@ -794,14 +982,26 @@ def evaluate_account_fit(request: AccountFitRequest) -> AccountFitReport:
         )
 
     margin_is_fresh = (
-        _parse_utc(request.margin_snapshot.captured_at_utc)
-        <= _parse_utc(evaluated_at_utc)
-        <= _parse_utc(request.margin_snapshot.valid_to_utc)
+        _parse_utc(
+            request.margin_snapshot.captured_at_utc,
+            field_name="margin_snapshot.captured_at_utc",
+        )
+        <= _parse_utc(evaluated_at_utc, field_name="evaluated_at_utc")
+        <= _parse_utc(
+            request.margin_snapshot.valid_to_utc,
+            field_name="margin_snapshot.valid_to_utc",
+        )
     )
     fee_is_current = (
-        _parse_utc(request.fee_schedule.valid_from_utc)
-        <= _parse_utc(evaluated_at_utc)
-        <= _parse_utc(request.fee_schedule.valid_to_utc)
+        _parse_utc(
+            request.fee_schedule.valid_from_utc,
+            field_name="fee_schedule.valid_from_utc",
+        )
+        <= _parse_utc(evaluated_at_utc, field_name="evaluated_at_utc")
+        <= _parse_utc(
+            request.fee_schedule.valid_to_utc,
+            field_name="fee_schedule.valid_to_utc",
+        )
     )
     if not margin_is_fresh or not fee_is_current:
         if not margin_is_fresh and not fee_is_current:

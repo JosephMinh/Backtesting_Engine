@@ -160,6 +160,134 @@ class AccountFitGateContractTests(unittest.TestCase):
         ):
             AccountFitExecutionDecision.from_json("not-json")
 
+    def test_request_loader_rejects_truthy_bool_and_invalid_enum_inputs(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "oneoz_passes_small_account_actual_contract_gate"
+        )
+
+        bool_payload = dict(case["request"])
+        bool_payload["overnight_requested"] = "false"
+        with self.assertRaisesRegex(ValueError, "overnight_requested"):
+            AccountFitRequest.from_dict(bool_payload)
+
+        bool_count_payload = dict(case["request"])
+        bool_count_payload["requested_contract_count"] = True
+        with self.assertRaisesRegex(ValueError, "requested_contract_count"):
+            AccountFitRequest.from_dict(bool_count_payload)
+
+        invalid_target_payload = dict(case["request"])
+        invalid_target_payload["promotion_target"] = "moonshot"
+        with self.assertRaisesRegex(ValueError, "moonshot"):
+            AccountFitRequest.from_dict(invalid_target_payload)
+
+        invalid_posture_payload = dict(case["request"])
+        invalid_posture_payload["requested_operating_posture"] = "forever_hold"
+        with self.assertRaisesRegex(ValueError, "forever_hold"):
+            AccountFitRequest.from_dict(invalid_posture_payload)
+
+        bool_schema_payload = dict(case["request"])
+        bool_schema_payload["schema_version"] = True
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            AccountFitRequest.from_dict(bool_schema_payload)
+
+    def test_report_and_decision_loaders_reject_invalid_status_and_missing_timestamps(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "oneoz_passes_small_account_actual_contract_gate"
+        )
+        request = AccountFitRequest.from_dict(dict(case["request"]))
+        report_payload = evaluate_account_fit(request).to_dict()
+
+        invalid_status_payload = dict(report_payload)
+        invalid_status_payload["status"] = "green"
+        with self.assertRaisesRegex(ValueError, "green"):
+            AccountFitReport.from_dict(invalid_status_payload)
+
+        bool_overnight_payload = dict(report_payload)
+        bool_overnight_payload["overnight_requested"] = "false"
+        with self.assertRaisesRegex(ValueError, "overnight_requested"):
+            AccountFitReport.from_dict(bool_overnight_payload)
+
+        missing_timestamp_payload = dict(report_payload)
+        missing_timestamp_payload.pop("timestamp")
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            AccountFitReport.from_dict(missing_timestamp_payload)
+
+        naive_timestamp_payload = dict(report_payload)
+        naive_timestamp_payload["timestamp"] = "2026-03-28T01:10:00"
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            AccountFitReport.from_dict(naive_timestamp_payload)
+
+        decision = select_account_fit_execution_symbol((evaluate_account_fit(request),))
+        decision_payload = decision.to_dict()
+
+        invalid_decision_status = dict(decision_payload)
+        invalid_decision_status["status"] = "eligible"
+        with self.assertRaisesRegex(ValueError, "eligible"):
+            AccountFitExecutionDecision.from_dict(invalid_decision_status)
+
+        invalid_symbol_statuses = dict(decision_payload)
+        invalid_symbol_statuses["report_status_by_symbol"] = {"1OZ": "good"}
+        with self.assertRaisesRegex(ValueError, "good"):
+            AccountFitExecutionDecision.from_dict(invalid_symbol_statuses)
+
+        missing_decision_timestamp = dict(decision_payload)
+        missing_decision_timestamp.pop("timestamp")
+        with self.assertRaisesRegex(ValueError, "timestamp"):
+            AccountFitExecutionDecision.from_dict(missing_decision_timestamp)
+
+    def test_identifier_and_symbol_loaders_reject_non_string_values(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "oneoz_passes_small_account_actual_contract_gate"
+        )
+
+        request_payload = dict(case["request"])
+        request_payload["candidate_id"] = False
+        with self.assertRaisesRegex(ValueError, "candidate_id"):
+            AccountFitRequest.from_dict(request_payload)
+
+        nested_symbol_payload = dict(case["request"])
+        nested_margin_snapshot = dict(nested_symbol_payload["margin_snapshot"])
+        nested_margin_snapshot["symbol"] = False
+        nested_symbol_payload["margin_snapshot"] = nested_margin_snapshot
+        with self.assertRaisesRegex(ValueError, "margin_snapshot.symbol"):
+            AccountFitRequest.from_dict(nested_symbol_payload)
+
+        request = AccountFitRequest.from_dict(dict(case["request"]))
+        report_payload = evaluate_account_fit(request).to_dict()
+
+        invalid_execution_symbol = dict(report_payload)
+        invalid_execution_symbol["execution_symbol"] = False
+        with self.assertRaisesRegex(ValueError, "execution_symbol"):
+            AccountFitReport.from_dict(invalid_execution_symbol)
+
+        invalid_allowed_symbol = dict(report_payload)
+        invalid_allowed_symbol["allowed_execution_symbol"] = False
+        with self.assertRaisesRegex(ValueError, "allowed_execution_symbol"):
+            AccountFitReport.from_dict(invalid_allowed_symbol)
+
+        decision_payload = select_account_fit_execution_symbol((evaluate_account_fit(request),)).to_dict()
+
+        invalid_selected_symbol = dict(decision_payload)
+        invalid_selected_symbol["selected_execution_symbol"] = False
+        with self.assertRaisesRegex(ValueError, "selected_execution_symbol"):
+            AccountFitExecutionDecision.from_dict(invalid_selected_symbol)
+
+        invalid_allowed_symbols = dict(decision_payload)
+        invalid_allowed_symbols["allowed_execution_symbols"] = [False]
+        with self.assertRaisesRegex(ValueError, "allowed_execution_symbols"):
+            AccountFitExecutionDecision.from_dict(invalid_allowed_symbols)
+
+        invalid_status_map_key = dict(decision_payload)
+        invalid_status_map_key["report_status_by_symbol"] = {False: "pass"}
+        with self.assertRaisesRegex(ValueError, "report_status_by_symbol"):
+            AccountFitExecutionDecision.from_dict(invalid_status_map_key)
+
 
 if __name__ == "__main__":
     unittest.main()
