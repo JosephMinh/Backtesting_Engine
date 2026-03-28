@@ -498,16 +498,43 @@ def validate_profile_binding(request: ProfileBindingRequest) -> ProfileBindingRe
             "expected": {"minimum": 1, "approved_starting_size": approved_starting_size, "maximum": max_position_size},
         }
 
-    if request.requested_initial_margin_fraction > account.max_initial_margin_fraction:
+    if (
+        request.requested_initial_margin_fraction <= 0
+        or request.requested_initial_margin_fraction >= 1
+    ):
+        differences["requested_initial_margin_fraction"] = {
+            "actual": request.requested_initial_margin_fraction,
+            "expected": {"minimum_exclusive": 0, "maximum_exclusive": 1},
+        }
+    elif request.requested_initial_margin_fraction > account.max_initial_margin_fraction:
         differences["requested_initial_margin_fraction"] = {
             "actual": request.requested_initial_margin_fraction,
             "expected": account.max_initial_margin_fraction,
         }
 
-    if request.requested_maintenance_margin_fraction > account.max_maintenance_margin_fraction:
+    if (
+        request.requested_maintenance_margin_fraction <= 0
+        or request.requested_maintenance_margin_fraction >= 1
+    ):
+        differences["requested_maintenance_margin_fraction"] = {
+            "actual": request.requested_maintenance_margin_fraction,
+            "expected": {"minimum_exclusive": 0, "maximum_exclusive": 1},
+        }
+    elif request.requested_maintenance_margin_fraction > account.max_maintenance_margin_fraction:
         differences["requested_maintenance_margin_fraction"] = {
             "actual": request.requested_maintenance_margin_fraction,
             "expected": account.max_maintenance_margin_fraction,
+        }
+    elif (
+        request.requested_maintenance_margin_fraction
+        <= request.requested_initial_margin_fraction
+    ):
+        differences["requested_maintenance_margin_fraction"] = {
+            "actual": request.requested_maintenance_margin_fraction,
+            "expected": {
+                "greater_than": request.requested_initial_margin_fraction,
+                "maximum": account.max_maintenance_margin_fraction,
+            },
         }
 
     if request.requested_operating_posture not in account.allowed_operating_postures:

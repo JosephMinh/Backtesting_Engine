@@ -34,6 +34,18 @@ def _normalize_persisted_timestamp(value: str, *, field_name: str) -> str:
     return normalized.isoformat()
 
 
+def _coerce_budget_value(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be finite and non-negative")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be finite and non-negative") from exc
+    if not math.isfinite(parsed) or parsed < 0:
+        raise ValueError(f"{field_name} must be finite and non-negative")
+    return parsed
+
+
 @unique
 class ResearchRunPurpose(str, Enum):
     SCREENING = "screening"
@@ -226,9 +238,11 @@ class FamilyDecisionRecord:
                 ),
             )
         for field_name in ("budget_consumed_usd", "next_budget_authorized_usd"):
-            value = getattr(self, field_name)
-            if not math.isfinite(value) or value < 0:
-                raise ValueError(f"{field_name} must be finite and non-negative")
+            object.__setattr__(
+                self,
+                field_name,
+                _coerce_budget_value(getattr(self, field_name), field_name=field_name),
+            )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -255,8 +269,14 @@ class FamilyDecisionRecord:
             decision_timestamp_utc=str(payload["decision_timestamp_utc"]),
             decision_type=FamilyDecisionType(str(payload["decision_type"])),
             evidence_references=tuple(str(item) for item in payload["evidence_references"]),
-            budget_consumed_usd=float(payload["budget_consumed_usd"]),
-            next_budget_authorized_usd=float(payload["next_budget_authorized_usd"]),
+            budget_consumed_usd=_coerce_budget_value(
+                payload["budget_consumed_usd"],
+                field_name="budget_consumed_usd",
+            ),
+            next_budget_authorized_usd=_coerce_budget_value(
+                payload["next_budget_authorized_usd"],
+                field_name="next_budget_authorized_usd",
+            ),
             reviewer_self_attestations=tuple(
                 ReviewerAttestation.from_dict(dict(item))
                 for item in payload["reviewer_self_attestations"]

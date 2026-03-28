@@ -462,7 +462,7 @@ def evaluate_release_compatibility(
             remediation="Publish only dataset_release, analytic_release, or data_profile_release objects.",
         )
 
-    if not isinstance(actual_version, int):
+    if not isinstance(actual_version, int) or isinstance(actual_version, bool):
         return ReleaseCompatibilityReport(
             release_kind=release_kind,
             release_id=release_id,

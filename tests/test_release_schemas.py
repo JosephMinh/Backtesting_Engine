@@ -142,6 +142,18 @@ class ReleaseSchemaContractTest(unittest.TestCase):
         self.assertFalse(report.compatible)
         self.assertEqual("RELEASE_SCHEMA_VERSION_UNSUPPORTED", report.reason_code)
 
+    def test_compatibility_report_rejects_boolean_schema_version(self) -> None:
+        report = evaluate_release_compatibility(
+            "analytic_release",
+            {
+                "release_id": "analytic_release_boolean_version_v1",
+                "schema_version": True,
+            },
+        )
+        self.assertEqual(ReleaseStatus.INVALID.value, report.status)
+        self.assertFalse(report.compatible)
+        self.assertEqual("RELEASE_SCHEMA_VERSION_MISSING", report.reason_code)
+
     def test_dataset_release_normalizes_observation_cutoff_to_utc(self) -> None:
         release = DatasetRelease(
             release_id="dataset_release_cutoff_normalized_v1",

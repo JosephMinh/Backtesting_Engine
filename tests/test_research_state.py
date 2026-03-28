@@ -315,6 +315,21 @@ class TestResearchStateContract(unittest.TestCase):
         ):
             sample_decision("decision-negative-next", next_budget_authorized_usd=-1.0)
 
+    def test_decision_rejects_boolean_budget_values(self):
+        with self.assertRaisesRegex(
+            ValueError,
+            "budget_consumed_usd must be finite and non-negative",
+        ):
+            sample_decision("decision-bool-consumed", budget_consumed_usd=True)
+
+        payload = sample_decision().to_dict()
+        payload["next_budget_authorized_usd"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "next_budget_authorized_usd must be finite and non-negative",
+        ):
+            FamilyDecisionRecord.from_dict(payload)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -157,6 +157,69 @@ class ProductProfileContractTest(unittest.TestCase):
         )
         self.assertIn("admissible", report.explanation.lower())
 
+    def test_binding_rejects_negative_or_inverted_margin_requests(self) -> None:
+        negative_initial = validate_profile_binding(
+            ProfileBindingRequest(
+                case_id="negative_initial_margin",
+                product_profile_id="oneoz_comex_v1",
+                account_profile_id="solo_small_gold_ibkr_5000_v1",
+                requested_lane=ProductLane.LIVE,
+                requested_symbol="1OZ",
+                requested_broker="IBKR",
+                requested_data_profile_release_id="ibkr_1oz_comex_bars_1m_v1",
+                requested_contract_count=1,
+                requested_initial_margin_fraction=-0.1,
+                requested_maintenance_margin_fraction=0.3,
+                requested_operating_posture=OperatingPosture.INTRADAY_FLAT_DEFAULT,
+                overnight_requested=False,
+                broker_contract_descriptor=BrokerContractDescriptor(
+                    symbol="1OZ",
+                    exchange="COMEX",
+                    currency="USD",
+                    contract_size_oz=1,
+                    minimum_price_fluctuation_usd_per_oz=0.25,
+                    settlement_type="cash_settled",
+                    session_calendar_id="comex_metals_globex_v1",
+                ),
+            )
+        )
+        self.assertEqual(BindingStatus.INCOMPATIBLE.value, negative_initial.status)
+        self.assertIn(
+            "requested_initial_margin_fraction",
+            negative_initial.differences,
+        )
+
+        inverted_margins = validate_profile_binding(
+            ProfileBindingRequest(
+                case_id="inverted_margin_pair",
+                product_profile_id="oneoz_comex_v1",
+                account_profile_id="solo_small_gold_ibkr_5000_v1",
+                requested_lane=ProductLane.LIVE,
+                requested_symbol="1OZ",
+                requested_broker="IBKR",
+                requested_data_profile_release_id="ibkr_1oz_comex_bars_1m_v1",
+                requested_contract_count=1,
+                requested_initial_margin_fraction=0.2,
+                requested_maintenance_margin_fraction=0.1,
+                requested_operating_posture=OperatingPosture.INTRADAY_FLAT_DEFAULT,
+                overnight_requested=False,
+                broker_contract_descriptor=BrokerContractDescriptor(
+                    symbol="1OZ",
+                    exchange="COMEX",
+                    currency="USD",
+                    contract_size_oz=1,
+                    minimum_price_fluctuation_usd_per_oz=0.25,
+                    settlement_type="cash_settled",
+                    session_calendar_id="comex_metals_globex_v1",
+                ),
+            )
+        )
+        self.assertEqual(BindingStatus.INCOMPATIBLE.value, inverted_margins.status)
+        self.assertIn(
+            "requested_maintenance_margin_fraction",
+            inverted_margins.differences,
+        )
+
     def test_catalog_counts_remain_narrow_and_explicit(self) -> None:
         self.assertEqual(2, len(PRODUCT_PROFILES))
         self.assertEqual(1, len(ACCOUNT_RISK_PROFILES))
