@@ -14,6 +14,24 @@ from shared.policy.clock_discipline import canonicalize_persisted_timestamp
 SUPPORTED_RELEASE_SCHEMA_VERSION = 1
 
 
+def _require_schema_version(value: object, *, release_kind: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{release_kind}: schema_version must be an integer")
+    return value
+
+
+def _normalize_observation_cutoff(value: str) -> str:
+    try:
+        normalized = canonicalize_persisted_timestamp(
+            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            "dataset_release: observation_cutoff_utc must be timezone-aware and UTC-normalizable"
+        ) from exc
+    return normalized.isoformat()
+
+
 @unique
 class ReleaseStatus(str, Enum):
     PASS = "pass"  # nosec B105 - lifecycle status literal, not a credential
@@ -56,6 +74,21 @@ class DatasetRelease:
     lifecycle_state: ReleaseLifecycleState
     schema_version: int = SUPPORTED_RELEASE_SCHEMA_VERSION
 
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "observation_cutoff_utc",
+            _normalize_observation_cutoff(self.observation_cutoff_utc),
+        )
+        object.__setattr__(
+            self,
+            "schema_version",
+            _require_schema_version(
+                self.schema_version,
+                release_kind=self.release_kind,
+            ),
+        )
+
     @property
     def release_kind(self) -> str:
         return "dataset_release"
@@ -84,7 +117,10 @@ class DatasetRelease:
             certification_report_hash=payload["certification_report_hash"],
             policy_bundle_hash=payload["policy_bundle_hash"],
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
-            schema_version=payload.get("schema_version", SUPPORTED_RELEASE_SCHEMA_VERSION),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                release_kind="dataset_release",
+            ),
         )
 
     @classmethod
@@ -104,6 +140,16 @@ class AnalyticRelease:
     artifact_root_hash: str
     lifecycle_state: ReleaseLifecycleState
     schema_version: int = SUPPORTED_RELEASE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "schema_version",
+            _require_schema_version(
+                self.schema_version,
+                release_kind=self.release_kind,
+            ),
+        )
 
     @property
     def release_kind(self) -> str:
@@ -130,7 +176,10 @@ class AnalyticRelease:
             slice_manifests=tuple(payload.get("slice_manifests", ())),
             artifact_root_hash=payload["artifact_root_hash"],
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
-            schema_version=payload.get("schema_version", SUPPORTED_RELEASE_SCHEMA_VERSION),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                release_kind="analytic_release",
+            ),
         )
 
     @classmethod
@@ -157,6 +206,16 @@ class DataProfileRelease:
     live_historical_parity_expectations: tuple[str, ...]
     lifecycle_state: ReleaseLifecycleState
     schema_version: int = SUPPORTED_RELEASE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "schema_version",
+            _require_schema_version(
+                self.schema_version,
+                release_kind=self.release_kind,
+            ),
+        )
 
     @property
     def release_kind(self) -> str:
@@ -190,7 +249,10 @@ class DataProfileRelease:
             symbology_mapping_rules=tuple(payload["symbology_mapping_rules"]),
             live_historical_parity_expectations=tuple(payload["live_historical_parity_expectations"]),
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
-            schema_version=payload.get("schema_version", SUPPORTED_RELEASE_SCHEMA_VERSION),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                release_kind="data_profile_release",
+            ),
         )
 
     @classmethod

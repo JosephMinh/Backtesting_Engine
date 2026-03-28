@@ -142,6 +142,85 @@ class ReleaseSchemaContractTest(unittest.TestCase):
         self.assertFalse(report.compatible)
         self.assertEqual("RELEASE_SCHEMA_VERSION_UNSUPPORTED", report.reason_code)
 
+    def test_dataset_release_normalizes_observation_cutoff_to_utc(self) -> None:
+        release = DatasetRelease(
+            release_id="dataset_release_cutoff_normalized_v1",
+            raw_input_hashes=("raw_sha256_a",),
+            reference_version_hashes=("calendar_sha256_v3",),
+            observation_cutoff_utc="2026-03-01T01:00:00+01:00",
+            validation_rules_version="validation_rules_v7",
+            catalog_version="catalog_v4",
+            protocol_versions={"ingestion_protocol": "ingest_v2"},
+            vendor_revision_watermark="databento_revision_2026-03-01",
+            correction_horizon="t_plus_2_business_days",
+            certification_report_hash="cert_report_sha256_001",
+            policy_bundle_hash="policy_bundle_sha256_001",
+            lifecycle_state=ReleaseLifecycleState.APPROVED,
+        )
+        self.assertEqual("2026-03-01T00:00:00+00:00", release.observation_cutoff_utc)
+
+    def test_release_loaders_require_explicit_integer_schema_version(self) -> None:
+        for release_kind, payload in (
+            (
+                "dataset_release",
+                {
+                    "release_id": "dataset_release_missing_schema_v1",
+                    "raw_input_hashes": ["raw_sha256_a"],
+                    "reference_version_hashes": ["calendar_sha256_v3"],
+                    "observation_cutoff_utc": "2026-03-01T00:00:00+00:00",
+                    "validation_rules_version": "validation_rules_v7",
+                    "catalog_version": "catalog_v4",
+                    "protocol_versions": {"ingestion_protocol": "ingest_v2"},
+                    "vendor_revision_watermark": "databento_revision_2026-03-01",
+                    "correction_horizon": "t_plus_2_business_days",
+                    "certification_report_hash": "cert_report_sha256_001",
+                    "policy_bundle_hash": "policy_bundle_sha256_001",
+                    "lifecycle_state": "approved",
+                },
+            ),
+            (
+                "analytic_release",
+                {
+                    "release_id": "analytic_release_missing_schema_v1",
+                    "dataset_release_id": "dataset_release_roundtrip_v1",
+                    "feature_version": "feature_defs_v9",
+                    "analytic_series_version": "analytic_series_v3",
+                    "feature_block_manifests": ["manifest://feature_block/core_v9"],
+                    "feature_availability_contracts": ["availability://gold/core_v9"],
+                    "slice_manifests": [],
+                    "artifact_root_hash": "artifact_root_sha256_001",
+                    "lifecycle_state": "published",
+                },
+            ),
+            (
+                "data_profile_release",
+                {
+                    "release_id": "ibkr_1oz_comex_bars_1m_missing_schema_v1",
+                    "source_feeds": ["ibkr_historical_bars", "ibkr_live_bars"],
+                    "venue_dataset_ids": ["ibkr:comex:1oz:bars:1m"],
+                    "schema_selection_rules": ["prefer_ibkr_trade_bar_schema_v2"],
+                    "timestamp_precedence_rule": "exchange_end_timestamp_then_vendor_arrival",
+                    "bar_construction_rules": ["one_minute_session_anchored_bars"],
+                    "session_anchor_rule": "comex_metals_globex_v1",
+                    "trade_quote_precedence_rule": "trade_first_then_quote_fallback",
+                    "zero_volume_bar_policy": "emit_with_explicit_zero_volume_flag",
+                    "late_print_policy": "quarantine_for_recertification_review",
+                    "correction_policy": "apply_vendor_corrections_via_delta_release",
+                    "gap_policy": "preserve_gaps_explicitly",
+                    "forward_fill_policy": "never_forward_fill_prices",
+                    "symbology_mapping_rules": ["bind_to_resolved_context_bundle_symbology_v4"],
+                    "live_historical_parity_expectations": ["same_session_anchor_and_close_rule"],
+                    "lifecycle_state": "approved",
+                },
+            ),
+        ):
+            with self.subTest(release_kind=release_kind):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    f"{release_kind}: schema_version must be an integer",
+                ):
+                    build_release(release_kind, payload)
+
     def test_from_json_rejects_invalid_json_payloads_with_value_error(self) -> None:
         with self.assertRaisesRegex(ValueError, "dataset_release: invalid JSON payload"):
             DatasetRelease.from_json("{not valid json")

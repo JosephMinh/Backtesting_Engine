@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import dataclass, field, replace
 from enum import Enum, unique
 
 from shared.policy.artifact_classes import ArtifactClass, get_artifact_definition
+from shared.policy.clock_discipline import canonicalize_persisted_timestamp
 from shared.policy.lifecycle_specs import (
     FAMILY_DECISION_MACHINE_ID,
     RESEARCH_RUN_MACHINE_ID,
@@ -18,6 +20,18 @@ from shared.policy.metadata_telemetry import RECORD_DEFINITIONS, StorageClass
 
 def _utc_now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def _normalize_persisted_timestamp(value: str, *, field_name: str) -> str:
+    try:
+        normalized = canonicalize_persisted_timestamp(
+            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        )
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{field_name} must be timezone-aware and UTC-normalizable"
+        ) from exc
+    return normalized.isoformat()
 
 
 @unique
@@ -69,6 +83,16 @@ class ReviewerAttestation:
     attested_controls: tuple[str, ...]
     signed_at_utc: str
 
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "signed_at_utc",
+            _normalize_persisted_timestamp(
+                self.signed_at_utc,
+                field_name="signed_at_utc",
+            ),
+        )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "reviewer_id": self.reviewer_id,
@@ -106,6 +130,16 @@ class ResearchRunRecord:
     parent_run_ids: tuple[str, ...] = ()
     lifecycle_state: ResearchRunLifecycle = ResearchRunLifecycle.RECORDED
     created_at_utc: str = field(default_factory=_utc_now)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "created_at_utc",
+            _normalize_persisted_timestamp(
+                self.created_at_utc,
+                field_name="created_at_utc",
+            ),
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -172,6 +206,29 @@ class FamilyDecisionRecord:
     reason_bundle: tuple[str, ...]
     revisit_at_utc: str | None = None
     lifecycle_state: FamilyDecisionLifecycle = FamilyDecisionLifecycle.ACTIVE
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "decision_timestamp_utc",
+            _normalize_persisted_timestamp(
+                self.decision_timestamp_utc,
+                field_name="decision_timestamp_utc",
+            ),
+        )
+        if self.revisit_at_utc is not None:
+            object.__setattr__(
+                self,
+                "revisit_at_utc",
+                _normalize_persisted_timestamp(
+                    self.revisit_at_utc,
+                    field_name="revisit_at_utc",
+                ),
+            )
+        for field_name in ("budget_consumed_usd", "next_budget_authorized_usd"):
+            value = getattr(self, field_name)
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(f"{field_name} must be finite and non-negative")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -354,7 +411,14 @@ def research_runs_for_family(
     store: ResearchStateStore, family_id: str
 ) -> tuple[ResearchRunRecord, ...]:
     return tuple(
-        record for record in store.research_runs.values() if record.family_id == family_id
+        sorted(
+            (
+                record
+                for record in store.research_runs.values()
+                if record.family_id == family_id
+            ),
+            key=lambda record: (record.created_at_utc, record.research_run_id),
+        )
     )
 
 
@@ -362,9 +426,14 @@ def family_decisions_for_family(
     store: ResearchStateStore, family_id: str
 ) -> tuple[FamilyDecisionRecord, ...]:
     return tuple(
-        record
-        for record in store.family_decision_records.values()
-        if record.family_id == family_id
+        sorted(
+            (
+                record
+                for record in store.family_decision_records.values()
+                if record.family_id == family_id
+            ),
+            key=lambda record: (record.decision_timestamp_utc, record.decision_record_id),
+        )
     )
 
 
@@ -381,8 +450,14 @@ def audit_events_for_record(
 def child_run_ids(store: ResearchStateStore, research_run_id: str) -> tuple[str, ...]:
     return tuple(
         record.research_run_id
-        for record in store.research_runs.values()
-        if research_run_id in record.parent_run_ids
+        for record in sorted(
+            (
+                record
+                for record in store.research_runs.values()
+                if research_run_id in record.parent_run_ids
+            ),
+            key=lambda record: (record.created_at_utc, record.research_run_id),
+        )
     )
 
 

@@ -40,6 +40,7 @@ def sample_research_run(
     *,
     family_id: str = "gold_breakout",
     parent_run_ids: tuple[str, ...] = (),
+    created_at_utc: str = "2026-03-26T15:00:00+00:00",
 ) -> ResearchRunRecord:
     return ResearchRunRecord(
         research_run_id=research_run_id,
@@ -59,6 +60,7 @@ def sample_research_run(
         output_artifact_digests=("artifact_a", "artifact_b"),
         admissibility_class=ResearchAdmissibilityClass.DIAGNOSTIC_ONLY,
         parent_run_ids=parent_run_ids,
+        created_at_utc=created_at_utc,
     )
 
 
@@ -70,14 +72,16 @@ def sample_decision(
     decision_type: FamilyDecisionType = FamilyDecisionType.CONTINUE,
     next_budget_authorized_usd: float = 500.0,
     revisit_at_utc: str | None = None,
+    decision_timestamp_utc: str = "2026-03-26T15:05:00+00:00",
+    budget_consumed_usd: float = 250.0,
 ) -> FamilyDecisionRecord:
     return FamilyDecisionRecord(
         decision_record_id=decision_record_id,
         family_id=family_id,
-        decision_timestamp_utc="2026-03-26T15:05:00+00:00",
+        decision_timestamp_utc=decision_timestamp_utc,
         decision_type=decision_type,
         evidence_references=evidence_references,
-        budget_consumed_usd=250.0,
+        budget_consumed_usd=budget_consumed_usd,
         next_budget_authorized_usd=next_budget_authorized_usd,
         reviewer_self_attestations=(sample_attestation(),),
         reason_bundle=("evidence_quality_green", "budget_remaining_sufficient"),
@@ -237,6 +241,79 @@ class TestResearchStateContract(unittest.TestCase):
             len(audit_events_for_record(store, "family_decision_record", "decision-001")),
             3,
         )
+
+    def test_persisted_timestamps_normalize_to_utc(self):
+        run = sample_research_run(created_at_utc="2026-03-26T10:00:00-05:00")
+        decision = sample_decision(
+            decision_timestamp_utc="2026-03-26T11:05:00-04:00",
+            revisit_at_utc="2026-03-27T11:05:00-04:00",
+        )
+
+        self.assertEqual("2026-03-26T15:00:00+00:00", run.created_at_utc)
+        self.assertEqual("2026-03-26T15:05:00+00:00", decision.decision_timestamp_utc)
+        self.assertEqual("2026-03-27T15:05:00+00:00", decision.revisit_at_utc)
+        self.assertEqual(
+            "2026-03-26T15:00:00+00:00",
+            decision.reviewer_self_attestations[0].signed_at_utc,
+        )
+
+    def test_family_queries_are_sorted_by_domain_timestamp_not_insertion_order(self):
+        store = ResearchStateStore()
+        record_research_run(
+            store,
+            sample_research_run("run-late", created_at_utc="2026-03-26T16:00:00+00:00"),
+        )
+        record_research_run(
+            store,
+            sample_research_run(
+                "run-early",
+                created_at_utc="2026-03-26T14:00:00+00:00",
+            ),
+        )
+        record_family_decision(
+            store,
+            sample_decision(
+                "decision-late",
+                evidence_references=("run-late",),
+                decision_timestamp_utc="2026-03-26T16:05:00+00:00",
+            ),
+        )
+        record_family_decision(
+            store,
+            sample_decision(
+                "decision-early",
+                evidence_references=("run-early",),
+                decision_timestamp_utc="2026-03-26T14:05:00+00:00",
+            ),
+        )
+
+        self.assertEqual(
+            ("run-early", "run-late"),
+            tuple(run.research_run_id for run in research_runs_for_family(store, "gold_breakout")),
+        )
+        self.assertEqual(
+            ("decision-early", "decision-late"),
+            tuple(
+                decision.decision_record_id
+                for decision in family_decisions_for_family(store, "gold_breakout")
+            ),
+        )
+
+    def test_decision_rejects_negative_budget_values(self):
+        store = ResearchStateStore()
+        record_research_run(store, sample_research_run())
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "budget_consumed_usd must be finite and non-negative",
+        ):
+            sample_decision("decision-negative-consumed", budget_consumed_usd=-1.0)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "next_budget_authorized_usd must be finite and non-negative",
+        ):
+            sample_decision("decision-negative-next", next_budget_authorized_usd=-1.0)
 
 
 if __name__ == "__main__":
