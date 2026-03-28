@@ -1,0 +1,544 @@
+{
+  "cases": [
+    {
+      "case_id": "pass_full_replay_certification",
+      "certification_id": "replay_certification_candidate_bundle_001",
+      "decision_trace_id": "decision_trace_replay_certification_001",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "certification_mode": "full",
+      "dependency_change_scope": "none",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_7_6_001",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_7_6_001",
+        "correlation_id": "corr-replay-certification-001",
+        "operator_reason_bundle": [
+          "frozen candidate registration retained for deterministic replay certification"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_7_6_001",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_7_6_001",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_7_6_001",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_7_6_001",
+          "signed_manifest_candidate_bundle_7_6_001",
+          "replay_cert_v1",
+          "tradability_study_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001",
+          "sha256:feature002"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "dependency_manifest_hashes": [
+          "dep_dag_sha256_001"
+        ],
+        "correlation_id": "corr-replay-certification-001",
+        "operator_reason_bundle": [
+          "replay fixture and signed manifest are closed over the frozen candidate"
+        ]
+      },
+      "expected_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        },
+        {
+          "signal_name": "risk_adjusted_signal",
+          "signal_value": 0.09,
+          "timestamp_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 2
+        }
+      ],
+      "actual_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        },
+        {
+          "signal_name": "risk_adjusted_signal",
+          "signal_value": 0.09,
+          "timestamp_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 2
+        }
+      ],
+      "expected_order_intent_trace": [
+        {
+          "order_intent_id": "intent_001",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "buy",
+          "quantity": 1.0,
+          "decision_sequence_number": 2
+        }
+      ],
+      "actual_order_intent_trace": [
+        {
+          "order_intent_id": "intent_001",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "buy",
+          "quantity": 1.0,
+          "decision_sequence_number": 2
+        }
+      ],
+      "expected_risk_action_trace": [
+        {
+          "risk_action_id": "risk_001",
+          "triggered_at_utc": "2026-03-27T00:01:02+00:00",
+          "action": "allow",
+          "policy_source": "session_risk_policy_v1",
+          "decision_sequence_number": 2
+        }
+      ],
+      "actual_risk_action_trace": [
+        {
+          "risk_action_id": "risk_001",
+          "triggered_at_utc": "2026-03-27T00:01:02+00:00",
+          "action": "allow",
+          "policy_source": "session_risk_policy_v1",
+          "decision_sequence_number": 2
+        }
+      ],
+      "expected_contract_state_trace": [
+        {
+          "decision_id": "contract_decision_001",
+          "decided_at_utc": "2026-03-27T00:01:03+00:00",
+          "contract_state": "paper_ready",
+          "reason_code": "CONTRACT_STATE_READY",
+          "decision_sequence_number": 2
+        }
+      ],
+      "actual_contract_state_trace": [
+        {
+          "decision_id": "contract_decision_001",
+          "decided_at_utc": "2026-03-27T00:01:03+00:00",
+          "contract_state": "paper_ready",
+          "reason_code": "CONTRACT_STATE_READY",
+          "decision_sequence_number": 2
+        }
+      ],
+      "expected_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "accepted",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 2
+        }
+      ],
+      "actual_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "accepted",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 2
+        }
+      ],
+      "expected_status": "pass",
+      "expected_reason_code": "REPLAY_CERTIFICATION_PASSED",
+      "expected_diff_count": 0,
+      "expected_paper_entry_permitted": true
+    },
+    {
+      "case_id": "reject_signal_trace_divergence",
+      "certification_id": "replay_certification_candidate_bundle_002",
+      "decision_trace_id": "decision_trace_replay_certification_002",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "certification_mode": "full",
+      "dependency_change_scope": "none",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_7_6_002",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_7_6_002",
+        "correlation_id": "corr-replay-certification-002",
+        "operator_reason_bundle": [
+          "candidate registration closed for divergence test"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_7_6_002",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_7_6_002",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_7_6_002",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_7_6_002",
+          "signed_manifest_candidate_bundle_7_6_002",
+          "replay_cert_v1",
+          "tradability_study_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001",
+          "sha256:feature002"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "dependency_manifest_hashes": [
+          "dep_dag_sha256_001"
+        ],
+        "correlation_id": "corr-replay-certification-002",
+        "operator_reason_bundle": [
+          "replay fixture and signed manifest are closed over the frozen candidate"
+        ]
+      },
+      "expected_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "actual_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.25,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "expected_order_intent_trace": [
+        {
+          "order_intent_id": "intent_002",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "buy",
+          "quantity": 1.0,
+          "decision_sequence_number": 1
+        }
+      ],
+      "actual_order_intent_trace": [
+        {
+          "order_intent_id": "intent_002",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "buy",
+          "quantity": 1.0,
+          "decision_sequence_number": 1
+        }
+      ],
+      "expected_risk_action_trace": [],
+      "actual_risk_action_trace": [],
+      "expected_contract_state_trace": [],
+      "actual_contract_state_trace": [],
+      "expected_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "accepted",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "actual_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "accepted",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "expected_status": "violation",
+      "expected_reason_code": "REPLAY_CERTIFICATION_DIVERGENCE_DETECTED",
+      "expected_diff_count": 1,
+      "expected_paper_entry_permitted": false,
+      "expected_first_divergence_stream": "signal_trace",
+      "expected_first_divergence_field": "signal_value"
+    },
+    {
+      "case_id": "reject_freshness_watermark_divergence",
+      "certification_id": "replay_certification_candidate_bundle_003",
+      "decision_trace_id": "decision_trace_replay_certification_003",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "certification_mode": "full",
+      "dependency_change_scope": "none",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_7_6_003",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_7_6_003",
+        "correlation_id": "corr-replay-certification-003",
+        "operator_reason_bundle": [
+          "candidate registration closed for freshness watermark divergence test"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_7_6_003",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_7_6_003",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_7_6_003",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_7_6_003",
+          "signed_manifest_candidate_bundle_7_6_003",
+          "replay_cert_v1",
+          "tradability_study_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001",
+          "sha256:feature002"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "dependency_manifest_hashes": [
+          "dep_dag_sha256_001"
+        ],
+        "correlation_id": "corr-replay-certification-003",
+        "operator_reason_bundle": [
+          "replay fixture and signed manifest are closed over the frozen candidate"
+        ]
+      },
+      "expected_signal_trace": [],
+      "actual_signal_trace": [],
+      "expected_order_intent_trace": [
+        {
+          "order_intent_id": "intent_003",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "sell",
+          "quantity": 1.0,
+          "decision_sequence_number": 7
+        }
+      ],
+      "actual_order_intent_trace": [
+        {
+          "order_intent_id": "intent_003",
+          "submitted_at_utc": "2026-03-27T00:01:01+00:00",
+          "action": "submit",
+          "symbol": "GCM6",
+          "side": "sell",
+          "quantity": 1.0,
+          "decision_sequence_number": 7
+        }
+      ],
+      "expected_risk_action_trace": [
+        {
+          "risk_action_id": "risk_003",
+          "triggered_at_utc": "2026-03-27T00:01:02+00:00",
+          "action": "allow",
+          "policy_source": "session_risk_policy_v1",
+          "decision_sequence_number": 7
+        }
+      ],
+      "actual_risk_action_trace": [
+        {
+          "risk_action_id": "risk_003",
+          "triggered_at_utc": "2026-03-27T00:01:02+00:00",
+          "action": "allow",
+          "policy_source": "session_risk_policy_v1",
+          "decision_sequence_number": 7
+        }
+      ],
+      "expected_contract_state_trace": [
+        {
+          "decision_id": "contract_decision_003",
+          "decided_at_utc": "2026-03-27T00:01:03+00:00",
+          "contract_state": "paper_ready",
+          "reason_code": "CONTRACT_STATE_READY",
+          "decision_sequence_number": 7
+        }
+      ],
+      "actual_contract_state_trace": [
+        {
+          "decision_id": "contract_decision_003",
+          "decided_at_utc": "2026-03-27T00:01:03+00:00",
+          "contract_state": "paper_ready",
+          "reason_code": "CONTRACT_STATE_READY",
+          "decision_sequence_number": 7
+        }
+      ],
+      "expected_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "accepted",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 7
+        }
+      ],
+      "actual_freshness_watermark_trace": [
+        {
+          "data_source": "bars_primary",
+          "watermark_timestamp_utc": "2026-03-27T00:00:59+00:00",
+          "handling_decision": "degraded_mode",
+          "observed_at_utc": "2026-03-27T00:01:00+00:00",
+          "decision_sequence_number": 7
+        }
+      ],
+      "expected_status": "violation",
+      "expected_reason_code": "REPLAY_CERTIFICATION_DIVERGENCE_DETECTED",
+      "expected_diff_count": 1,
+      "expected_paper_entry_permitted": false,
+      "expected_first_divergence_stream": "freshness_watermark_trace",
+      "expected_first_divergence_field": "handling_decision"
+    },
+    {
+      "case_id": "reject_incremental_recertification_with_broad_change",
+      "certification_id": "replay_certification_candidate_bundle_004",
+      "decision_trace_id": "decision_trace_replay_certification_004",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "certification_mode": "incremental",
+      "dependency_change_scope": "broad",
+      "prior_certification_id": "replay_certification_candidate_bundle_prev_004",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_7_6_004",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_7_6_004",
+        "correlation_id": "corr-replay-certification-004",
+        "operator_reason_bundle": [
+          "candidate registration closed for incremental scope test"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_7_6_004",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_7_6_004",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_7_6_004",
+        "available_artifact_ids": [
+          "dataset_release_gold_2026q1_v1",
+          "analytic_release_gold_2026q1_v1",
+          "ibkr_1oz_comex_bars_1m_v1",
+          "resolved_context_bundle_gold_2026q1_ctx_sha256_001",
+          "execution_profile_release_gold_2026q1_v1_exec_profile_sha256_001",
+          "replay_fixture_candidate_bundle_7_6_004",
+          "signed_manifest_candidate_bundle_7_6_004",
+          "replay_cert_v1",
+          "tradability_study_v1"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001",
+          "sha256:feature002"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a",
+          "risk_signoff_b"
+        ],
+        "dependency_manifest_hashes": [
+          "dep_dag_sha256_001"
+        ],
+        "correlation_id": "corr-replay-certification-004",
+        "operator_reason_bundle": [
+          "replay fixture and signed manifest are closed over the frozen candidate"
+        ]
+      },
+      "expected_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "actual_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "expected_order_intent_trace": [],
+      "actual_order_intent_trace": [],
+      "expected_risk_action_trace": [],
+      "actual_risk_action_trace": [],
+      "expected_contract_state_trace": [],
+      "actual_contract_state_trace": [],
+      "expected_freshness_watermark_trace": [],
+      "actual_freshness_watermark_trace": [],
+      "expected_status": "violation",
+      "expected_reason_code": "REPLAY_CERTIFICATION_INCREMENTAL_SCOPE_TOO_BROAD",
+      "expected_diff_count": 0,
+      "expected_paper_entry_permitted": false
+    },
+    {
+      "case_id": "reject_certification_when_replay_readiness_is_open",
+      "certification_id": "replay_certification_candidate_bundle_005",
+      "decision_trace_id": "decision_trace_replay_certification_005",
+      "candidate_case_id": "allow_frozen_candidate_bundle",
+      "certification_mode": "full",
+      "dependency_change_scope": "none",
+      "registration_overrides": {
+        "registration_log_id": "candidate_bundle_freeze_log_7_6_005",
+        "registration_artifact_id": "signed_manifest_candidate_bundle_7_6_005",
+        "correlation_id": "corr-replay-certification-005",
+        "operator_reason_bundle": [
+          "candidate registration closed for replay-readiness prerequisite test"
+        ]
+      },
+      "replay_context_overrides": {
+        "replay_context_id": "candidate_bundle_replay_context_7_6_005",
+        "replay_fixture_id": "replay_fixture_candidate_bundle_7_6_005",
+        "signed_manifest_id": "signed_manifest_candidate_bundle_7_6_005",
+        "available_artifact_ids": [
+          "replay_fixture_candidate_bundle_7_6_005",
+          "signed_manifest_candidate_bundle_7_6_005"
+        ],
+        "available_feature_contract_hashes": [
+          "sha256:feature001"
+        ],
+        "available_signature_ids": [
+          "ops_signoff_a"
+        ],
+        "dependency_manifest_hashes": [],
+        "correlation_id": "corr-replay-certification-005",
+        "operator_reason_bundle": [
+          "replay context intentionally leaves readiness dependencies open"
+        ]
+      },
+      "expected_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "actual_signal_trace": [
+        {
+          "signal_name": "alpha_signal",
+          "signal_value": 0.125,
+          "timestamp_utc": "2026-03-27T00:00:00+00:00",
+          "decision_sequence_number": 1
+        }
+      ],
+      "expected_order_intent_trace": [],
+      "actual_order_intent_trace": [],
+      "expected_risk_action_trace": [],
+      "actual_risk_action_trace": [],
+      "expected_contract_state_trace": [],
+      "actual_contract_state_trace": [],
+      "expected_freshness_watermark_trace": [],
+      "actual_freshness_watermark_trace": [],
+      "expected_status": "violation",
+      "expected_reason_code": "REPLAY_CERTIFICATION_REPLAY_NOT_READY",
+      "expected_diff_count": 0,
+      "expected_paper_entry_permitted": false,
+      "expected_replay_readiness_reason_code": "CANDIDATE_BUNDLE_REPLAY_NOT_CLOSED"
+    }
+  ]
+}
