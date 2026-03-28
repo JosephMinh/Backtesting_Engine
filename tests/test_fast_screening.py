@@ -61,6 +61,11 @@ class FastScreeningContractTests(unittest.TestCase):
                 "other_allowed_actions: must be a list of strings",
             ),
             (
+                "other_allowed_actions_missing",
+                lambda payload: payload["governance"].pop("other_allowed_actions"),
+                "other_allowed_actions: missing required field",
+            ),
+            (
                 "schema_version_unsupported",
                 lambda payload: payload.__setitem__("schema_version", 2),
                 "schema_version: unsupported schema version 2; expected 1",
@@ -69,6 +74,11 @@ class FastScreeningContractTests(unittest.TestCase):
                 "schema_version_missing",
                 lambda payload: payload.pop("schema_version"),
                 "schema_version: missing required field",
+            ),
+            (
+                "equivalence_evidence_missing",
+                lambda payload: payload.pop("equivalence_evidence"),
+                "equivalence_evidence: missing required field",
             ),
         )
 
@@ -190,6 +200,16 @@ class FastScreeningContractTests(unittest.TestCase):
                 "timestamp_naive",
                 lambda payload: payload.__setitem__("timestamp", "2026-03-28T00:00:00"),
                 "timestamp: must be timezone-aware",
+            ),
+            (
+                "nested_check_id_missing",
+                lambda payload: payload["decision_trace"][0].pop("check_id"),
+                "check_id: missing required field",
+            ),
+            (
+                "nested_evidence_missing",
+                lambda payload: payload["decision_trace"][0].pop("evidence"),
+                "evidence: missing required field",
             ),
         )
 

@@ -95,6 +95,12 @@ def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
     return value
 
 
+def _require_present(payload: dict[str, Any], *, field_name: str) -> object:
+    if field_name not in payload:
+        raise ValueError(f"{field_name}: missing required field")
+    return payload[field_name]
+
+
 def _require_non_empty_string(value: object, *, field_name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{field_name}: must be a non-empty string")
@@ -218,55 +224,61 @@ class FastScreeningEquivalenceEvidence:
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningEquivalenceEvidence":
         payload = _require_mapping(payload, field_name="fast_screening_equivalence")
         return cls(
-            study_id=_require_non_empty_string(payload["study_id"], field_name="study_id"),
+            study_id=_require_non_empty_string(
+                _require_present(payload, field_name="study_id"),
+                field_name="study_id",
+            ),
             compared_engine=_require_non_empty_string(
-                payload["compared_engine"],
+                _require_present(payload, field_name="compared_engine"),
                 field_name="compared_engine",
             ),
-            passed=_require_bool(payload["passed"], field_name="passed"),
+            passed=_require_bool(
+                _require_present(payload, field_name="passed"),
+                field_name="passed",
+            ),
             checked_dimensions=_require_string_sequence(
-                payload["checked_dimensions"],
+                _require_present(payload, field_name="checked_dimensions"),
                 field_name="checked_dimensions",
             ),
             coverage_seed_count=_require_int(
-                payload["coverage_seed_count"],
+                _require_present(payload, field_name="coverage_seed_count"),
                 field_name="coverage_seed_count",
                 minimum=1,
             ),
             retained_run_log_ids=_require_string_sequence(
-                payload["retained_run_log_ids"],
+                _require_present(payload, field_name="retained_run_log_ids"),
                 field_name="retained_run_log_ids",
             ),
             retained_artifact_ids=_require_string_sequence(
-                payload["retained_artifact_ids"],
+                _require_present(payload, field_name="retained_artifact_ids"),
                 field_name="retained_artifact_ids",
             ),
             expected_vs_actual_diff_ids=_require_string_sequence(
-                payload["expected_vs_actual_diff_ids"],
+                _require_present(payload, field_name="expected_vs_actual_diff_ids"),
                 field_name="expected_vs_actual_diff_ids",
             ),
             max_signal_mismatch_rate=_require_finite_float(
-                payload["max_signal_mismatch_rate"],
+                _require_present(payload, field_name="max_signal_mismatch_rate"),
                 field_name="max_signal_mismatch_rate",
             ),
             allowed_signal_mismatch_rate=_require_finite_float(
-                payload["allowed_signal_mismatch_rate"],
+                _require_present(payload, field_name="allowed_signal_mismatch_rate"),
                 field_name="allowed_signal_mismatch_rate",
             ),
             max_fill_rate_delta=_require_finite_float(
-                payload["max_fill_rate_delta"],
+                _require_present(payload, field_name="max_fill_rate_delta"),
                 field_name="max_fill_rate_delta",
             ),
             allowed_fill_rate_delta=_require_finite_float(
-                payload["allowed_fill_rate_delta"],
+                _require_present(payload, field_name="allowed_fill_rate_delta"),
                 field_name="allowed_fill_rate_delta",
             ),
             max_pnl_drift_bps=_require_finite_float(
-                payload["max_pnl_drift_bps"],
+                _require_present(payload, field_name="max_pnl_drift_bps"),
                 field_name="max_pnl_drift_bps",
             ),
             allowed_pnl_drift_bps=_require_finite_float(
-                payload["allowed_pnl_drift_bps"],
+                _require_present(payload, field_name="allowed_pnl_drift_bps"),
                 field_name="allowed_pnl_drift_bps",
             ),
         )
@@ -298,35 +310,35 @@ class FastScreeningGovernance:
         payload = _require_mapping(payload, field_name="fast_screening_governance")
         return cls(
             may_inform_continuation=_require_bool(
-                payload["may_inform_continuation"],
+                _require_present(payload, field_name="may_inform_continuation"),
                 field_name="may_inform_continuation",
             ),
             may_inform_abandonment=_require_bool(
-                payload["may_inform_abandonment"],
+                _require_present(payload, field_name="may_inform_abandonment"),
                 field_name="may_inform_abandonment",
             ),
             promotion_blocked=_require_bool(
-                payload["promotion_blocked"],
+                _require_present(payload, field_name="promotion_blocked"),
                 field_name="promotion_blocked",
             ),
             requires_full_nautilus_screening=_require_bool(
-                payload["requires_full_nautilus_screening"],
+                _require_present(payload, field_name="requires_full_nautilus_screening"),
                 field_name="requires_full_nautilus_screening",
             ),
             requires_full_validation=_require_bool(
-                payload["requires_full_validation"],
+                _require_present(payload, field_name="requires_full_validation"),
                 field_name="requires_full_validation",
             ),
             requires_full_stress=_require_bool(
-                payload["requires_full_stress"],
+                _require_present(payload, field_name="requires_full_stress"),
                 field_name="requires_full_stress",
             ),
             requires_null_comparison=_require_bool(
-                payload["requires_null_comparison"],
+                _require_present(payload, field_name="requires_null_comparison"),
                 field_name="requires_null_comparison",
             ),
             other_allowed_actions=_require_string_sequence(
-                payload.get("other_allowed_actions", ()),
+                _require_present(payload, field_name="other_allowed_actions"),
                 field_name="other_allowed_actions",
             ),
         )
@@ -367,54 +379,61 @@ class FastScreeningRequest:
         if "schema_version" not in payload:
             raise ValueError("schema_version: missing required field")
         return cls(
-            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            case_id=_require_non_empty_string(
+                _require_present(payload, field_name="case_id"),
+                field_name="case_id",
+            ),
             candidate_id=_require_non_empty_string(
-                payload["candidate_id"],
+                _require_present(payload, field_name="candidate_id"),
                 field_name="candidate_id",
             ),
             strategy_class_id=_require_non_empty_string(
-                payload["strategy_class_id"],
+                _require_present(payload, field_name="strategy_class_id"),
                 field_name="strategy_class_id",
             ),
             fast_path_engine=_require_non_empty_string(
-                payload["fast_path_engine"],
+                _require_present(payload, field_name="fast_path_engine"),
                 field_name="fast_path_engine",
             ),
             decision_basis=_require_non_empty_string(
-                payload["decision_basis"],
+                _require_present(payload, field_name="decision_basis"),
                 field_name="decision_basis",
             ),
             bar_interval_seconds=_require_int(
-                payload["bar_interval_seconds"],
+                _require_present(payload, field_name="bar_interval_seconds"),
                 field_name="bar_interval_seconds",
                 minimum=1,
             ),
             order_semantics=_require_string_sequence(
-                payload["order_semantics"],
+                _require_present(payload, field_name="order_semantics"),
                 field_name="order_semantics",
             ),
             order_management_mode=_require_non_empty_string(
-                payload["order_management_mode"],
+                _require_present(payload, field_name="order_management_mode"),
                 field_name="order_management_mode",
             ),
             requires_passive_queue_dependence=_require_bool(
-                payload["requires_passive_queue_dependence"]
-                ,
+                _require_present(payload, field_name="requires_passive_queue_dependence"),
                 field_name="requires_passive_queue_dependence",
             ),
             depends_on_portability_sensitive_microstructure=_require_bool(
-                payload["depends_on_portability_sensitive_microstructure"]
-                ,
+                _require_present(
+                    payload,
+                    field_name="depends_on_portability_sensitive_microstructure",
+                ),
                 field_name="depends_on_portability_sensitive_microstructure",
             ),
             equivalence_evidence=FastScreeningEquivalenceEvidence.from_dict(
                 _require_mapping(
-                    payload["equivalence_evidence"],
+                    _require_present(payload, field_name="equivalence_evidence"),
                     field_name="equivalence_evidence",
                 )
             ),
             governance=FastScreeningGovernance.from_dict(
-                _require_mapping(payload["governance"], field_name="governance")
+                _require_mapping(
+                    _require_present(payload, field_name="governance"),
+                    field_name="governance",
+                )
             ),
             schema_version=_require_schema_version(
                 payload["schema_version"],
@@ -448,20 +467,38 @@ class FastScreeningCheckResult:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningCheckResult":
         payload = _require_mapping(payload, field_name="fast_screening_check_result")
-        evidence = _require_mapping(payload.get("evidence", {}), field_name="evidence")
+        evidence = _require_mapping(
+            _require_present(payload, field_name="evidence"),
+            field_name="evidence",
+        )
         return cls(
             check_id=_require_enum_value(
-                payload["check_id"],
+                _require_present(payload, field_name="check_id"),
                 field_name="check_id",
                 enum_type=FastScreeningCheckID,
                 description="fast-screening check id",
             ),
-            check_name=_require_non_empty_string(payload["check_name"], field_name="check_name"),
-            passed=_require_bool(payload["passed"], field_name="passed"),
-            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
-            diagnostic=_require_non_empty_string(payload["diagnostic"], field_name="diagnostic"),
+            check_name=_require_non_empty_string(
+                _require_present(payload, field_name="check_name"),
+                field_name="check_name",
+            ),
+            passed=_require_bool(
+                _require_present(payload, field_name="passed"),
+                field_name="passed",
+            ),
+            reason_code=_require_non_empty_string(
+                _require_present(payload, field_name="reason_code"),
+                field_name="reason_code",
+            ),
+            diagnostic=_require_non_empty_string(
+                _require_present(payload, field_name="diagnostic"),
+                field_name="diagnostic",
+            ),
             evidence=dict(evidence),
-            timestamp=_normalize_utc_timestamp(payload["timestamp"], field_name="timestamp"),
+            timestamp=_normalize_utc_timestamp(
+                _require_present(payload, field_name="timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
@@ -503,87 +540,99 @@ class FastScreeningReport:
     def from_dict(cls, payload: dict[str, Any]) -> "FastScreeningReport":
         payload = _require_mapping(payload, field_name="fast_screening_report")
         return cls(
-            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
-            candidate_id=_require_non_empty_string(payload["candidate_id"], field_name="candidate_id"),
+            case_id=_require_non_empty_string(
+                _require_present(payload, field_name="case_id"),
+                field_name="case_id",
+            ),
+            candidate_id=_require_non_empty_string(
+                _require_present(payload, field_name="candidate_id"),
+                field_name="candidate_id",
+            ),
             strategy_class_id=_require_non_empty_string(
-                payload["strategy_class_id"],
+                _require_present(payload, field_name="strategy_class_id"),
                 field_name="strategy_class_id",
             ),
             fast_path_engine=_require_non_empty_string(
-                payload["fast_path_engine"],
+                _require_present(payload, field_name="fast_path_engine"),
                 field_name="fast_path_engine",
             ),
             status=_require_enum_value(
-                payload["status"],
+                _require_present(payload, field_name="status"),
                 field_name="status",
                 enum_type=FastScreeningStatus,
                 description="fast-screening status",
             ),
-            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            reason_code=_require_non_empty_string(
+                _require_present(payload, field_name="reason_code"),
+                field_name="reason_code",
+            ),
             fast_path_eligible=_require_bool(
-                payload["fast_path_eligible"],
+                _require_present(payload, field_name="fast_path_eligible"),
                 field_name="fast_path_eligible",
             ),
             equivalence_certified=_require_bool(
-                payload["equivalence_certified"],
+                _require_present(payload, field_name="equivalence_certified"),
                 field_name="equivalence_certified",
             ),
             promotion_blocked=_require_bool(
-                payload["promotion_blocked"],
+                _require_present(payload, field_name="promotion_blocked"),
                 field_name="promotion_blocked",
             ),
             admissible_research_actions=list(
                 _require_string_sequence(
-                    payload["admissible_research_actions"],
+                    _require_present(payload, field_name="admissible_research_actions"),
                     field_name="admissible_research_actions",
                 )
             ),
             required_follow_on_workflow=list(
                 _require_string_sequence(
-                    payload["required_follow_on_workflow"],
+                    _require_present(payload, field_name="required_follow_on_workflow"),
                     field_name="required_follow_on_workflow",
                 )
             ),
             decision_trace=[
                 FastScreeningCheckResult.from_dict(item).to_dict()
                 for item in _require_object_sequence(
-                    payload["decision_trace"],
+                    _require_present(payload, field_name="decision_trace"),
                     field_name="decision_trace",
                 )
             ],
             failed_check_ids=list(
                 _require_string_sequence(
-                    payload["failed_check_ids"],
+                    _require_present(payload, field_name="failed_check_ids"),
                     field_name="failed_check_ids",
                 )
             ),
             retained_run_log_ids=list(
                 _require_string_sequence(
-                    payload["retained_run_log_ids"],
+                    _require_present(payload, field_name="retained_run_log_ids"),
                     field_name="retained_run_log_ids",
                 )
             ),
             retained_artifact_ids=list(
                 _require_string_sequence(
-                    payload["retained_artifact_ids"],
+                    _require_present(payload, field_name="retained_artifact_ids"),
                     field_name="retained_artifact_ids",
                 )
             ),
             expected_vs_actual_diff_ids=list(
                 _require_string_sequence(
-                    payload["expected_vs_actual_diff_ids"],
+                    _require_present(payload, field_name="expected_vs_actual_diff_ids"),
                     field_name="expected_vs_actual_diff_ids",
                 )
             ),
             explanation=_require_non_empty_string(
-                payload["explanation"],
+                _require_present(payload, field_name="explanation"),
                 field_name="explanation",
             ),
             remediation=_require_non_empty_string(
-                payload["remediation"],
+                _require_present(payload, field_name="remediation"),
                 field_name="remediation",
             ),
-            timestamp=_normalize_utc_timestamp(payload["timestamp"], field_name="timestamp"),
+            timestamp=_normalize_utc_timestamp(
+                _require_present(payload, field_name="timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     @classmethod
