@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
-from typing import Any
+from typing import Any, Callable
 
 from shared.policy.artifact_classes import ArtifactClass, get_artifact_definition
 from shared.policy.clock_discipline import canonicalize_persisted_timestamp
@@ -97,6 +98,60 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a finite number")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be a finite number") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name} must be a finite number")
+    return parsed
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _optional_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string")
+    try:
+        return canonicalize_persisted_timestamp(
+            datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        ).isoformat()
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string") from exc
+
+
+def _normalize_optional_utc_timestamp(
+    value: object,
+    *,
+    field_name: str,
+    default_factory: Callable[[], str],
+) -> str:
+    if value is None:
+        return default_factory()
+    return _normalize_utc_timestamp(value, field_name=field_name)
+
+
 @dataclass(frozen=True)
 class CandidateBundle:
     bundle_id: str
@@ -159,10 +214,9 @@ class CandidateBundle:
             research_symbol=str(payload["research_symbol"]),
             execution_symbol=str(payload["execution_symbol"]),
             dataset_release_id=str(payload["dataset_release_id"]),
-            analytic_release_id=(
-                str(payload["analytic_release_id"])
-                if payload.get("analytic_release_id")
-                else None
+            analytic_release_id=_optional_string(
+                payload.get("analytic_release_id"),
+                field_name="analytic_release_id",
             ),
             data_profile_release_id=str(payload["data_profile_release_id"]),
             resolved_context_bundle_id=str(payload["resolved_context_bundle_id"]),
@@ -179,8 +233,14 @@ class CandidateBundle:
             eligible_account_class_constraints=tuple(
                 str(item) for item in payload["eligible_account_class_constraints"]
             ),
-            minimum_capital_usd=int(payload["minimum_capital_usd"]),
-            minimum_margin_fraction=float(payload["minimum_margin_fraction"]),
+            minimum_capital_usd=_require_int(
+                payload["minimum_capital_usd"],
+                field_name="minimum_capital_usd",
+            ),
+            minimum_margin_fraction=_require_float(
+                payload["minimum_margin_fraction"],
+                field_name="minimum_margin_fraction",
+            ),
             required_broker_capability_profile_id=str(
                 payload["required_broker_capability_profile_id"]
             ),
@@ -188,28 +248,29 @@ class CandidateBundle:
             required_evidence_ids=tuple(str(item) for item in payload["required_evidence_ids"]),
             compatibility_matrix_version=str(payload["compatibility_matrix_version"]),
             signature_ids=tuple(str(item) for item in payload["signature_ids"]),
-            concrete_account_binding_id=(
-                str(payload["concrete_account_binding_id"])
-                if payload.get("concrete_account_binding_id")
-                else None
+            concrete_account_binding_id=_optional_string(
+                payload.get("concrete_account_binding_id"),
+                field_name="concrete_account_binding_id",
             ),
-            live_data_entitlement_id=(
-                str(payload["live_data_entitlement_id"])
-                if payload.get("live_data_entitlement_id")
-                else None
+            live_data_entitlement_id=_optional_string(
+                payload.get("live_data_entitlement_id"),
+                field_name="live_data_entitlement_id",
             ),
-            current_fee_schedule_snapshot_id=(
-                str(payload["current_fee_schedule_snapshot_id"])
-                if payload.get("current_fee_schedule_snapshot_id")
-                else None
+            current_fee_schedule_snapshot_id=_optional_string(
+                payload.get("current_fee_schedule_snapshot_id"),
+                field_name="current_fee_schedule_snapshot_id",
             ),
-            current_margin_snapshot_id=(
-                str(payload["current_margin_snapshot_id"])
-                if payload.get("current_margin_snapshot_id")
-                else None
+            current_margin_snapshot_id=_optional_string(
+                payload.get("current_margin_snapshot_id"),
+                field_name="current_margin_snapshot_id",
             ),
-            schema_version=int(
-                payload.get("schema_version", SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION)
+            schema_version=(
+                _require_schema_version(
+                    payload["schema_version"],
+                    label="candidate_bundle",
+                )
+                if "schema_version" in payload
+                else SUPPORTED_DEPLOYMENT_PACKET_SCHEMA_VERSION
             ),
         )
 
@@ -256,10 +317,9 @@ class CandidateBundleFreezeRegistration:
             signal_kernel_digest=str(payload["signal_kernel_digest"]),
             parameterization_digest=str(payload["parameterization_digest"]),
             dataset_release_id=str(payload["dataset_release_id"]),
-            analytic_release_id=(
-                str(payload["analytic_release_id"])
-                if payload.get("analytic_release_id")
-                else None
+            analytic_release_id=_optional_string(
+                payload.get("analytic_release_id"),
+                field_name="analytic_release_id",
             ),
             data_profile_release_id=str(payload["data_profile_release_id"]),
             resolved_context_bundle_id=str(payload["resolved_context_bundle_id"]),
@@ -279,7 +339,11 @@ class CandidateBundleFreezeRegistration:
                 str(item) for item in payload["operator_reason_bundle"]
             ),
             frozen_bundle_payload=_jsonable(dict(payload["frozen_bundle_payload"])),
-            created_at_utc=str(payload.get("created_at_utc", _utcnow())),
+            created_at_utc=_normalize_optional_utc_timestamp(
+                payload.get("created_at_utc"),
+                field_name="created_at_utc",
+                default_factory=_utcnow,
+            ),
         )
 
     @classmethod

@@ -255,6 +255,35 @@ class DeploymentPacketContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "candidate_bundle: invalid JSON payload"):
             CandidateBundle.from_json("{not valid json")
 
+    def test_candidate_loader_rejects_bool_numeric_coercions_and_boolean_schema_version(self) -> None:
+        payload = dict(load_cases()["candidate_cases"][0]["payload"])
+
+        payload_with_bool_capital = dict(payload)
+        payload_with_bool_capital["minimum_capital_usd"] = True
+        with self.assertRaisesRegex(ValueError, "minimum_capital_usd must be an integer"):
+            CandidateBundle.from_dict(payload_with_bool_capital)
+
+        payload_with_bool_margin = dict(payload)
+        payload_with_bool_margin["minimum_margin_fraction"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "minimum_margin_fraction must be a finite number",
+        ):
+            CandidateBundle.from_dict(payload_with_bool_margin)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "candidate_bundle: schema_version must be an integer",
+        ):
+            CandidateBundle.from_dict(payload_with_bool_schema)
+
+        payload_with_bool_optional_id = dict(payload)
+        payload_with_bool_optional_id["analytic_release_id"] = False
+        with self.assertRaisesRegex(ValueError, "analytic_release_id must be a string"):
+            CandidateBundle.from_dict(payload_with_bool_optional_id)
+
     def test_candidate_fixture_cases_emit_expected_reports(self) -> None:
         for payload in load_cases()["candidate_cases"]:
             with self.subTest(case_id=payload["case_id"]):
@@ -477,6 +506,24 @@ class DeploymentPacketContractTest(unittest.TestCase):
             replay_context,
             CandidateBundleReplayContext.from_json(replay_context.to_json()),
         )
+
+    def test_candidate_freeze_loader_requires_aware_created_timestamp(self) -> None:
+        candidate = build_candidate(load_cases()["candidate_cases"][0]["payload"])
+        registration = build_freeze_registration(candidate)
+        payload = registration.to_dict()
+
+        payload_with_naive_timestamp = dict(payload)
+        payload_with_naive_timestamp["created_at_utc"] = "2026-03-27T00:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "created_at_utc must be an ISO-8601 timestamp string",
+        ):
+            CandidateBundleFreezeRegistration.from_dict(payload_with_naive_timestamp)
+
+        payload_with_bool_optional_id = dict(payload)
+        payload_with_bool_optional_id["analytic_release_id"] = False
+        with self.assertRaisesRegex(ValueError, "analytic_release_id must be a string"):
+            CandidateBundleFreezeRegistration.from_dict(payload_with_bool_optional_id)
 
     def test_candidate_replay_report_mentions_closed_dependencies(self) -> None:
         case = next(
