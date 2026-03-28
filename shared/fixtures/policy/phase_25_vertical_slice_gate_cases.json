@@ -1,0 +1,365 @@
+{
+  "shared_request_defaults": {
+    "drill_script_reference": "scripts/opsd_vertical_slice_smoke.py",
+    "vertical_slice_report": {
+      "schema_version": 1,
+      "case_id": "gold_momentum_promotable",
+      "script_reference": "scripts/opsd_vertical_slice_smoke.py",
+      "manifest_path": "artifact/opsd_vertical_slice_manifest.json",
+      "artifact_root": "artifact/opsd_vertical_slice",
+      "run_id": "opsd-vertical-slice-run-001",
+      "correlation_id": "opsd_vertical_slice:run-001",
+      "decision_trace_id": "opsd_vertical_slice:run-001:decision_trace",
+      "decision": "pass",
+      "reason_code": "OPSD_VERTICAL_SLICE_READY_FOR_PHASE_2_5_GATE",
+      "timestamp": "2026-03-28T00:00:00+00:00",
+      "retained_logs": [
+        {
+          "step_id": "kernel",
+          "reference_id": "artifact/kernel/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the kernel vertical-slice step."
+        },
+        {
+          "step_id": "runtime",
+          "reference_id": "artifact/runtime/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the runtime vertical-slice step."
+        },
+        {
+          "step_id": "schedule",
+          "reference_id": "artifact/schedule/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the schedule vertical-slice step."
+        },
+        {
+          "step_id": "live_bar",
+          "reference_id": "artifact/live_bar/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the live-bar vertical-slice step."
+        },
+        {
+          "step_id": "readiness",
+          "reference_id": "artifact/readiness/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the readiness vertical-slice step."
+        },
+        {
+          "step_id": "recovery_smoke",
+          "reference_id": "artifact/recovery_smoke/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the recovery-smoke vertical-slice step."
+        },
+        {
+          "step_id": "recovery_runtime",
+          "reference_id": "artifact/recovery_runtime/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the recovery-runtime vertical-slice step."
+        },
+        {
+          "step_id": "route_mode",
+          "reference_id": "artifact/route_mode/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the route-mode vertical-slice step."
+        },
+        {
+          "step_id": "reconciliation",
+          "reference_id": "artifact/reconciliation/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the reconciliation vertical-slice step."
+        },
+        {
+          "step_id": "evidence_archive",
+          "reference_id": "artifact/evidence_archive/stdout.txt",
+          "correlation_id": "opsd_vertical_slice:run-001",
+          "detail": "Retained stdout for the evidence-archive vertical-slice step."
+        }
+      ],
+      "retained_artifact_ids": [
+        "artifact/opsd_vertical_slice",
+        "artifact/opsd_vertical_slice_manifest.json",
+        "compiled_schedule_gold_reset_v1",
+        "artifact/live_bar",
+        "artifact/readiness",
+        "artifact/recovery_smoke",
+        "artifact/route_mode",
+        "authoritative-ledger-close-0001",
+        "artifact/evidence_archive",
+        "paper_bundle_001",
+        "shadow_bundle_001",
+        "recovery_bundle_001"
+      ],
+      "summary": {
+        "script_reference": "scripts/opsd_vertical_slice_smoke.py",
+        "manifest_path": "artifact/opsd_vertical_slice_manifest.json",
+        "artifact_root": "artifact/opsd_vertical_slice",
+        "run_id": "opsd-vertical-slice-run-001",
+        "correlation_id": "opsd_vertical_slice:run-001",
+        "decision_trace_id": "opsd_vertical_slice:run-001:decision_trace",
+        "decision": "pass",
+        "reason_code": "OPSD_VERTICAL_SLICE_READY_FOR_PHASE_2_5_GATE",
+        "kernel": {
+          "case_id": "gold_momentum_promotable",
+          "identity_digest": "fd6f2109c5560d7b",
+          "decision_count": 4,
+          "signal_kernel": "signal_kernels/gold_momentum_v1.bin"
+        },
+        "runtime": {
+          "startup_scenarios": [
+            "startup-handoff",
+            "mailbox-backpressure",
+            "broker-mutation-control"
+          ],
+          "control_reason_code": "WITHDRAW_LIVE_OPERATOR_REQUEST"
+        },
+        "schedule": {
+          "artifact_id": "compiled_schedule_gold_reset_v1",
+          "reset_state": "reset_boundary",
+          "post_reset_tradeable": "true"
+        },
+        "live_bar": {
+          "artifact_root": "artifact/live_bar",
+          "scenario": "tradeable-pass",
+          "status": "accepted",
+          "reason_code": "BAR_BUILDER_ACCEPTED"
+        },
+        "readiness": {
+          "artifact_root": "artifact/readiness",
+          "scenario": "green-readiness-pass",
+          "status": "green",
+          "reason_code": "READINESS_READY_TO_ACTIVATE"
+        },
+        "recovery_smoke": {
+          "artifact_root": "artifact/recovery_smoke",
+          "scenario": "green-verified-restart",
+          "recovery_status": "resume_tradeable",
+          "shutdown_status": "restart_ready"
+        },
+        "recovery_runtime": {
+          "scenario": "recovery_fence",
+          "recovery_state": "safe_resume",
+          "shutdown_restart_ready": "true"
+        },
+        "route_mode": {
+          "artifact_root": "artifact/route_mode",
+          "selected": [
+            {
+              "scenario": "paper-route-reroutes-submit",
+              "outcome": "routed_to_paper",
+              "reason_code": "PAPER_ROUTE_EXECUTION_REHEARSAL"
+            },
+            {
+              "scenario": "shadow-live-suppresses-submit",
+              "outcome": "suppressed",
+              "reason_code": "SHADOW_LIVE_SUPPRESSION_REQUIRED"
+            }
+          ]
+        },
+        "reconciliation": {
+          "artifact_id": "authoritative-ledger-close-0001",
+          "next_session_eligibility": "blocked"
+        },
+        "evidence_archive": {
+          "archive_root": "artifact/evidence_archive",
+          "sealed_evidence_ids": [
+            "paper_bundle_001",
+            "shadow_bundle_001",
+            "recovery_bundle_001"
+          ]
+        },
+        "retained_logs": [
+          {
+            "step_id": "kernel",
+            "reference_id": "artifact/kernel/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the kernel vertical-slice step."
+          },
+          {
+            "step_id": "runtime",
+            "reference_id": "artifact/runtime/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the runtime vertical-slice step."
+          },
+          {
+            "step_id": "schedule",
+            "reference_id": "artifact/schedule/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the schedule vertical-slice step."
+          },
+          {
+            "step_id": "live_bar",
+            "reference_id": "artifact/live_bar/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the live-bar vertical-slice step."
+          },
+          {
+            "step_id": "readiness",
+            "reference_id": "artifact/readiness/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the readiness vertical-slice step."
+          },
+          {
+            "step_id": "recovery_smoke",
+            "reference_id": "artifact/recovery_smoke/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the recovery-smoke vertical-slice step."
+          },
+          {
+            "step_id": "recovery_runtime",
+            "reference_id": "artifact/recovery_runtime/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the recovery-runtime vertical-slice step."
+          },
+          {
+            "step_id": "route_mode",
+            "reference_id": "artifact/route_mode/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the route-mode vertical-slice step."
+          },
+          {
+            "step_id": "reconciliation",
+            "reference_id": "artifact/reconciliation/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the reconciliation vertical-slice step."
+          },
+          {
+            "step_id": "evidence_archive",
+            "reference_id": "artifact/evidence_archive/stdout.txt",
+            "correlation_id": "opsd_vertical_slice:run-001",
+            "detail": "Retained stdout for the evidence-archive vertical-slice step."
+          }
+        ],
+        "retained_artifact_ids": [
+          "artifact/opsd_vertical_slice",
+          "artifact/opsd_vertical_slice_manifest.json",
+          "compiled_schedule_gold_reset_v1",
+          "artifact/live_bar",
+          "artifact/readiness",
+          "artifact/recovery_smoke",
+          "artifact/route_mode",
+          "authoritative-ledger-close-0001",
+          "artifact/evidence_archive",
+          "paper_bundle_001",
+          "shadow_bundle_001",
+          "recovery_bundle_001"
+        ]
+      }
+    },
+    "surface_evidence": [
+      {
+        "surface_id": "live_data_entitlement_checks",
+        "passed": true,
+        "reference_id": "artifact/entitlements.json",
+        "detail": "IBKR market-data entitlements are retained."
+      },
+      {
+        "surface_id": "approved_ibkr_bar_construction_pipeline",
+        "passed": true,
+        "reference_id": "artifact/bar_pipeline.json",
+        "detail": "Approved IBKR bar construction pipeline is retained."
+      },
+      {
+        "surface_id": "dummy_strategy_routing_through_opsd",
+        "passed": true,
+        "reference_id": "artifact/opsd_route.json",
+        "detail": "Sentinel strategy route through opsd is retained."
+      },
+      {
+        "surface_id": "paper_route_smoke_workflow",
+        "passed": true,
+        "reference_id": "artifact/paper_smoke.json",
+        "detail": "Paper-route smoke workflow is retained."
+      },
+      {
+        "surface_id": "shadow_live_suppression_path",
+        "passed": true,
+        "reference_id": "artifact/shadow_suppression.json",
+        "detail": "Shadow-live suppression path is retained."
+      },
+      {
+        "surface_id": "statement_ingestion_skeleton",
+        "passed": true,
+        "reference_id": "artifact/statement_ingestion.json",
+        "detail": "Statement ingestion skeleton is retained."
+      },
+      {
+        "surface_id": "reconciliation_skeleton",
+        "passed": true,
+        "reference_id": "artifact/reconciliation.json",
+        "detail": "Reconciliation skeleton is retained."
+      },
+      {
+        "surface_id": "contract_conformance_checks",
+        "passed": true,
+        "reference_id": "artifact/contract_conformance.json",
+        "detail": "Contract-conformance checks are retained."
+      },
+      {
+        "surface_id": "preliminary_1oz_tradability_diagnostics",
+        "passed": true,
+        "reference_id": "artifact/1oz_diagnostics.json",
+        "detail": "Preliminary 1OZ tradability diagnostics are retained."
+      }
+    ],
+    "runtime_evidence": {
+      "broker_reconnect_observed": true,
+      "broker_reconnect_reference_id": "artifact/broker_reconnect.json",
+      "session_reset_observed": true,
+      "session_reset_reference_id": "artifact/session_reset.json",
+      "state_ownership_verified": true,
+      "state_ownership_reference_id": "artifact/runtime_state_ownership.json",
+      "supervision_reference_id": "artifact/runtime_supervision.json"
+    },
+    "operator_notes": [
+      "Phase 2.5 is the first hard end-to-end rehearsal on the real execution lane.",
+      "Later live-lane work stays blocked unless this gate clears or explicitly pivots."
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "phase_25_passes_cleanly",
+      "overrides": {},
+      "expected_status": "pass",
+      "expected_reason_code": "PHASE_25_VERTICAL_SLICE_PASS"
+    },
+    {
+      "case_id": "phase_25_pivots_with_explicit_vertical_slice_pivot",
+      "overrides": {
+        "vertical_slice_report": {
+          "decision": "pivot",
+          "reason_code": "OPSD_VERTICAL_SLICE_PIVOT_RECORDED",
+          "summary": {
+            "decision": "pivot",
+            "reason_code": "OPSD_VERTICAL_SLICE_PIVOT_RECORDED"
+          }
+        }
+      },
+      "expected_status": "pivot",
+      "expected_reason_code": "PHASE_25_VERTICAL_SLICE_PIVOT"
+    },
+    {
+      "case_id": "phase_25_pivots_on_missing_runtime_evidence",
+      "overrides": {
+        "runtime_evidence": {
+          "session_reset_observed": false
+        }
+      },
+      "expected_status": "pivot",
+      "expected_reason_code": "PHASE_25_RUNTIME_EVIDENCE_INCOMPLETE"
+    },
+    {
+      "case_id": "phase_25_invalid_when_harness_report_is_malformed",
+      "overrides": {
+        "vertical_slice_report": {
+          "decision": "invalid",
+          "summary": {
+            "artifact_root": "artifact/opsd_vertical_slice",
+            "decision": "invalid"
+          }
+        }
+      },
+      "expected_status": "invalid",
+      "expected_reason_code": "PHASE_25_VERTICAL_SLICE_REPORT_INVALID"
+    }
+  ]
+}
