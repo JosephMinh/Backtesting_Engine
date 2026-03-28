@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -42,6 +43,108 @@ def _decode_json(payload: str, label: str) -> dict[str, Any]:
     if not isinstance(decoded, dict):
         raise ValueError(f"{label}: payload must decode to a JSON object")
     return decoded
+
+
+def _parse_utc(value: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
+    if not parsed:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return parsed
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_int(
+    value: object,
+    *,
+    field_name: str,
+    minimum: int | None = None,
+) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if minimum is not None and value < minimum:
+        qualifier = "positive" if minimum == 1 else f">= {minimum}"
+        raise ValueError(f"{field_name}: must be {qualifier}")
+    return value
+
+
+def _require_finite_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be numeric")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name}: must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be finite")
+    return parsed
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of strings")
+    return tuple(_require_non_empty_string(item, field_name=field_name) for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _require_int(value, field_name=field_name, minimum=1)
+    if parsed != SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {parsed}; "
+            f"expected {SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION}"
+        )
+    return parsed
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
 
 
 @unique
@@ -121,42 +224,114 @@ class RecoveryFenceRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RecoveryFenceRequest":
+        payload = _require_mapping(payload, field_name="recovery_fence_request")
         session_payload = payload.get("fresh_session_packet")
         return cls(
-            recovery_run_id=str(payload["recovery_run_id"]),
-            deployment_instance_id=str(payload["deployment_instance_id"]),
-            trigger_event_id=str(payload["trigger_event_id"]),
-            entered_recovering_state=bool(payload["entered_recovering_state"]),
-            no_new_entries_asserted=bool(payload["no_new_entries_asserted"]),
-            broker_mutations_blocked=bool(payload["broker_mutations_blocked"]),
-            broker_positions_reconciled=bool(payload["broker_positions_reconciled"]),
-            open_orders_reconciled=bool(payload["open_orders_reconciled"]),
-            order_intent_mappings_repaired=bool(payload["order_intent_mappings_repaired"]),
-            ambiguity_detected=bool(payload["ambiguity_detected"]),
-            ambiguity_disposition=RecoveryDisposition(payload["ambiguity_disposition"]),
-            snapshot_artifact_id=str(payload["snapshot_artifact_id"]),
-            journal_replay_artifact_id=str(payload["journal_replay_artifact_id"]),
-            journal_digest_frontier_id=str(payload["journal_digest_frontier_id"]),
-            warmup_source=WarmupSource(payload["warmup_source"]),
-            warmup_artifact_id=str(payload["warmup_artifact_id"]),
-            session_reset_or_material_reconnect=bool(
+            recovery_run_id=_require_non_empty_string(
+                payload["recovery_run_id"],
+                field_name="recovery_run_id",
+            ),
+            deployment_instance_id=_require_non_empty_string(
+                payload["deployment_instance_id"],
+                field_name="deployment_instance_id",
+            ),
+            trigger_event_id=_require_non_empty_string(
+                payload["trigger_event_id"],
+                field_name="trigger_event_id",
+            ),
+            entered_recovering_state=_require_bool(
+                payload["entered_recovering_state"],
+                field_name="entered_recovering_state",
+            ),
+            no_new_entries_asserted=_require_bool(
+                payload["no_new_entries_asserted"],
+                field_name="no_new_entries_asserted",
+            ),
+            broker_mutations_blocked=_require_bool(
+                payload["broker_mutations_blocked"],
+                field_name="broker_mutations_blocked",
+            ),
+            broker_positions_reconciled=_require_bool(
+                payload["broker_positions_reconciled"],
+                field_name="broker_positions_reconciled",
+            ),
+            open_orders_reconciled=_require_bool(
+                payload["open_orders_reconciled"],
+                field_name="open_orders_reconciled",
+            ),
+            order_intent_mappings_repaired=_require_bool(
+                payload["order_intent_mappings_repaired"],
+                field_name="order_intent_mappings_repaired",
+            ),
+            ambiguity_detected=_require_bool(
+                payload["ambiguity_detected"],
+                field_name="ambiguity_detected",
+            ),
+            ambiguity_disposition=RecoveryDisposition(
+                _require_enum_value(
+                    payload["ambiguity_disposition"],
+                    field_name="ambiguity_disposition",
+                    enum_type=RecoveryDisposition,
+                    description="recovery disposition",
+                )
+            ),
+            snapshot_artifact_id=_require_non_empty_string(
+                payload["snapshot_artifact_id"],
+                field_name="snapshot_artifact_id",
+            ),
+            journal_replay_artifact_id=_require_non_empty_string(
+                payload["journal_replay_artifact_id"],
+                field_name="journal_replay_artifact_id",
+            ),
+            journal_digest_frontier_id=_require_non_empty_string(
+                payload["journal_digest_frontier_id"],
+                field_name="journal_digest_frontier_id",
+            ),
+            warmup_source=WarmupSource(
+                _require_enum_value(
+                    payload["warmup_source"],
+                    field_name="warmup_source",
+                    enum_type=WarmupSource,
+                    description="warmup source",
+                )
+            ),
+            warmup_artifact_id=_require_non_empty_string(
+                payload["warmup_artifact_id"],
+                field_name="warmup_artifact_id",
+            ),
+            session_reset_or_material_reconnect=_require_bool(
                 payload["session_reset_or_material_reconnect"]
+                ,
+                field_name="session_reset_or_material_reconnect",
             ),
             fresh_session_packet=(
-                SessionReadinessPacket.from_dict(dict(session_payload))
+                SessionReadinessPacket.from_dict(
+                    _require_mapping(
+                        session_payload,
+                        field_name="fresh_session_packet",
+                    )
+                )
                 if session_payload is not None
                 else None
             ),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
             ),
-            signed_recovery_hash=str(payload["signed_recovery_hash"]),
-            schema_version=int(
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            signed_recovery_hash=_require_non_empty_string(
+                payload["signed_recovery_hash"],
+                field_name="signed_recovery_hash",
+            ),
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -191,26 +366,63 @@ class GracefulShutdownRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "GracefulShutdownRecord":
+        payload = _require_mapping(payload, field_name="graceful_shutdown_record")
         return cls(
-            shutdown_record_id=str(payload["shutdown_record_id"]),
-            deployment_instance_id=str(payload["deployment_instance_id"]),
-            stop_new_entries_asserted=bool(payload["stop_new_entries_asserted"]),
-            drain_policy=GracefulDrainPolicy(payload["drain_policy"]),
-            final_snapshot_artifact_id=str(payload["final_snapshot_artifact_id"]),
-            journal_barrier_id=str(payload["journal_barrier_id"]),
-            journal_digest_frontier_id=str(payload["journal_digest_frontier_id"]),
-            shutdown_reason=str(payload["shutdown_reason"]),
-            restart_ready=bool(payload["restart_ready"]),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            shutdown_record_id=_require_non_empty_string(
+                payload["shutdown_record_id"],
+                field_name="shutdown_record_id",
             ),
-            signed_shutdown_hash=str(payload["signed_shutdown_hash"]),
-            schema_version=int(
+            deployment_instance_id=_require_non_empty_string(
+                payload["deployment_instance_id"],
+                field_name="deployment_instance_id",
+            ),
+            stop_new_entries_asserted=_require_bool(
+                payload["stop_new_entries_asserted"],
+                field_name="stop_new_entries_asserted",
+            ),
+            drain_policy=GracefulDrainPolicy(
+                _require_enum_value(
+                    payload["drain_policy"],
+                    field_name="drain_policy",
+                    enum_type=GracefulDrainPolicy,
+                    description="graceful drain policy",
+                )
+            ),
+            final_snapshot_artifact_id=_require_non_empty_string(
+                payload["final_snapshot_artifact_id"],
+                field_name="final_snapshot_artifact_id",
+            ),
+            journal_barrier_id=_require_non_empty_string(
+                payload["journal_barrier_id"],
+                field_name="journal_barrier_id",
+            ),
+            journal_digest_frontier_id=_require_non_empty_string(
+                payload["journal_digest_frontier_id"],
+                field_name="journal_digest_frontier_id",
+            ),
+            shutdown_reason=_require_non_empty_string(
+                payload["shutdown_reason"],
+                field_name="shutdown_reason",
+            ),
+            restart_ready=_require_bool(payload["restart_ready"], field_name="restart_ready"),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            signed_shutdown_hash=_require_non_empty_string(
+                payload["signed_shutdown_hash"],
+                field_name="signed_shutdown_hash",
+            ),
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -249,32 +461,79 @@ class DegradationAssessment:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DegradationAssessment":
+        payload = _require_mapping(payload, field_name="degradation_assessment")
         return cls(
-            assessment_id=str(payload["assessment_id"]),
-            deployment_instance_id=str(payload["deployment_instance_id"]),
-            session_id=str(payload["session_id"]),
-            market_data_fresh=bool(payload["market_data_fresh"]),
-            stale_quote_rate_bps=int(payload["stale_quote_rate_bps"]),
-            bar_parity_healthy=bool(payload["bar_parity_healthy"]),
-            connection_healthy=bool(payload["connection_healthy"]),
-            clock_synced=bool(payload["clock_synced"]),
-            broker_latency_ms=int(payload["broker_latency_ms"]),
-            policy_engine_healthy=bool(payload["policy_engine_healthy"]),
-            intraday_mismatch_above_tolerance=bool(
+            assessment_id=_require_non_empty_string(
+                payload["assessment_id"],
+                field_name="assessment_id",
+            ),
+            deployment_instance_id=_require_non_empty_string(
+                payload["deployment_instance_id"],
+                field_name="deployment_instance_id",
+            ),
+            session_id=_require_non_empty_string(payload["session_id"], field_name="session_id"),
+            market_data_fresh=_require_bool(
+                payload["market_data_fresh"],
+                field_name="market_data_fresh",
+            ),
+            stale_quote_rate_bps=_require_int(
+                payload["stale_quote_rate_bps"],
+                field_name="stale_quote_rate_bps",
+                minimum=0,
+            ),
+            bar_parity_healthy=_require_bool(
+                payload["bar_parity_healthy"],
+                field_name="bar_parity_healthy",
+            ),
+            connection_healthy=_require_bool(
+                payload["connection_healthy"],
+                field_name="connection_healthy",
+            ),
+            clock_synced=_require_bool(payload["clock_synced"], field_name="clock_synced"),
+            broker_latency_ms=_require_int(
+                payload["broker_latency_ms"],
+                field_name="broker_latency_ms",
+                minimum=0,
+            ),
+            policy_engine_healthy=_require_bool(
+                payload["policy_engine_healthy"],
+                field_name="policy_engine_healthy",
+            ),
+            intraday_mismatch_above_tolerance=_require_bool(
                 payload["intraday_mismatch_above_tolerance"]
+                ,
+                field_name="intraday_mismatch_above_tolerance",
             ),
-            proposed_action=DegradationAction(payload["proposed_action"]),
-            new_entries_blocked=bool(payload["new_entries_blocked"]),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            proposed_action=DegradationAction(
+                _require_enum_value(
+                    payload["proposed_action"],
+                    field_name="proposed_action",
+                    enum_type=DegradationAction,
+                    description="degradation action",
+                )
             ),
-            signed_assessment_hash=str(payload["signed_assessment_hash"]),
-            schema_version=int(
+            new_entries_blocked=_require_bool(
+                payload["new_entries_blocked"],
+                field_name="new_entries_blocked",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            signed_assessment_hash=_require_non_empty_string(
+                payload["signed_assessment_hash"],
+                field_name="signed_assessment_hash",
+            ),
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -314,39 +573,86 @@ class LedgerCloseArtifact:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "LedgerCloseArtifact":
+        payload = _require_mapping(payload, field_name="ledger_close_artifact")
         return cls(
-            ledger_close_id=str(payload["ledger_close_id"]),
-            deployment_instance_id=str(payload["deployment_instance_id"]),
-            ledger_close_date=str(payload["ledger_close_date"]),
-            authoritative_statement_set_id=str(payload["authoritative_statement_set_id"]),
-            as_booked_pnl=float(payload["as_booked_pnl"]),
-            as_reconciled_pnl=float(payload["as_reconciled_pnl"]),
-            discrepancy_summary_ids=tuple(
-                str(item) for item in payload["discrepancy_summary_ids"]
+            ledger_close_id=_require_non_empty_string(
+                payload["ledger_close_id"],
+                field_name="ledger_close_id",
             ),
-            discrepancy_above_tolerance=bool(payload["discrepancy_above_tolerance"]),
-            reviewed_or_waived=bool(payload["reviewed_or_waived"]),
-            review_or_waiver_id=(
-                str(payload["review_or_waiver_id"])
-                if payload.get("review_or_waiver_id") is not None
-                else None
+            deployment_instance_id=_require_non_empty_string(
+                payload["deployment_instance_id"],
+                field_name="deployment_instance_id",
+            ),
+            ledger_close_date=_require_non_empty_string(
+                payload["ledger_close_date"],
+                field_name="ledger_close_date",
+            ),
+            authoritative_statement_set_id=_require_non_empty_string(
+                payload["authoritative_statement_set_id"],
+                field_name="authoritative_statement_set_id",
+            ),
+            as_booked_pnl=_require_finite_float(
+                payload["as_booked_pnl"],
+                field_name="as_booked_pnl",
+            ),
+            as_reconciled_pnl=_require_finite_float(
+                payload["as_reconciled_pnl"],
+                field_name="as_reconciled_pnl",
+            ),
+            discrepancy_summary_ids=_require_string_sequence(
+                payload["discrepancy_summary_ids"],
+                field_name="discrepancy_summary_ids",
+            ),
+            discrepancy_above_tolerance=_require_bool(
+                payload["discrepancy_above_tolerance"],
+                field_name="discrepancy_above_tolerance",
+            ),
+            reviewed_or_waived=_require_bool(
+                payload["reviewed_or_waived"],
+                field_name="reviewed_or_waived",
+            ),
+            review_or_waiver_id=_require_optional_non_empty_string(
+                payload.get("review_or_waiver_id"),
+                field_name="review_or_waiver_id",
             ),
             next_session_eligibility=NextSessionEligibility(
-                payload["next_session_eligibility"]
+                _require_enum_value(
+                    payload["next_session_eligibility"],
+                    field_name="next_session_eligibility",
+                    enum_type=NextSessionEligibility,
+                    description="next-session eligibility",
+                )
             ),
-            cash_movements_reconciled=bool(payload["cash_movements_reconciled"]),
-            commissions_reconciled=bool(payload["commissions_reconciled"]),
-            margin_reconciled=bool(payload["margin_reconciled"]),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            cash_movements_reconciled=_require_bool(
+                payload["cash_movements_reconciled"],
+                field_name="cash_movements_reconciled",
             ),
-            signed_ledger_hash=str(payload["signed_ledger_hash"]),
-            schema_version=int(
+            commissions_reconciled=_require_bool(
+                payload["commissions_reconciled"],
+                field_name="commissions_reconciled",
+            ),
+            margin_reconciled=_require_bool(
+                payload["margin_reconciled"],
+                field_name="margin_reconciled",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            signed_ledger_hash=_require_non_empty_string(
+                payload["signed_ledger_hash"],
+                field_name="signed_ledger_hash",
+            ),
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -387,38 +693,98 @@ class RestoreDrillArtifact:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RestoreDrillArtifact":
+        payload = _require_mapping(payload, field_name="restore_drill_artifact")
         return cls(
-            restore_drill_id=str(payload["restore_drill_id"]),
-            deployment_instance_id=str(payload["deployment_instance_id"]),
-            backup_artifact_id=str(payload["backup_artifact_id"]),
-            snapshot_artifact_id=str(payload["snapshot_artifact_id"]),
-            journal_barrier_id=str(payload["journal_barrier_id"]),
-            journal_digest_frontier_id=str(payload["journal_digest_frontier_id"]),
-            off_host_recoverable=bool(payload["off_host_recoverable"]),
-            digest_chain_verified=bool(payload["digest_chain_verified"]),
-            restored_to_clean_host=bool(payload["restored_to_clean_host"]),
-            entered_recovering_state=bool(payload["entered_recovering_state"]),
-            broker_reconciliation_clean=bool(payload["broker_reconciliation_clean"]),
-            reviewed_waiver_id=(
-                str(payload["reviewed_waiver_id"])
-                if payload.get("reviewed_waiver_id") is not None
-                else None
+            restore_drill_id=_require_non_empty_string(
+                payload["restore_drill_id"],
+                field_name="restore_drill_id",
             ),
-            rpo_target_minutes=int(payload["rpo_target_minutes"]),
-            achieved_rpo_minutes=int(payload["achieved_rpo_minutes"]),
-            rto_target_minutes=int(payload["rto_target_minutes"]),
-            achieved_rto_minutes=int(payload["achieved_rto_minutes"]),
-            dashboard_visible=bool(payload["dashboard_visible"]),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            deployment_instance_id=_require_non_empty_string(
+                payload["deployment_instance_id"],
+                field_name="deployment_instance_id",
             ),
-            signed_restore_hash=str(payload["signed_restore_hash"]),
-            schema_version=int(
+            backup_artifact_id=_require_non_empty_string(
+                payload["backup_artifact_id"],
+                field_name="backup_artifact_id",
+            ),
+            snapshot_artifact_id=_require_non_empty_string(
+                payload["snapshot_artifact_id"],
+                field_name="snapshot_artifact_id",
+            ),
+            journal_barrier_id=_require_non_empty_string(
+                payload["journal_barrier_id"],
+                field_name="journal_barrier_id",
+            ),
+            journal_digest_frontier_id=_require_non_empty_string(
+                payload["journal_digest_frontier_id"],
+                field_name="journal_digest_frontier_id",
+            ),
+            off_host_recoverable=_require_bool(
+                payload["off_host_recoverable"],
+                field_name="off_host_recoverable",
+            ),
+            digest_chain_verified=_require_bool(
+                payload["digest_chain_verified"],
+                field_name="digest_chain_verified",
+            ),
+            restored_to_clean_host=_require_bool(
+                payload["restored_to_clean_host"],
+                field_name="restored_to_clean_host",
+            ),
+            entered_recovering_state=_require_bool(
+                payload["entered_recovering_state"],
+                field_name="entered_recovering_state",
+            ),
+            broker_reconciliation_clean=_require_bool(
+                payload["broker_reconciliation_clean"],
+                field_name="broker_reconciliation_clean",
+            ),
+            reviewed_waiver_id=_require_optional_non_empty_string(
+                payload.get("reviewed_waiver_id"),
+                field_name="reviewed_waiver_id",
+            ),
+            rpo_target_minutes=_require_int(
+                payload["rpo_target_minutes"],
+                field_name="rpo_target_minutes",
+                minimum=0,
+            ),
+            achieved_rpo_minutes=_require_int(
+                payload["achieved_rpo_minutes"],
+                field_name="achieved_rpo_minutes",
+                minimum=0,
+            ),
+            rto_target_minutes=_require_int(
+                payload["rto_target_minutes"],
+                field_name="rto_target_minutes",
+                minimum=0,
+            ),
+            achieved_rto_minutes=_require_int(
+                payload["achieved_rto_minutes"],
+                field_name="achieved_rto_minutes",
+                minimum=0,
+            ),
+            dashboard_visible=_require_bool(
+                payload["dashboard_visible"],
+                field_name="dashboard_visible",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            signed_restore_hash=_require_non_empty_string(
+                payload["signed_restore_hash"],
+                field_name="signed_restore_hash",
+            ),
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_RUNTIME_RECOVERY_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -445,6 +811,51 @@ class RecoveryValidationReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "RecoveryValidationReport":
+        payload = _require_mapping(payload, field_name="recovery_validation_report")
+        if "artifact_id" not in payload:
+            raise ValueError("artifact_id: field is required")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            artifact_kind=_require_non_empty_string(
+                payload["artifact_kind"],
+                field_name="artifact_kind",
+            ),
+            artifact_id=_require_optional_non_empty_string(
+                payload.get("artifact_id"),
+                field_name="artifact_id",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=PacketStatus,
+                description="packet status",
+            ),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            context=_require_mapping(payload["context"], field_name="context"),
+            missing_fields=_require_string_sequence(
+                payload["missing_fields"],
+                field_name="missing_fields",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "RecoveryValidationReport":
+        return cls.from_dict(_decode_json(payload, "recovery_validation_report"))
 
 
 def _recovery_context(request: RecoveryFenceRequest) -> dict[str, Any]:
