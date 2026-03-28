@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 import re
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
@@ -49,6 +50,143 @@ def _parse_semver(value: str) -> tuple[int, int, int] | None:
     return tuple(int(component) for component in match.groups())
 
 
+def _parse_utc(value: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
+    if not parsed:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return parsed
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_int(
+    value: object,
+    *,
+    field_name: str,
+    minimum: int | None = None,
+) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if minimum is not None and value < minimum:
+        qualifier = "positive" if minimum == 1 else f">= {minimum}"
+        raise ValueError(f"{field_name}: must be {qualifier}")
+    return value
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of strings")
+    return tuple(_require_non_empty_string(item, field_name=field_name) for item in value)
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of objects")
+    return tuple(_require_mapping(item, field_name=field_name) for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _require_int(value, field_name=field_name, minimum=1)
+    if parsed != SUPPORTED_STRATEGY_CONTRACT_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {parsed}; "
+            f"expected {SUPPORTED_STRATEGY_CONTRACT_SCHEMA_VERSION}"
+        )
+    return parsed
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
+
+
+def _require_decision_basis(value: object, *, field_name: str) -> str:
+    parsed = _require_non_empty_string(value, field_name=field_name)
+    if parsed not in ALLOWED_DECISION_BASES:
+        raise ValueError(f"{field_name}: must be a valid decision basis")
+    return parsed
+
+
+def _require_semver(value: object, *, field_name: str) -> str:
+    parsed = _require_non_empty_string(value, field_name=field_name)
+    if _parse_semver(parsed) is None:
+        raise ValueError(f"{field_name}: must be a valid semantic version")
+    return parsed
+
+
+def _require_finite_mapping(
+    value: object,
+    *,
+    field_name: str,
+) -> dict[str, float]:
+    mapping = _require_mapping(value, field_name=field_name)
+    normalized: dict[str, float] = {}
+    for key, item in mapping.items():
+        normalized[_require_non_empty_string(key, field_name=field_name)] = _require_finite_float(
+            item,
+            field_name=field_name,
+        )
+    return normalized
+
+
+def _require_finite_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be numeric")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name}: must be numeric") from exc
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name}: must be finite")
+    return parsed
+
+
 def strategy_protocol_evidence_fields() -> tuple[str, ...]:
     return COMPATIBILITY_DOMAIN_INDEX[
         CompatibilityDomain.STRATEGY_PROTOCOL.value
@@ -86,9 +224,13 @@ class StrategyDependency:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "StrategyDependency":
+        payload = _require_mapping(payload, field_name="strategy_dependency")
         return cls(
-            node_id=str(payload["node_id"]),
-            depends_on=tuple(str(item) for item in payload.get("depends_on", ())),
+            node_id=_require_non_empty_string(payload["node_id"], field_name="node_id"),
+            depends_on=_require_string_sequence(
+                payload.get("depends_on", ()),
+                field_name="depends_on",
+            ),
         )
 
 
@@ -102,9 +244,17 @@ class DecisionCadence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DecisionCadence":
+        payload = _require_mapping(payload, field_name="decision_cadence")
         return cls(
-            decision_basis=str(payload["decision_basis"]),
-            interval_seconds=int(payload["interval_seconds"]),
+            decision_basis=_require_decision_basis(
+                payload["decision_basis"],
+                field_name="decision_basis",
+            ),
+            interval_seconds=_require_int(
+                payload["interval_seconds"],
+                field_name="interval_seconds",
+                minimum=1,
+            ),
         )
 
 
@@ -119,10 +269,22 @@ class WarmupRequirement:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "WarmupRequirement":
+        payload = _require_mapping(payload, field_name="warmup")
         return cls(
-            min_history_bars=int(payload["min_history_bars"]),
-            min_history_minutes=int(payload["min_history_minutes"]),
-            requires_state_seed=bool(payload["requires_state_seed"]),
+            min_history_bars=_require_int(
+                payload["min_history_bars"],
+                field_name="min_history_bars",
+                minimum=0,
+            ),
+            min_history_minutes=_require_int(
+                payload["min_history_minutes"],
+                field_name="min_history_minutes",
+                minimum=0,
+            ),
+            requires_state_seed=_require_bool(
+                payload["requires_state_seed"],
+                field_name="requires_state_seed",
+            ),
         )
 
 
@@ -136,9 +298,13 @@ class OrderIntentSchema:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OrderIntentSchema":
+        payload = _require_mapping(payload, field_name="order_intent_schema")
         return cls(
-            schema_id=str(payload["schema_id"]),
-            required_fields=tuple(str(item) for item in payload["required_fields"]),
+            schema_id=_require_non_empty_string(payload["schema_id"], field_name="schema_id"),
+            required_fields=_require_string_sequence(
+                payload["required_fields"],
+                field_name="required_fields",
+            ),
         )
 
 
@@ -160,25 +326,50 @@ class SignalKernelContract:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SignalKernelContract":
+        payload = _require_mapping(payload, field_name="signal_kernel")
         return cls(
-            signal_kernel_digest=str(payload["signal_kernel_digest"]),
-            research_kernel_hash=str(payload["research_kernel_hash"]),
-            live_kernel_hash=str(payload["live_kernel_hash"]),
-            canonical_implementation_kind=str(payload["canonical_implementation_kind"]),
-            rust_crate=(
-                str(payload["rust_crate"])
-                if payload.get("rust_crate") not in (None, "")
-                else None
+            signal_kernel_digest=_require_non_empty_string(
+                payload["signal_kernel_digest"],
+                field_name="signal_kernel_digest",
             ),
-            python_binding_module=(
-                str(payload["python_binding_module"])
-                if payload.get("python_binding_module") not in (None, "")
-                else None
+            research_kernel_hash=_require_non_empty_string(
+                payload["research_kernel_hash"],
+                field_name="research_kernel_hash",
             ),
-            python_promotable_logic_present=bool(payload["python_promotable_logic_present"]),
-            kernel_abi_version=str(payload["kernel_abi_version"]),
-            state_serialization_version=str(payload["state_serialization_version"]),
-            semantic_version=str(payload["semantic_version"]),
+            live_kernel_hash=_require_non_empty_string(
+                payload["live_kernel_hash"],
+                field_name="live_kernel_hash",
+            ),
+            canonical_implementation_kind=_require_enum_value(
+                payload["canonical_implementation_kind"],
+                field_name="canonical_implementation_kind",
+                enum_type=KernelImplementationKind,
+                description="kernel implementation kind",
+            ),
+            rust_crate=_require_optional_non_empty_string(
+                payload.get("rust_crate"),
+                field_name="rust_crate",
+            ),
+            python_binding_module=_require_optional_non_empty_string(
+                payload.get("python_binding_module"),
+                field_name="python_binding_module",
+            ),
+            python_promotable_logic_present=_require_bool(
+                payload["python_promotable_logic_present"],
+                field_name="python_promotable_logic_present",
+            ),
+            kernel_abi_version=_require_non_empty_string(
+                payload["kernel_abi_version"],
+                field_name="kernel_abi_version",
+            ),
+            state_serialization_version=_require_non_empty_string(
+                payload["state_serialization_version"],
+                field_name="state_serialization_version",
+            ),
+            semantic_version=_require_semver(
+                payload["semantic_version"],
+                field_name="semantic_version",
+            ),
         )
 
 
@@ -193,18 +384,21 @@ class EquivalenceCertification:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "EquivalenceCertification":
+        payload = _require_mapping(payload, field_name="equivalence_certification")
         return cls(
-            certification_id=(
-                str(payload["certification_id"])
-                if payload.get("certification_id") not in (None, "")
-                else None
+            certification_id=_require_optional_non_empty_string(
+                payload.get("certification_id"),
+                field_name="certification_id",
             ),
-            golden_session_fixture_id=(
-                str(payload["golden_session_fixture_id"])
-                if payload.get("golden_session_fixture_id") not in (None, "")
-                else None
+            golden_session_fixture_id=_require_optional_non_empty_string(
+                payload.get("golden_session_fixture_id"),
+                field_name="golden_session_fixture_id",
             ),
-            property_case_count=int(payload["property_case_count"]),
+            property_case_count=_require_int(
+                payload["property_case_count"],
+                field_name="property_case_count",
+                minimum=0,
+            ),
         )
 
 
@@ -240,26 +434,63 @@ class StrategyContract:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "StrategyContract":
+        payload = _require_mapping(payload, field_name="strategy_contract")
         return cls(
-            contract_id=str(payload["contract_id"]),
-            strategy_family_id=str(payload["strategy_family_id"]),
-            lifecycle_class=str(payload["lifecycle_class"]),
-            parameter_schema_id=str(payload["parameter_schema_id"]),
-            required_inputs=tuple(str(item) for item in payload["required_inputs"]),
-            decision_cadence=DecisionCadence.from_dict(dict(payload["decision_cadence"])),
-            warmup=WarmupRequirement.from_dict(dict(payload["warmup"])),
-            risk_control_hooks=tuple(str(item) for item in payload["risk_control_hooks"]),
-            order_intent_schema=OrderIntentSchema.from_dict(dict(payload["order_intent_schema"])),
+            contract_id=_require_non_empty_string(payload["contract_id"], field_name="contract_id"),
+            strategy_family_id=_require_non_empty_string(
+                payload["strategy_family_id"],
+                field_name="strategy_family_id",
+            ),
+            lifecycle_class=_require_enum_value(
+                payload["lifecycle_class"],
+                field_name="lifecycle_class",
+                enum_type=StrategyLifecycleClass,
+                description="strategy lifecycle class",
+            ),
+            parameter_schema_id=_require_non_empty_string(
+                payload["parameter_schema_id"],
+                field_name="parameter_schema_id",
+            ),
+            required_inputs=_require_string_sequence(
+                payload["required_inputs"],
+                field_name="required_inputs",
+            ),
+            decision_cadence=DecisionCadence.from_dict(
+                _require_mapping(payload["decision_cadence"], field_name="decision_cadence")
+            ),
+            warmup=WarmupRequirement.from_dict(
+                _require_mapping(payload["warmup"], field_name="warmup")
+            ),
+            risk_control_hooks=_require_string_sequence(
+                payload["risk_control_hooks"],
+                field_name="risk_control_hooks",
+            ),
+            order_intent_schema=OrderIntentSchema.from_dict(
+                _require_mapping(payload["order_intent_schema"], field_name="order_intent_schema")
+            ),
             dependency_dag=tuple(
-                StrategyDependency.from_dict(dict(item)) for item in payload["dependency_dag"]
+                StrategyDependency.from_dict(item)
+                for item in _require_object_sequence(
+                    payload["dependency_dag"],
+                    field_name="dependency_dag",
+                )
             ),
-            signal_kernel=SignalKernelContract.from_dict(dict(payload["signal_kernel"])),
-            candidate_freeze_ready=bool(payload["candidate_freeze_ready"]),
+            signal_kernel=SignalKernelContract.from_dict(
+                _require_mapping(payload["signal_kernel"], field_name="signal_kernel")
+            ),
+            candidate_freeze_ready=_require_bool(
+                payload["candidate_freeze_ready"],
+                field_name="candidate_freeze_ready",
+            ),
             equivalence_certification=EquivalenceCertification.from_dict(
-                dict(payload["equivalence_certification"])
+                _require_mapping(
+                    payload["equivalence_certification"],
+                    field_name="equivalence_certification",
+                )
             ),
-            schema_version=int(
-                payload.get("schema_version", SUPPORTED_STRATEGY_CONTRACT_SCHEMA_VERSION)
+            schema_version=_require_schema_version(
+                payload.get("schema_version", SUPPORTED_STRATEGY_CONTRACT_SCHEMA_VERSION),
+                field_name="schema_version",
             ),
         )
 
@@ -293,6 +524,76 @@ class StrategyContractReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "StrategyContractReport":
+        payload = _require_mapping(payload, field_name="strategy_contract_report")
+        return cls(
+            contract_id=_require_non_empty_string(payload["contract_id"], field_name="contract_id"),
+            strategy_family_id=_require_non_empty_string(
+                payload["strategy_family_id"],
+                field_name="strategy_family_id",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=StrategyContractStatus,
+                description="strategy contract status",
+            ),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            stable_contract_complete=_require_bool(
+                payload["stable_contract_complete"],
+                field_name="stable_contract_complete",
+            ),
+            canonical_kernel_rule_satisfied=_require_bool(
+                payload["canonical_kernel_rule_satisfied"],
+                field_name="canonical_kernel_rule_satisfied",
+            ),
+            equivalence_certification_required=_require_bool(
+                payload["equivalence_certification_required"],
+                field_name="equivalence_certification_required",
+            ),
+            equivalence_certification_ready=_require_bool(
+                payload["equivalence_certification_ready"],
+                field_name="equivalence_certification_ready",
+            ),
+            dependency_dag_acyclic=_require_bool(
+                payload["dependency_dag_acyclic"],
+                field_name="dependency_dag_acyclic",
+            ),
+            strategy_protocol_evidence_fields=_require_string_sequence(
+                payload["strategy_protocol_evidence_fields"],
+                field_name="strategy_protocol_evidence_fields",
+            ),
+            missing_fields=_require_string_sequence(
+                payload["missing_fields"],
+                field_name="missing_fields",
+            ),
+            violated_guarantees=_require_string_sequence(
+                payload["violated_guarantees"],
+                field_name="violated_guarantees",
+            ),
+            guardrail_result=_require_mapping(
+                payload["guardrail_result"],
+                field_name="guardrail_result",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "StrategyContractReport":
+        return cls.from_dict(_decode_json_object(payload, label="strategy_contract_report"))
+
 
 @dataclass(frozen=True)
 class StrategyContractCompatibilityReport:
@@ -314,6 +615,59 @@ class StrategyContractCompatibilityReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "StrategyContractCompatibilityReport":
+        payload = _require_mapping(payload, field_name="strategy_contract_compatibility_report")
+        return cls(
+            contract_id=_require_non_empty_string(payload["contract_id"], field_name="contract_id"),
+            previous_semantic_version=_require_semver(
+                payload["previous_semantic_version"],
+                field_name="previous_semantic_version",
+            ),
+            current_semantic_version=_require_semver(
+                payload["current_semantic_version"],
+                field_name="current_semantic_version",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=StrategyContractStatus,
+                description="strategy contract status",
+            ),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            compatible=_require_bool(payload["compatible"], field_name="compatible"),
+            requires_recertification=_require_bool(
+                payload["requires_recertification"],
+                field_name="requires_recertification",
+            ),
+            changed_fields=_require_string_sequence(
+                payload["changed_fields"],
+                field_name="changed_fields",
+            ),
+            broken_guarantees=_require_string_sequence(
+                payload["broken_guarantees"],
+                field_name="broken_guarantees",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "StrategyContractCompatibilityReport":
+        return cls.from_dict(
+            _decode_json_object(payload, label="strategy_contract_compatibility_report")
+        )
 
 
 def _lifecycle_is_promotable(lifecycle_class: str) -> bool:
