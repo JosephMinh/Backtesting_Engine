@@ -76,6 +76,31 @@ class AppendOnlyLedgerTests(unittest.TestCase):
         self.assertEqual("LEDGER_SEQUENCE_OUT_OF_ORDER", report.reason_code)
         self.assertEqual(1, report.violating_sequence_id)
 
+    def test_integrity_report_loader_rejects_truthy_flags(self) -> None:
+        report = validate_append_only_ledger(
+            (ledger_event(1, "evt_ok", LedgerEventClass.BOOKED_FILL),),
+            account_id="acct_live_oneoz",
+            symbol="1OZ",
+        )
+        payload = report.to_dict()
+        payload["valid"] = "true"
+        with self.assertRaisesRegex(ValueError, "valid must be a boolean"):
+            type(report).from_dict(payload)
+
+    def test_integrity_report_loader_rejects_boolean_sequence_id(self) -> None:
+        report = validate_append_only_ledger(
+            (
+                ledger_event(2, "evt_002", LedgerEventClass.BOOKED_FILL),
+                ledger_event(1, "evt_001", LedgerEventClass.BOOKED_FEE),
+            ),
+            account_id="acct_live_oneoz",
+            symbol="1OZ",
+        )
+        payload = report.to_dict()
+        payload["violating_sequence_id"] = True
+        with self.assertRaisesRegex(ValueError, "violating_sequence_id must be an integer"):
+            type(report).from_dict(payload)
+
 
 class LedgerCloseTests(unittest.TestCase):
     def test_close_distinguishes_as_booked_from_as_reconciled(self) -> None:
@@ -242,6 +267,157 @@ class LedgerCloseTests(unittest.TestCase):
         self.assertEqual(artifact, parsed)
         serialized = artifact.to_dict()
         self.assertEqual("1400.000", serialized["broker_authoritative_snapshot"]["initial_margin_requirement_usd"])
+
+    def test_ledger_event_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = ledger_event(1, "evt_schema", LedgerEventClass.BOOKED_FILL).to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "ledger_event: schema_version must be an integer"):
+            LedgerEvent.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(ValueError, "ledger_event: schema_version must be an integer"):
+            LedgerEvent.from_dict(payload_with_bool_schema)
+
+    def test_ledger_event_loader_rejects_boolean_sequence_id(self) -> None:
+        payload = ledger_event(1, "evt_sequence", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload["sequence_id"] = False
+        with self.assertRaisesRegex(ValueError, "sequence_id must be an integer"):
+            LedgerEvent.from_dict(payload)
+
+    def test_ledger_event_loader_rejects_naive_occurred_at(self) -> None:
+        payload = ledger_event(1, "evt_time", LedgerEventClass.BOOKED_FILL).to_dict()
+        payload["occurred_at"] = "2026-03-12T00:01:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "occurred_at must be a timezone-aware ISO-8601 timestamp",
+        ):
+            LedgerEvent.from_dict(payload)
+
+    def test_close_artifact_loader_requires_explicit_integer_schema_version(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_schema",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(
+                    1,
+                    "evt_fill",
+                    LedgerEventClass.BOOKED_FILL,
+                    position_delta_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "ledger_close_artifact: schema_version must be an integer",
+        ):
+            LedgerCloseArtifact.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "ledger_close_artifact: schema_version must be an integer",
+        ):
+            LedgerCloseArtifact.from_dict(payload_with_bool_schema)
+
+    def test_close_artifact_loader_rejects_invalid_status(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_status",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(
+                    1,
+                    "evt_fill",
+                    LedgerEventClass.BOOKED_FILL,
+                    position_delta_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload["status"] = "done"
+        with self.assertRaisesRegex(
+            ValueError,
+            "status must be a valid ledger close status",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+    def test_close_artifact_loader_rejects_naive_timestamps(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_timestamp",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(
+                    1,
+                    "evt_fill",
+                    LedgerEventClass.BOOKED_FILL,
+                    position_delta_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload["timestamp"] = "2026-03-12T00:03:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp must be a timezone-aware ISO-8601 timestamp",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+        payload = artifact.to_dict()
+        payload["broker_authoritative_snapshot"]["source_timestamp"] = "2026-03-12T00:03:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "source_timestamp must be a timezone-aware ISO-8601 timestamp",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
 
 
 if __name__ == "__main__":

@@ -48,6 +48,49 @@ def _decode_json_object(payload: str, label: str) -> dict[str, object]:
     return decoded
 
 
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name} must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_close_status(value: object) -> str:
+    if isinstance(value, LedgerCloseStatus):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError("status must be a valid ledger close status")
+    try:
+        return LedgerCloseStatus(value).value
+    except ValueError as exc:
+        raise ValueError("status must be a valid ledger close status") from exc
+
+
 @unique
 class LedgerCloseStatus(str, Enum):
     PASS = "pass"  # nosec B105 - lifecycle status literal, not a credential
@@ -147,12 +190,15 @@ class LedgerEvent:
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "LedgerEvent":
         return cls(
-            sequence_id=int(payload["sequence_id"]),
+            sequence_id=_require_int(payload["sequence_id"], field_name="sequence_id"),
             event_id=str(payload["event_id"]),
             event_class=LedgerEventClass(str(payload["event_class"])),
             account_id=str(payload["account_id"]),
             symbol=str(payload["symbol"]),
-            occurred_at=str(payload["occurred_at"]),
+            occurred_at=_normalize_utc_timestamp(
+                payload["occurred_at"],
+                field_name="occurred_at",
+            ),
             description=str(payload["description"]),
             correlation_id=str(payload.get("correlation_id", "")),
             reference_event_id=(
@@ -181,7 +227,10 @@ class LedgerEvent:
                 str(key): str(value)
                 for key, value in dict(payload.get("metadata", {})).items()
             },
-            schema_version=int(payload.get("schema_version", SUPPORTED_LEDGER_SCHEMA_VERSION)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="ledger_event",
+            ),
         )
 
     @classmethod
@@ -257,7 +306,12 @@ class BrokerAuthoritativeSnapshot:
                 None if payload.get("margin_event_id") is None else str(payload["margin_event_id"])
             ),
             source_timestamp=(
-                None if payload.get("source_timestamp") is None else str(payload["source_timestamp"])
+                None
+                if payload.get("source_timestamp") is None
+                else _normalize_utc_timestamp(
+                    payload["source_timestamp"],
+                    field_name="source_timestamp",
+                )
             ),
         )
 
@@ -322,7 +376,7 @@ class AppendOnlyIntegrityReport:
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> "AppendOnlyIntegrityReport":
         return cls(
-            valid=bool(payload["valid"]),
+            valid=_require_bool(payload["valid"], field_name="valid"),
             reason_code=str(payload["reason_code"]),
             explanation=str(payload["explanation"]),
             duplicate_event_id=(
@@ -331,7 +385,10 @@ class AppendOnlyIntegrityReport:
             violating_sequence_id=(
                 None
                 if payload.get("violating_sequence_id") is None
-                else int(payload["violating_sequence_id"])
+                else _require_int(
+                    payload["violating_sequence_id"],
+                    field_name="violating_sequence_id",
+                )
             ),
         )
 
@@ -386,7 +443,7 @@ class LedgerCloseArtifact:
             close_id=str(payload["close_id"]),
             account_id=str(payload["account_id"]),
             symbol=str(payload["symbol"]),
-            status=str(payload["status"]),
+            status=_require_close_status(payload["status"]),
             reason_code=str(payload["reason_code"]),
             append_only_integrity=AppendOnlyIntegrityReport.from_dict(
                 dict(payload["append_only_integrity"])
@@ -406,8 +463,14 @@ class LedgerCloseArtifact:
             ),
             restatement_event_ids=tuple(str(item) for item in payload["restatement_event_ids"]),
             explanation=str(payload["explanation"]),
-            timestamp=str(payload["timestamp"]),
-            schema_version=int(payload.get("schema_version", SUPPORTED_LEDGER_SCHEMA_VERSION)),
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
+            ),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="ledger_close_artifact",
+            ),
         )
 
     @classmethod
