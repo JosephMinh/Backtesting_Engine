@@ -191,6 +191,67 @@ class BaselineRiskEvaluationTests(unittest.TestCase):
         self.assertEqual(report.effective_defaults, reparsed.effective_defaults)
         self.assertEqual(report.control_results, reparsed.control_results)
 
+    def test_request_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "baseline_risk_evaluation_request: schema_version must be an integer",
+        ):
+            BaselineRiskEvaluationRequest.from_dict(payload)
+
+        payload = dict(load_cases()["shared_request_defaults"])
+        payload["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "baseline_risk_evaluation_request: schema_version must be an integer",
+        ):
+            BaselineRiskEvaluationRequest.from_dict(payload)
+
+    def test_request_loader_rejects_truthy_bool_coercions(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "pending_order_intent_count must be an integer",
+        ):
+            build_request({"pending_order_intent_count": True})
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "data_quality_degraded must be a boolean",
+        ):
+            build_request({"data_quality_degraded": "false"})
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "requested_initial_margin_fraction must be finite",
+        ):
+            build_request({"requested_initial_margin_fraction": True})
+
+    def test_timestamp_fields_require_timezone_aware_strings(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp fields must be timezone-aware UTC-normalizable strings",
+        ):
+            build_request({"evaluated_at_utc": "2026-03-28T00:00:00"})
+
+    def test_report_loader_rejects_truthy_control_flags(self) -> None:
+        fixture = load_cases()
+        report = evaluate_baseline_risk_controls(
+            build_request(fixture["evaluation_cases"][0]["overrides"])
+        )
+        payload = report.to_dict()
+        payload["control_results"][0]["passed"] = "true"
+        with self.assertRaisesRegex(ValueError, "passed must be a boolean"):
+            BaselineRiskEvaluationReport.from_dict(payload)
+
+        payload = report.to_dict()
+        payload["timestamp"] = "2026-03-28T00:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp fields must be timezone-aware UTC-normalizable strings",
+        ):
+            BaselineRiskEvaluationReport.from_dict(payload)
+
 
 if __name__ == "__main__":
     unittest.main()

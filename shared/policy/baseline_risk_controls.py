@@ -45,11 +45,13 @@ def _utcnow() -> str:
 
 
 def _normalize_timestamp(value: str) -> str:
-    return (
-        datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
-        .astimezone(datetime.timezone.utc)
-        .isoformat()
-    )
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValueError("timestamp fields must be timezone-aware UTC-normalizable strings") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError("timestamp fields must be timezone-aware UTC-normalizable strings")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
 
 
 def _jsonable(value: Any) -> Any:
@@ -60,6 +62,46 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_jsonable(item) for item in value]
     return value
+
+
+def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
+    try:
+        decoded = json.JSONDecoder().decode(payload)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{label}: invalid JSON payload") from exc
+    if not isinstance(decoded, dict):
+        raise ValueError(f"{label}: expected JSON object")
+    return decoded
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _require_finite_number(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be finite")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} must be finite") from exc
+    if not parsed == parsed or parsed in (float("inf"), float("-inf")):
+        raise ValueError(f"{field_name} must be finite")
+    return parsed
 
 
 @unique
@@ -111,23 +153,59 @@ class BaselineRiskDefaults:
             source_account_profile_id=str(payload["source_account_profile_id"]),
             source_strategy_contract_id=str(payload["source_strategy_contract_id"]),
             execution_symbol=str(payload["execution_symbol"]),
-            max_position_size=int(payload["max_position_size"]),
-            max_concurrent_order_intents=int(payload["max_concurrent_order_intents"]),
-            daily_loss_lockout_fraction=float(payload["daily_loss_lockout_fraction"]),
-            max_drawdown_fraction=float(payload["max_drawdown_fraction"]),
-            max_initial_margin_fraction=float(payload["max_initial_margin_fraction"]),
-            max_maintenance_margin_fraction=float(payload["max_maintenance_margin_fraction"]),
-            overnight_gap_stress_fraction=float(payload["overnight_gap_stress_fraction"]),
+            max_position_size=_require_int(
+                payload["max_position_size"],
+                field_name="max_position_size",
+            ),
+            max_concurrent_order_intents=_require_int(
+                payload["max_concurrent_order_intents"],
+                field_name="max_concurrent_order_intents",
+            ),
+            daily_loss_lockout_fraction=_require_finite_number(
+                payload["daily_loss_lockout_fraction"],
+                field_name="daily_loss_lockout_fraction",
+            ),
+            max_drawdown_fraction=_require_finite_number(
+                payload["max_drawdown_fraction"],
+                field_name="max_drawdown_fraction",
+            ),
+            max_initial_margin_fraction=_require_finite_number(
+                payload["max_initial_margin_fraction"],
+                field_name="max_initial_margin_fraction",
+            ),
+            max_maintenance_margin_fraction=_require_finite_number(
+                payload["max_maintenance_margin_fraction"],
+                field_name="max_maintenance_margin_fraction",
+            ),
+            overnight_gap_stress_fraction=_require_finite_number(
+                payload["overnight_gap_stress_fraction"],
+                field_name="overnight_gap_stress_fraction",
+            ),
             allowed_operating_postures=tuple(
                 str(item) for item in payload["allowed_operating_postures"]
             ),
             default_operating_posture=str(payload["default_operating_posture"]),
-            overnight_only_with_strict_class=bool(payload["overnight_only_with_strict_class"]),
+            overnight_only_with_strict_class=_require_bool(
+                payload["overnight_only_with_strict_class"],
+                field_name="overnight_only_with_strict_class",
+            ),
             delivery_fence_rule=str(payload["delivery_fence_rule"]),
-            delivery_fence_review_required=bool(payload["delivery_fence_review_required"]),
-            warmup_min_history_bars=int(payload["warmup_min_history_bars"]),
-            warmup_min_history_minutes=int(payload["warmup_min_history_minutes"]),
-            warmup_requires_state_seed=bool(payload["warmup_requires_state_seed"]),
+            delivery_fence_review_required=_require_bool(
+                payload["delivery_fence_review_required"],
+                field_name="delivery_fence_review_required",
+            ),
+            warmup_min_history_bars=_require_int(
+                payload["warmup_min_history_bars"],
+                field_name="warmup_min_history_bars",
+            ),
+            warmup_min_history_minutes=_require_int(
+                payload["warmup_min_history_minutes"],
+                field_name="warmup_min_history_minutes",
+            ),
+            warmup_requires_state_seed=_require_bool(
+                payload["warmup_requires_state_seed"],
+                field_name="warmup_requires_state_seed",
+            ),
         )
 
 
@@ -170,37 +248,78 @@ class BaselineRiskEvaluationRequest:
             product_profile_id=str(payload["product_profile_id"]),
             account_profile_id=str(payload["account_profile_id"]),
             strategy_contract=StrategyContract.from_dict(dict(payload["strategy_contract"])),
-            current_position_size=int(payload["current_position_size"]),
-            projected_position_size=int(payload["projected_position_size"]),
-            pending_order_intent_count=int(payload["pending_order_intent_count"]),
-            data_quality_degraded=bool(payload["data_quality_degraded"]),
-            proposed_order_increases_risk=bool(payload["proposed_order_increases_risk"]),
-            daily_loss_fraction=float(payload["daily_loss_fraction"]),
-            drawdown_fraction=float(payload["drawdown_fraction"]),
-            delivery_window_active=bool(payload["delivery_window_active"]),
-            warmup_bars_observed=int(payload["warmup_bars_observed"]),
-            warmup_minutes_observed=int(payload["warmup_minutes_observed"]),
-            state_seed_loaded=bool(payload["state_seed_loaded"]),
-            requested_initial_margin_fraction=float(payload["requested_initial_margin_fraction"]),
-            requested_maintenance_margin_fraction=float(
-                payload["requested_maintenance_margin_fraction"]
+            current_position_size=_require_int(
+                payload["current_position_size"],
+                field_name="current_position_size",
+            ),
+            projected_position_size=_require_int(
+                payload["projected_position_size"],
+                field_name="projected_position_size",
+            ),
+            pending_order_intent_count=_require_int(
+                payload["pending_order_intent_count"],
+                field_name="pending_order_intent_count",
+            ),
+            data_quality_degraded=_require_bool(
+                payload["data_quality_degraded"],
+                field_name="data_quality_degraded",
+            ),
+            proposed_order_increases_risk=_require_bool(
+                payload["proposed_order_increases_risk"],
+                field_name="proposed_order_increases_risk",
+            ),
+            daily_loss_fraction=_require_finite_number(
+                payload["daily_loss_fraction"],
+                field_name="daily_loss_fraction",
+            ),
+            drawdown_fraction=_require_finite_number(
+                payload["drawdown_fraction"],
+                field_name="drawdown_fraction",
+            ),
+            delivery_window_active=_require_bool(
+                payload["delivery_window_active"],
+                field_name="delivery_window_active",
+            ),
+            warmup_bars_observed=_require_int(
+                payload["warmup_bars_observed"],
+                field_name="warmup_bars_observed",
+            ),
+            warmup_minutes_observed=_require_int(
+                payload["warmup_minutes_observed"],
+                field_name="warmup_minutes_observed",
+            ),
+            state_seed_loaded=_require_bool(
+                payload["state_seed_loaded"],
+                field_name="state_seed_loaded",
+            ),
+            requested_initial_margin_fraction=_require_finite_number(
+                payload["requested_initial_margin_fraction"],
+                field_name="requested_initial_margin_fraction",
+            ),
+            requested_maintenance_margin_fraction=_require_finite_number(
+                payload["requested_maintenance_margin_fraction"],
+                field_name="requested_maintenance_margin_fraction",
             ),
             requested_operating_posture=str(payload["requested_operating_posture"]),
-            overnight_requested=bool(payload["overnight_requested"]),
-            overnight_approval_granted=bool(payload["overnight_approval_granted"]),
+            overnight_requested=_require_bool(
+                payload["overnight_requested"],
+                field_name="overnight_requested",
+            ),
+            overnight_approval_granted=_require_bool(
+                payload["overnight_approval_granted"],
+                field_name="overnight_approval_granted",
+            ),
             waivers=tuple(
                 PolicyWaiver.from_dict(dict(item)) for item in payload.get("waivers", ())
             ),
             evaluated_at_utc=(
-                str(payload["evaluated_at_utc"])
+                _normalize_timestamp(str(payload["evaluated_at_utc"]))
                 if payload.get("evaluated_at_utc") not in (None, "")
                 else None
             ),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_BASELINE_RISK_CONTROL_SCHEMA_VERSION,
-                )
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="baseline_risk_evaluation_request",
             ),
         )
 
@@ -227,8 +346,8 @@ class BaselineRiskControlResult:
         return cls(
             control_id=str(payload["control_id"]),
             control_name=str(payload["control_name"]),
-            passed=bool(payload["passed"]),
-            waived=bool(payload["waived"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            waived=_require_bool(payload["waived"], field_name="waived"),
             status=str(payload["status"]),
             action=str(payload["action"]),
             reason_code=(
@@ -306,18 +425,17 @@ class BaselineRiskEvaluationReport:
             ),
             explanation=str(payload["explanation"]),
             remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            timestamp=_normalize_timestamp(str(payload.get("timestamp", _utcnow()))),
         )
 
     @classmethod
     def from_json(cls, payload: str) -> "BaselineRiskEvaluationReport":
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError("baseline_risk_evaluation_report: invalid JSON payload") from exc
-        if not isinstance(data, dict):
-            raise ValueError("baseline_risk_evaluation_report: expected JSON object")
-        return cls.from_dict(data)
+        return cls.from_dict(
+            _decode_json_object(
+                payload,
+                label="baseline_risk_evaluation_report",
+            )
+        )
 
 
 def inherited_baseline_risk_defaults(
