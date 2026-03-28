@@ -18,6 +18,122 @@ from shared.policy.research_state import ResearchAdmissibilityClass
 SUPPORTED_NOTEBOOK_QUARANTINE_SCHEMA_VERSION = 1
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_present(payload: dict[str, object], *, field_name: str) -> object:
+    if field_name not in payload:
+        raise ValueError(f"{field_name} field is required")
+    return payload[field_name]
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, object], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of objects")
+    return tuple(
+        _require_mapping(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_boolean(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be a boolean")
+    return value
+
+
+def _require_timestamp(value: object, *, field_name: str) -> str:
+    try:
+        normalized = datetime.datetime.fromisoformat(
+            _require_non_empty_string(value, field_name=field_name).replace("Z", "+00:00")
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name}: must be timezone-aware and ISO-8601 compatible") from exc
+    if normalized.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware and ISO-8601 compatible")
+    return normalized.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_evidence_source_kind(value: object, *, field_name: str) -> EvidenceSourceKind:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid evidence source kind")
+    try:
+        return EvidenceSourceKind(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid evidence source kind") from exc
+
+
+def _require_evidence_usage(value: object, *, field_name: str) -> EvidenceUsage:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid evidence usage")
+    try:
+        return EvidenceUsage(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid evidence usage") from exc
+
+
+def _require_dependency_state(value: object, *, field_name: str) -> DependencyState:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid dependency state")
+    try:
+        return DependencyState(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid dependency state") from exc
+
+
+def _require_freshness_state(value: object, *, field_name: str) -> FreshnessState:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid freshness state")
+    try:
+        return FreshnessState(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid freshness state") from exc
+
+
+def _require_research_admissibility(
+    value: object,
+    *,
+    field_name: str,
+) -> ResearchAdmissibilityClass:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid research admissibility class")
+    try:
+        return ResearchAdmissibilityClass(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid research admissibility class") from exc
+
+
+def _require_status(value: object, *, field_name: str) -> NotebookQuarantineStatus:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid notebook quarantine status")
+    try:
+        return NotebookQuarantineStatus(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid notebook quarantine status") from exc
+
+
 @unique
 class EvidenceSourceKind(str, Enum):
     NOTEBOOK_OUTPUT = "notebook_output"
@@ -134,40 +250,90 @@ class EvidenceSourceRecord:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> EvidenceSourceRecord:
+        payload = _require_mapping(payload, field_name="evidence_source_record")
         admissibility = payload.get("research_admissibility_class")
         return cls(
-            source_id=str(payload["source_id"]),
-            source_kind=EvidenceSourceKind(str(payload["source_kind"])),
-            usage=EvidenceUsage(str(payload["usage"])),
-            counts_toward_gate=bool(payload.get("counts_toward_gate", False)),
+            source_id=_require_non_empty_string(
+                _require_present(payload, field_name="source_id"),
+                field_name="source_id",
+            ),
+            source_kind=_require_evidence_source_kind(
+                _require_present(payload, field_name="source_kind"),
+                field_name="source_kind",
+            ),
+            usage=_require_evidence_usage(
+                _require_present(payload, field_name="usage"),
+                field_name="usage",
+            ),
+            counts_toward_gate=(
+                False
+                if payload.get("counts_toward_gate") is None
+                else _require_boolean(payload["counts_toward_gate"], field_name="counts_toward_gate")
+            ),
             canonical_reference_id=(
                 None
                 if payload.get("canonical_reference_id") is None
-                else str(payload["canonical_reference_id"])
+                else _require_non_empty_string(
+                    payload["canonical_reference_id"],
+                    field_name="canonical_reference_id",
+                )
             ),
             reference_artifact_id=(
                 None
                 if payload.get("reference_artifact_id") is None
-                else str(payload["reference_artifact_id"])
+                else _require_non_empty_string(
+                    payload["reference_artifact_id"],
+                    field_name="reference_artifact_id",
+                )
             ),
             research_run_id=(
-                None if payload.get("research_run_id") is None else str(payload["research_run_id"])
+                None
+                if payload.get("research_run_id") is None
+                else _require_non_empty_string(
+                    payload["research_run_id"],
+                    field_name="research_run_id",
+                )
             ),
             family_decision_record_id=(
                 None
                 if payload.get("family_decision_record_id") is None
-                else str(payload["family_decision_record_id"])
+                else _require_non_empty_string(
+                    payload["family_decision_record_id"],
+                    field_name="family_decision_record_id",
+                )
             ),
             research_admissibility_class=(
                 None
                 if admissibility is None
-                else ResearchAdmissibilityClass(str(admissibility))
+                else _require_research_admissibility(
+                    admissibility,
+                    field_name="research_admissibility_class",
+                )
             ),
-            dependency_state=DependencyState(str(payload.get("dependency_state", "valid"))),
-            freshness_state=FreshnessState(
-                str(payload.get("freshness_state", "not_applicable"))
+            dependency_state=(
+                DependencyState.VALID
+                if payload.get("dependency_state") is None
+                else _require_dependency_state(
+                    payload["dependency_state"],
+                    field_name="dependency_state",
+                )
             ),
-            produced_by_notebook=bool(payload.get("produced_by_notebook", False)),
+            freshness_state=(
+                FreshnessState.NOT_APPLICABLE
+                if payload.get("freshness_state") is None
+                else _require_freshness_state(
+                    payload["freshness_state"],
+                    field_name="freshness_state",
+                )
+            ),
+            produced_by_notebook=(
+                False
+                if payload.get("produced_by_notebook") is None
+                else _require_boolean(
+                    payload["produced_by_notebook"],
+                    field_name="produced_by_notebook",
+                )
+            ),
         )
 
 
@@ -188,15 +354,28 @@ class NotebookQuarantineRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> NotebookQuarantineRequest:
+        payload = _require_mapping(payload, field_name="notebook_quarantine_request")
         return cls(
-            evaluation_id=str(payload["evaluation_id"]),
-            family_id=str(payload["family_id"]),
+            evaluation_id=_require_non_empty_string(
+                _require_present(payload, field_name="evaluation_id"),
+                field_name="evaluation_id",
+            ),
+            family_id=_require_non_empty_string(
+                _require_present(payload, field_name="family_id"),
+                field_name="family_id",
+            ),
             evidence_sources=tuple(
-                EvidenceSourceRecord.from_dict(dict(item))
-                for item in payload["evidence_sources"]
+                EvidenceSourceRecord.from_dict(item)
+                for item in _require_object_sequence(
+                    _require_present(payload, field_name="evidence_sources"),
+                    field_name="evidence_sources",
+                )
             ),
             required_decision_record_ids=tuple(
-                str(item) for item in payload.get("required_decision_record_ids", [])
+                _require_string_sequence(
+                    payload.get("required_decision_record_ids", []),
+                    field_name="required_decision_record_ids",
+                )
             ),
         )
 
@@ -222,15 +401,33 @@ class NotebookQuarantineCheckResult:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> NotebookQuarantineCheckResult:
+        payload = _require_mapping(payload, field_name="notebook_quarantine_check_result")
         return cls(
-            check_id=str(payload["check_id"]),
-            passed=bool(payload["passed"]),
-            reason_code=(
-                None if payload.get("reason_code") is None else str(payload["reason_code"])
+            check_id=_require_non_empty_string(
+                _require_present(payload, field_name="check_id"),
+                field_name="check_id",
             ),
-            explanation=str(payload["explanation"]),
-            affected_source_ids=tuple(str(item) for item in payload["affected_source_ids"]),
-            context=dict(payload.get("context", {})),
+            passed=_require_boolean(
+                _require_present(payload, field_name="passed"),
+                field_name="passed",
+            ),
+            reason_code=(
+                None
+                if _require_present(payload, field_name="reason_code") is None
+                else _require_non_empty_string(payload["reason_code"], field_name="reason_code")
+            ),
+            explanation=_require_non_empty_string(
+                _require_present(payload, field_name="explanation"),
+                field_name="explanation",
+            ),
+            affected_source_ids=_require_string_sequence(
+                _require_present(payload, field_name="affected_source_ids"),
+                field_name="affected_source_ids",
+            ),
+            context=_require_mapping(
+                _require_present(payload, field_name="context"),
+                field_name="context",
+            ),
         )
 
 
@@ -270,27 +467,69 @@ class NotebookQuarantineReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> NotebookQuarantineReport:
+        payload = _require_mapping(payload, field_name="notebook_quarantine_report")
         return cls(
-            evaluation_id=str(payload["evaluation_id"]),
-            family_id=str(payload["family_id"]),
-            status=NotebookQuarantineStatus(str(payload["status"])),
-            selection_admissible=bool(payload["selection_admissible"]),
-            promotion_admissible=bool(payload["promotion_admissible"]),
-            quarantined_source_ids=tuple(str(item) for item in payload["quarantined_source_ids"]),
-            admissible_source_ids=tuple(str(item) for item in payload["admissible_source_ids"]),
-            rejected_source_ids=tuple(str(item) for item in payload["rejected_source_ids"]),
-            covered_decision_record_ids=tuple(
-                str(item) for item in payload["covered_decision_record_ids"]
+            evaluation_id=_require_non_empty_string(
+                _require_present(payload, field_name="evaluation_id"),
+                field_name="evaluation_id",
             ),
-            missing_decision_record_ids=tuple(
-                str(item) for item in payload["missing_decision_record_ids"]
+            family_id=_require_non_empty_string(
+                _require_present(payload, field_name="family_id"),
+                field_name="family_id",
+            ),
+            status=_require_status(
+                _require_present(payload, field_name="status"),
+                field_name="status",
+            ),
+            selection_admissible=_require_boolean(
+                _require_present(payload, field_name="selection_admissible"),
+                field_name="selection_admissible",
+            ),
+            promotion_admissible=_require_boolean(
+                _require_present(payload, field_name="promotion_admissible"),
+                field_name="promotion_admissible",
+            ),
+            quarantined_source_ids=_require_string_sequence(
+                _require_present(payload, field_name="quarantined_source_ids"),
+                field_name="quarantined_source_ids",
+            ),
+            admissible_source_ids=_require_string_sequence(
+                _require_present(payload, field_name="admissible_source_ids"),
+                field_name="admissible_source_ids",
+            ),
+            rejected_source_ids=_require_string_sequence(
+                _require_present(payload, field_name="rejected_source_ids"),
+                field_name="rejected_source_ids",
+            ),
+            covered_decision_record_ids=_require_string_sequence(
+                _require_present(payload, field_name="covered_decision_record_ids"),
+                field_name="covered_decision_record_ids",
+            ),
+            missing_decision_record_ids=_require_string_sequence(
+                _require_present(payload, field_name="missing_decision_record_ids"),
+                field_name="missing_decision_record_ids",
             ),
             check_results=tuple(
-                NotebookQuarantineCheckResult.from_dict(dict(item))
-                for item in payload["check_results"]
+                NotebookQuarantineCheckResult.from_dict(item)
+                for item in _require_object_sequence(
+                    _require_present(payload, field_name="check_results"),
+                    field_name="check_results",
+                )
             ),
-            generated_at_utc=str(payload["generated_at_utc"]),
+            generated_at_utc=_require_timestamp(
+                _require_present(payload, field_name="generated_at_utc"),
+                field_name="generated_at_utc",
+            ),
         )
+
+    @classmethod
+    def from_json(cls, payload: str) -> NotebookQuarantineReport:
+        decoder = json.JSONDecoder()
+        try:
+            decoded = decoder.decode(payload)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"notebook_quarantine_report: invalid JSON payload: {exc.msg}") from exc
+        return cls.from_dict(_require_mapping(decoded, field_name="notebook_quarantine_report"))
 
 
 def admissible_gate_source_kinds() -> tuple[str, ...]:

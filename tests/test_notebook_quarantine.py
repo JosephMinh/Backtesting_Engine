@@ -7,7 +7,9 @@ import unittest
 from pathlib import Path
 
 from shared.policy.notebook_quarantine import (
+    EvidenceSourceRecord,
     VALIDATION_ERRORS,
+    NotebookQuarantineCheckResult,
     NotebookQuarantineReport,
     NotebookQuarantineRequest,
     admissible_gate_source_kinds,
@@ -113,6 +115,94 @@ class TestNotebookQuarantineContract(unittest.TestCase):
         self.assertTrue(restored.promotion_admissible)
         self.assertEqual(("decision-report",), restored.admissible_source_ids)
         self.assertEqual(6, len(restored.check_results))
+        reloaded = NotebookQuarantineReport.from_json(
+            evaluate_notebook_quarantine(request).to_json()
+        )
+        self.assertEqual(restored.status, reloaded.status)
+        self.assertEqual(restored.admissible_source_ids, reloaded.admissible_source_ids)
+        self.assertEqual(len(restored.check_results), len(reloaded.check_results))
+
+    def test_request_loader_rejects_fail_open_boundary_values(self) -> None:
+        with self.assertRaisesRegex(ValueError, "counts_toward_gate"):
+            EvidenceSourceRecord.from_dict(
+                {
+                    "source_id": "nb-output",
+                    "source_kind": "notebook_output",
+                    "usage": "exploration",
+                    "counts_toward_gate": "false",
+                }
+            )
+
+        with self.assertRaisesRegex(ValueError, "required_decision_record_ids"):
+            NotebookQuarantineRequest.from_dict(
+                {
+                    "evaluation_id": "nbq-invalid-sequence",
+                    "family_id": "gold_breakout",
+                    "evidence_sources": [],
+                    "required_decision_record_ids": "decision-001",
+                }
+            )
+
+        with self.assertRaisesRegex(ValueError, "evidence_sources field is required"):
+            NotebookQuarantineRequest.from_dict(
+                {
+                    "evaluation_id": "nbq-missing-sources",
+                    "family_id": "gold_breakout",
+                }
+            )
+
+    def test_report_loader_rejects_missing_nullable_fields_and_bad_values(self) -> None:
+        request = NotebookQuarantineRequest.from_dict(
+            {
+                "evaluation_id": "nbq-boundary",
+                "family_id": "gold_breakout",
+                "required_decision_record_ids": ["decision-001"],
+                "evidence_sources": [
+                    {
+                        "source_id": "decision-report",
+                        "source_kind": "policy_evaluated_report",
+                        "usage": "promotion",
+                        "counts_toward_gate": True,
+                        "canonical_reference_id": "decision-001",
+                        "reference_artifact_id": "family_decision_record",
+                        "family_decision_record_id": "decision-001",
+                    }
+                ],
+            }
+        )
+        report_payload = evaluate_notebook_quarantine(request).to_dict()
+        report_payload["check_results"][0].pop("reason_code")
+        with self.assertRaisesRegex(ValueError, "reason_code field is required"):
+            NotebookQuarantineReport.from_dict(report_payload)
+
+        check_payload = NotebookQuarantineCheckResult(
+            check_id="example",
+            passed=True,
+            reason_code=None,
+            explanation="example explanation",
+            affected_source_ids=("source-1",),
+            context={"detail": "ok"},
+        ).to_dict()
+        check_payload["passed"] = "true"
+        with self.assertRaisesRegex(ValueError, "passed"):
+            NotebookQuarantineCheckResult.from_dict(check_payload)
+
+        check_payload = NotebookQuarantineCheckResult(
+            check_id="example",
+            passed=True,
+            reason_code=None,
+            explanation="example explanation",
+            affected_source_ids=("source-1",),
+            context={"detail": "ok"},
+        ).to_dict()
+        check_payload.pop("explanation")
+        with self.assertRaisesRegex(ValueError, "explanation field is required"):
+            NotebookQuarantineCheckResult.from_dict(check_payload)
+
+        report_payload = evaluate_notebook_quarantine(request).to_dict()
+        report_payload.pop("check_results")
+        with self.assertRaisesRegex(ValueError, "check_results field is required"):
+            NotebookQuarantineReport.from_dict(report_payload)
 
     def _load_report_json(self, payload: str) -> dict[str, object]:
         try:
