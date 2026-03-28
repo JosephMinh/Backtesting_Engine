@@ -192,6 +192,26 @@ class AccountFitGateContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "schema_version"):
             AccountFitRequest.from_dict(bool_schema_payload)
 
+        missing_schema_payload = dict(case["request"])
+        missing_schema_payload.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            AccountFitRequest.from_dict(missing_schema_payload)
+
+        unsupported_schema_payload = dict(case["request"])
+        unsupported_schema_payload["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "unsupported schema_version 2"):
+            AccountFitRequest.from_dict(unsupported_schema_payload)
+
+    def test_public_loaders_reject_non_object_payloads(self) -> None:
+        with self.assertRaisesRegex(ValueError, "account_fit_request"):
+            AccountFitRequest.from_dict([])  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(ValueError, "account_fit_report"):
+            AccountFitReport.from_dict([])  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(ValueError, "account_fit_execution_decision"):
+            AccountFitExecutionDecision.from_dict([])  # type: ignore[arg-type]
+
     def test_report_and_decision_loaders_reject_invalid_status_and_missing_timestamps(self) -> None:
         case = next(
             case
@@ -238,6 +258,39 @@ class AccountFitGateContractTests(unittest.TestCase):
         missing_decision_timestamp.pop("timestamp")
         with self.assertRaisesRegex(ValueError, "timestamp"):
             AccountFitExecutionDecision.from_dict(missing_decision_timestamp)
+
+    def test_report_and_decision_loaders_reject_fail_open_sequence_and_mapping_shapes(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "oneoz_passes_small_account_actual_contract_gate"
+        )
+        request = AccountFitRequest.from_dict(dict(case["request"]))
+        report_payload = evaluate_account_fit(request).to_dict()
+
+        invalid_threshold_sources = dict(report_payload)
+        invalid_threshold_sources["threshold_source_ids"] = "threshold-1"
+        with self.assertRaisesRegex(ValueError, "threshold_source_ids"):
+            AccountFitReport.from_dict(invalid_threshold_sources)
+
+        invalid_check_results = dict(report_payload)
+        invalid_check_results["check_results"] = [False]
+        with self.assertRaisesRegex(ValueError, "check_results"):
+            AccountFitReport.from_dict(invalid_check_results)
+
+        invalid_context = dict(report_payload)
+        invalid_context["check_results"] = [
+            {**report_payload["check_results"][0], "context": ["not", "a", "mapping"]}
+        ]
+        with self.assertRaisesRegex(ValueError, "context"):
+            AccountFitReport.from_dict(invalid_context)
+
+        decision_payload = select_account_fit_execution_symbol((evaluate_account_fit(request),)).to_dict()
+
+        invalid_status_map_shape = dict(decision_payload)
+        invalid_status_map_shape["report_status_by_symbol"] = [["1OZ", "pass"]]
+        with self.assertRaisesRegex(ValueError, "report_status_by_symbol"):
+            AccountFitExecutionDecision.from_dict(invalid_status_map_shape)
 
     def test_identifier_and_symbol_loaders_reject_non_string_values(self) -> None:
         case = next(

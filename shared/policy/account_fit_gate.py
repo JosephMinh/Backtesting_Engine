@@ -70,6 +70,12 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
 def _as_non_negative_float(value: object, *, field_name: str) -> float:
     if isinstance(value, bool):
         raise ValueError(f"{field_name}: must be non-negative")
@@ -106,6 +112,32 @@ def _optional_non_empty_string(value: object, *, field_name: str) -> str | None:
     if value in (None, ""):
         return None
     return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_object_sequence(
+    value: object, *, field_name: str
+) -> tuple[dict[str, Any], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of objects")
+    return tuple(_require_mapping(item, field_name=f"{field_name}[]") for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _as_positive_int(value, field_name=field_name)
+    if parsed != SUPPORTED_ACCOUNT_FIT_GATE_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema_version {parsed}; expected "
+            f"{SUPPORTED_ACCOUNT_FIT_GATE_SCHEMA_VERSION}"
+        )
+    return parsed
 
 
 def _jsonable(value: Any) -> Any:
@@ -154,6 +186,7 @@ class BrokerMarginSnapshot:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "BrokerMarginSnapshot":
+        payload = _require_mapping(payload, field_name="margin_snapshot")
         captured_at_utc = _normalize_timestamp(
             payload["captured_at_utc"],
             field_name="margin_snapshot.captured_at_utc",
@@ -215,6 +248,7 @@ class FeeScheduleArtifact:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FeeScheduleArtifact":
+        payload = _require_mapping(payload, field_name="fee_schedule")
         captured_at_utc = _normalize_timestamp(
             payload["captured_at_utc"],
             field_name="fee_schedule.captured_at_utc",
@@ -281,6 +315,7 @@ class AccountFitThresholds:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitThresholds":
+        payload = _require_mapping(payload, field_name="thresholds")
         return cls(
             source_product_profile_id=_require_non_empty_string(
                 payload["source_product_profile_id"],
@@ -298,7 +333,10 @@ class AccountFitThresholds:
                 payload["approved_starting_equity_usd"],
                 field_name="approved_starting_equity_usd",
             ),
-            approved_symbols=tuple(str(item) for item in payload["approved_symbols"]),
+            approved_symbols=_require_string_sequence(
+                payload["approved_symbols"],
+                field_name="approved_symbols",
+            ),
             max_position_size=(
                 _as_positive_int(
                     payload["max_position_size"],
@@ -359,13 +397,19 @@ class AccountFitRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitRequest":
+        payload = _require_mapping(payload, field_name="account_fit_request")
         return cls(
             case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
             candidate_id=_require_non_empty_string(
                 payload["candidate_id"],
                 field_name="candidate_id",
             ),
-            promotion_target=PromotionTarget(str(payload["promotion_target"])).value,
+            promotion_target=PromotionTarget(
+                _require_non_empty_string(
+                    payload["promotion_target"],
+                    field_name="promotion_target",
+                )
+            ).value,
             product_profile_id=_require_non_empty_string(
                 payload["product_profile_id"],
                 field_name="product_profile_id",
@@ -379,7 +423,10 @@ class AccountFitRequest:
                 field_name="requested_contract_count",
             ),
             requested_operating_posture=OperatingPosture(
-                str(payload["requested_operating_posture"])
+                _require_non_empty_string(
+                    payload["requested_operating_posture"],
+                    field_name="requested_operating_posture",
+                )
             ).value,
             overnight_requested=_require_boolean(
                 payload["overnight_requested"],
@@ -398,9 +445,17 @@ class AccountFitRequest:
                 field_name="expected_overnight_gap_stress_usd",
             ),
             margin_snapshot=BrokerMarginSnapshot.from_dict(
-                dict(payload["margin_snapshot"])
+                _require_mapping(
+                    payload["margin_snapshot"],
+                    field_name="margin_snapshot",
+                )
             ),
-            fee_schedule=FeeScheduleArtifact.from_dict(dict(payload["fee_schedule"])),
+            fee_schedule=FeeScheduleArtifact.from_dict(
+                _require_mapping(
+                    payload["fee_schedule"],
+                    field_name="fee_schedule",
+                )
+            ),
             evaluated_at_utc=(
                 _normalize_timestamp(
                     payload["evaluated_at_utc"],
@@ -409,11 +464,8 @@ class AccountFitRequest:
                 if payload.get("evaluated_at_utc") not in (None, "")
                 else None
             ),
-            schema_version=_as_positive_int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_ACCOUNT_FIT_GATE_SCHEMA_VERSION,
-                ),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -442,15 +494,15 @@ class AccountFitCheckResult:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitCheckResult":
+        payload = _require_mapping(payload, field_name="check_result")
         return cls(
             check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
             title=_require_non_empty_string(payload["title"], field_name="title"),
             applied=_require_boolean(payload["applied"], field_name="applied"),
             passed=_require_boolean(payload["passed"], field_name="passed"),
-            reason_code=(
-                str(payload["reason_code"])
-                if payload.get("reason_code") not in (None, "")
-                else None
+            reason_code=_optional_non_empty_string(
+                payload.get("reason_code"),
+                field_name="reason_code",
             ),
             actual_fraction=(
                 _as_non_negative_float(
@@ -484,8 +536,14 @@ class AccountFitCheckResult:
                 if payload.get("threshold_usd") is not None
                 else None
             ),
-            diagnostic=str(payload["diagnostic"]),
-            context=dict(payload.get("context", {})),
+            diagnostic=_require_non_empty_string(
+                payload["diagnostic"],
+                field_name="diagnostic",
+            ),
+            context=_require_mapping(
+                payload.get("context", {}),
+                field_name="context",
+            ),
         )
 
 
@@ -536,15 +594,26 @@ class AccountFitReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitReport":
+        payload = _require_mapping(payload, field_name="account_fit_report")
         return cls(
             case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
             candidate_id=_require_non_empty_string(
                 payload["candidate_id"],
                 field_name="candidate_id",
             ),
-            status=AccountFitStatus(str(payload["status"])).value,
-            reason_code=str(payload["reason_code"]),
-            promotion_target=PromotionTarget(str(payload["promotion_target"])).value,
+            status=AccountFitStatus(
+                _require_non_empty_string(payload["status"], field_name="status")
+            ).value,
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            promotion_target=PromotionTarget(
+                _require_non_empty_string(
+                    payload["promotion_target"],
+                    field_name="promotion_target",
+                )
+            ).value,
             product_profile_id=_require_non_empty_string(
                 payload["product_profile_id"],
                 field_name="product_profile_id",
@@ -562,32 +631,44 @@ class AccountFitReport:
                 field_name="requested_contract_count",
             ),
             requested_operating_posture=OperatingPosture(
-                str(payload["requested_operating_posture"])
+                _require_non_empty_string(
+                    payload["requested_operating_posture"],
+                    field_name="requested_operating_posture",
+                )
             ).value,
             overnight_requested=_require_boolean(
                 payload["overnight_requested"],
                 field_name="overnight_requested",
             ),
-            threshold_source_ids=tuple(
-                _require_non_empty_string(item, field_name="threshold_source_ids[]")
-                for item in payload["threshold_source_ids"]
+            threshold_source_ids=_require_string_sequence(
+                payload["threshold_source_ids"],
+                field_name="threshold_source_ids",
             ),
-            artifact_ids=tuple(
-                _require_non_empty_string(item, field_name="artifact_ids[]")
-                for item in payload["artifact_ids"]
+            artifact_ids=_require_string_sequence(
+                payload["artifact_ids"],
+                field_name="artifact_ids",
             ),
             thresholds=(
-                AccountFitThresholds.from_dict(dict(payload["thresholds"]))
+                AccountFitThresholds.from_dict(
+                    _require_mapping(payload["thresholds"], field_name="thresholds")
+                )
                 if payload.get("thresholds") is not None
                 else None
             ),
             margin_snapshot=(
-                BrokerMarginSnapshot.from_dict(dict(payload["margin_snapshot"]))
+                BrokerMarginSnapshot.from_dict(
+                    _require_mapping(
+                        payload["margin_snapshot"],
+                        field_name="margin_snapshot",
+                    )
+                )
                 if payload.get("margin_snapshot") is not None
                 else None
             ),
             fee_schedule=(
-                FeeScheduleArtifact.from_dict(dict(payload["fee_schedule"]))
+                FeeScheduleArtifact.from_dict(
+                    _require_mapping(payload["fee_schedule"], field_name="fee_schedule")
+                )
                 if payload.get("fee_schedule") is not None
                 else None
             ),
@@ -607,20 +688,29 @@ class AccountFitReport:
                 payload["expected_overnight_gap_stress_usd"],
                 field_name="expected_overnight_gap_stress_usd",
             ),
-            failed_check_ids=tuple(
-                _require_non_empty_string(item, field_name="failed_check_ids[]")
-                for item in payload["failed_check_ids"]
+            failed_check_ids=_require_string_sequence(
+                payload["failed_check_ids"],
+                field_name="failed_check_ids",
             ),
             check_results=tuple(
-                AccountFitCheckResult.from_dict(dict(item))
-                for item in payload["check_results"]
+                AccountFitCheckResult.from_dict(item)
+                for item in _require_object_sequence(
+                    payload["check_results"],
+                    field_name="check_results",
+                )
             ),
             allowed_execution_symbol=_optional_non_empty_string(
                 payload.get("allowed_execution_symbol"),
                 field_name="allowed_execution_symbol",
             ),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
             evaluated_at_utc=_normalize_timestamp(
                 payload["evaluated_at_utc"],
                 field_name="evaluated_at_utc",
@@ -657,36 +747,56 @@ class AccountFitExecutionDecision:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AccountFitExecutionDecision":
+        payload = _require_mapping(
+            payload,
+            field_name="account_fit_execution_decision",
+        )
         return cls(
             candidate_id=_require_non_empty_string(
                 payload["candidate_id"],
                 field_name="candidate_id",
             ),
-            status=AccountFitStatus(str(payload["status"])).value,
-            reason_code=str(payload["reason_code"]),
-            allowed_execution_symbols=tuple(
-                _require_non_empty_string(
-                    item,
-                    field_name="allowed_execution_symbols[]",
-                )
-                for item in payload["allowed_execution_symbols"]
+            status=AccountFitStatus(
+                _require_non_empty_string(payload["status"], field_name="status")
+            ).value,
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            allowed_execution_symbols=_require_string_sequence(
+                payload["allowed_execution_symbols"],
+                field_name="allowed_execution_symbols",
             ),
             selected_execution_symbol=_optional_non_empty_string(
                 payload.get("selected_execution_symbol"),
                 field_name="selected_execution_symbol",
             ),
-            source_case_ids=tuple(
-                _require_non_empty_string(item, field_name="source_case_ids[]")
-                for item in payload["source_case_ids"]
+            source_case_ids=_require_string_sequence(
+                payload["source_case_ids"],
+                field_name="source_case_ids",
             ),
             report_status_by_symbol={
                 _require_non_empty_string(key, field_name="report_status_by_symbol{}"): (
-                    AccountFitStatus(str(value)).value
+                    AccountFitStatus(
+                        _require_non_empty_string(
+                            value,
+                            field_name="report_status_by_symbol{}",
+                        )
+                    ).value
                 )
-                for key, value in dict(payload["report_status_by_symbol"]).items()
+                for key, value in _require_mapping(
+                    payload["report_status_by_symbol"],
+                    field_name="report_status_by_symbol",
+                ).items()
             },
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
             timestamp=_normalize_timestamp(
                 payload.get("timestamp"),
                 field_name="timestamp",

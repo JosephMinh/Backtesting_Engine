@@ -14,6 +14,7 @@
         "expected_daily_loss_usd": 60.0,
         "expected_max_drawdown_usd": 500.0,
         "expected_overnight_gap_stress_usd": 20.0,
+        "schema_version": 1,
         "margin_snapshot": {
           "snapshot_id": "broker_margin_snapshot_1oz_20260327",
           "broker": "IBKR",
@@ -88,6 +89,7 @@
         "expected_daily_loss_usd": 140.0,
         "expected_max_drawdown_usd": 820.0,
         "expected_overnight_gap_stress_usd": 260.0,
+        "schema_version": 1,
         "margin_snapshot": {
           "snapshot_id": "broker_margin_snapshot_mgc_20260327",
           "broker": "IBKR",
@@ -168,6 +170,7 @@
         "expected_daily_loss_usd": 45.0,
         "expected_max_drawdown_usd": 250.0,
         "expected_overnight_gap_stress_usd": 10.0,
+        "schema_version": 1,
         "margin_snapshot": {
           "snapshot_id": "broker_margin_snapshot_1oz_stale",
           "broker": "IBKR",
@@ -211,6 +214,7 @@
         "expected_daily_loss_usd": 45.0,
         "expected_max_drawdown_usd": 250.0,
         "expected_overnight_gap_stress_usd": 10.0,
+        "schema_version": 1,
         "margin_snapshot": {
           "snapshot_id": "broker_margin_snapshot_1oz_20260327",
           "broker": "IBKR",
@@ -254,6 +258,7 @@
         "expected_daily_loss_usd": 60.0,
         "expected_max_drawdown_usd": 500.0,
         "expected_overnight_gap_stress_usd": 20.0,
+        "schema_version": 1,
         "margin_snapshot": {
           "snapshot_id": "broker_margin_snapshot_1oz_20260327",
           "broker": "IBKR",
