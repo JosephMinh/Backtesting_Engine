@@ -207,6 +207,57 @@ class PaperShadowStagePolicyContractTest(unittest.TestCase):
         self.assertEqual(report.requested_lane, reparsed.requested_lane)
         self.assertEqual(report.expected_vs_actual_diffs, reparsed.expected_vs_actual_diffs)
 
+    def test_request_requires_explicit_schema_version(self) -> None:
+        case = load_cases()["cases"][0]
+        payload = deep_merge(dict(load_cases()["defaults"]), dict(case.get("payload_overrides", {})))
+        payload["case_id"] = case["case_id"]
+        payload = apply_objective_mutations(payload, dict(case.get("objective_mutations", {})))
+        payload.pop("schema_version")
+
+        with self.assertRaisesRegex(ValueError, "missing schema_version"):
+            PaperShadowStagePolicyRequest.from_dict(payload)
+
+        payload["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "unsupported schema_version"):
+            PaperShadowStagePolicyRequest.from_dict(payload)
+
+    def test_request_rejects_non_boolean_objective_satisfaction(self) -> None:
+        case = load_cases()["cases"][0]
+        payload = deep_merge(dict(load_cases()["defaults"]), dict(case.get("payload_overrides", {})))
+        payload["case_id"] = case["case_id"]
+        payload = apply_objective_mutations(
+            payload,
+            {"paper_objectives": {"live_market_data_behavior": {"satisfied": "true"}}},
+        )
+
+        with self.assertRaisesRegex(ValueError, "stage_objective_evidence.satisfied"):
+            PaperShadowStagePolicyRequest.from_dict(payload)
+
+    def test_report_requires_timestamp_and_real_booleans(self) -> None:
+        case = next(
+            case
+            for case in load_cases()["cases"]
+            if case["case_id"] == "allow_live_with_complete_overnight_evidence"
+        )
+        report_payload = evaluate_paper_shadow_stage_policy(build_request(case)).to_dict()
+
+        missing_timestamp = dict(report_payload)
+        missing_timestamp.pop("timestamp")
+        with self.assertRaisesRegex(ValueError, "missing timestamp"):
+            PaperShadowStagePolicyReport.from_dict(missing_timestamp)
+
+        invalid_bool = dict(report_payload)
+        invalid_bool["paper_stage_complete"] = "false"
+        with self.assertRaisesRegex(
+            ValueError, "paper_shadow_stage_policy_report.paper_stage_complete"
+        ):
+            PaperShadowStagePolicyReport.from_dict(invalid_bool)
+
+        invalid_schema = dict(report_payload)
+        invalid_schema["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "unsupported schema_version"):
+            PaperShadowStagePolicyReport.from_dict(invalid_schema)
+
     def test_smoke_script_emits_selected_case(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "smoke.json"

@@ -131,6 +131,78 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return decoded
 
 
+def _require_present(
+    payload: dict[str, Any], field_name: str, *, label: str
+) -> Any:
+    if field_name not in payload:
+        raise ValueError(f"{label}: missing {field_name}")
+    return payload[field_name]
+
+
+def _require_mapping(value: Any, *, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label}: expected object")
+    return value
+
+
+def _require_non_empty_string(value: Any, *, label: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{label}: expected string")
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label}: expected non-empty string")
+    return normalized
+
+
+def _require_optional_string(value: Any, *, label: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, label=label)
+
+
+def _require_bool(value: Any, *, label: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    raise ValueError(f"{label}: expected boolean")
+
+
+def _require_int(value: Any, *, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{label}: expected integer")
+    return value
+
+
+def _require_supported_schema_version(value: Any, *, label: str) -> int:
+    parsed = _require_int(value, label=label)
+    if parsed != SUPPORTED_PAPER_SHADOW_STAGE_POLICY_SCHEMA_VERSION:
+        raise ValueError(f"{label}: unsupported schema_version")
+    return parsed
+
+
+def _require_string_sequence(value: Any, *, label: str) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        raise ValueError(f"{label}: expected list")
+    return tuple(_require_non_empty_string(item, label=label) for item in value)
+
+
+def _require_mapping_sequence(value: Any, *, label: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise ValueError(f"{label}: expected list")
+    return [
+        _require_mapping(item, label=f"{label}[{index}]")
+        for index, item in enumerate(value)
+    ]
+
+
+def _require_timestamp(value: Any, *, label: str) -> str:
+    timestamp = _require_non_empty_string(value, label=label)
+    try:
+        parsed = _dt.datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{label}: expected ISO-8601 timestamp") from exc
+    return canonicalize_persisted_timestamp(parsed).isoformat()
+
+
 def _jsonable(value: Any) -> Any:
     if isinstance(value, Enum):
         return value.value
@@ -227,13 +299,44 @@ class StageObjectiveEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "StageObjectiveEvidence":
+        objective_payload = _require_mapping(payload, label="stage_objective_evidence")
         return cls(
-            objective_id=str(payload["objective_id"]),
-            objective_group=str(payload["objective_group"]),
-            satisfied=bool(payload["satisfied"]),
-            reference_id=str(payload["reference_id"]),
-            detail=str(payload["detail"]),
-            artifact_ids=tuple(str(item) for item in payload.get("artifact_ids", ())),
+            objective_id=_require_non_empty_string(
+                _require_present(
+                    objective_payload, "objective_id", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.objective_id",
+            ),
+            objective_group=_require_non_empty_string(
+                _require_present(
+                    objective_payload, "objective_group", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.objective_group",
+            ),
+            satisfied=_require_bool(
+                _require_present(
+                    objective_payload, "satisfied", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.satisfied",
+            ),
+            reference_id=_require_non_empty_string(
+                _require_present(
+                    objective_payload, "reference_id", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.reference_id",
+            ),
+            detail=_require_non_empty_string(
+                _require_present(
+                    objective_payload, "detail", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.detail",
+            ),
+            artifact_ids=_require_string_sequence(
+                _require_present(
+                    objective_payload, "artifact_ids", label="stage_objective_evidence"
+                ),
+                label="stage_objective_evidence.artifact_ids",
+            ),
         )
 
 
@@ -296,48 +399,120 @@ class PaperShadowStagePolicyRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "PaperShadowStagePolicyRequest":
+        request_payload = _require_mapping(
+            payload, label="paper_shadow_stage_policy_request"
+        )
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_bundle_id=str(payload["candidate_bundle_id"]),
-            requested_lane=str(payload["requested_lane"]),
-            paper_pass_evidence_id=(
-                str(payload["paper_pass_evidence_id"])
-                if payload.get("paper_pass_evidence_id")
-                else None
+            case_id=_require_non_empty_string(
+                _require_present(
+                    request_payload, "case_id", label="paper_shadow_stage_policy_request"
+                ),
+                label="paper_shadow_stage_policy_request.case_id",
             ),
-            shadow_pass_evidence_id=(
-                str(payload["shadow_pass_evidence_id"])
-                if payload.get("shadow_pass_evidence_id")
-                else None
+            candidate_bundle_id=_require_non_empty_string(
+                _require_present(
+                    request_payload,
+                    "candidate_bundle_id",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.candidate_bundle_id",
             ),
-            market_data_entitlement_check_id=(
-                str(payload["market_data_entitlement_check_id"])
-                if payload.get("market_data_entitlement_check_id")
-                else None
+            requested_lane=_require_non_empty_string(
+                _require_present(
+                    request_payload,
+                    "requested_lane",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.requested_lane",
+            ),
+            paper_pass_evidence_id=_require_optional_string(
+                _require_present(
+                    request_payload,
+                    "paper_pass_evidence_id",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.paper_pass_evidence_id",
+            ),
+            shadow_pass_evidence_id=_require_optional_string(
+                _require_present(
+                    request_payload,
+                    "shadow_pass_evidence_id",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.shadow_pass_evidence_id",
+            ),
+            market_data_entitlement_check_id=_require_optional_string(
+                _require_present(
+                    request_payload,
+                    "market_data_entitlement_check_id",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.market_data_entitlement_check_id",
             ),
             paper_objectives=tuple(
-                StageObjectiveEvidence.from_dict(dict(item))
-                for item in payload["paper_objectives"]
+                StageObjectiveEvidence.from_dict(item)
+                for item in _require_mapping_sequence(
+                    _require_present(
+                        request_payload,
+                        "paper_objectives",
+                        label="paper_shadow_stage_policy_request",
+                    ),
+                    label="paper_shadow_stage_policy_request.paper_objectives",
+                )
             ),
             shadow_live_objectives=tuple(
-                StageObjectiveEvidence.from_dict(dict(item))
-                for item in payload.get("shadow_live_objectives", ())
+                StageObjectiveEvidence.from_dict(item)
+                for item in _require_mapping_sequence(
+                    _require_present(
+                        request_payload,
+                        "shadow_live_objectives",
+                        label="paper_shadow_stage_policy_request",
+                    ),
+                    label="paper_shadow_stage_policy_request.shadow_live_objectives",
+                )
             ),
-            overnight_candidate_class=str(
-                payload.get("overnight_candidate_class", OvernightCandidateClass.NONE.value)
+            overnight_candidate_class=_require_non_empty_string(
+                _require_present(
+                    request_payload,
+                    "overnight_candidate_class",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.overnight_candidate_class",
             ),
             overnight_evidence_records=tuple(
-                OvernightEvidenceRecord.from_dict(dict(item))
-                for item in payload.get("overnight_evidence_records", ())
-            ),
-            correlation_id=str(payload.get("correlation_id", "")),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload.get("operator_reason_bundle", ())
-            ),
-            schema_version=int(
-                payload.get(
-                    "schema_version", SUPPORTED_PAPER_SHADOW_STAGE_POLICY_SCHEMA_VERSION
+                OvernightEvidenceRecord.from_dict(item)
+                for item in _require_mapping_sequence(
+                    _require_present(
+                        request_payload,
+                        "overnight_evidence_records",
+                        label="paper_shadow_stage_policy_request",
+                    ),
+                    label="paper_shadow_stage_policy_request.overnight_evidence_records",
                 )
+            ),
+            correlation_id=_require_non_empty_string(
+                _require_present(
+                    request_payload,
+                    "correlation_id",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                _require_present(
+                    request_payload,
+                    "operator_reason_bundle",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.operator_reason_bundle",
+            ),
+            schema_version=_require_supported_schema_version(
+                _require_present(
+                    request_payload,
+                    "schema_version",
+                    label="paper_shadow_stage_policy_request",
+                ),
+                label="paper_shadow_stage_policy_request.schema_version",
             ),
         )
 
@@ -378,32 +553,179 @@ class PaperShadowStagePolicyReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "PaperShadowStagePolicyReport":
+        report_payload = _require_mapping(payload, label="paper_shadow_stage_policy_report")
         return cls(
-            schema_version=int(payload["schema_version"]),
-            case_id=str(payload["case_id"]),
-            candidate_bundle_id=str(payload["candidate_bundle_id"]),
-            requested_lane=str(payload["requested_lane"]),
-            status=str(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            paper_stage_complete=bool(payload["paper_stage_complete"]),
-            shadow_live_stage_complete=bool(payload["shadow_live_stage_complete"]),
-            overnight_evidence_complete=bool(payload["overnight_evidence_complete"]),
-            requested_lane_permitted=bool(payload["requested_lane_permitted"]),
-            live_activation_permitted=bool(payload["live_activation_permitted"]),
-            decision_trace=[dict(item) for item in payload["decision_trace"]],
-            expected_vs_actual_diffs=[
-                dict(item) for item in payload["expected_vs_actual_diffs"]
-            ],
-            retained_artifact_ids=tuple(
-                str(item) for item in payload["retained_artifact_ids"]
+            schema_version=_require_supported_schema_version(
+                _require_present(
+                    report_payload,
+                    "schema_version",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.schema_version",
             ),
-            operator_reason_bundle=dict(payload["operator_reason_bundle"]),
-            artifact_manifest=dict(payload["artifact_manifest"]),
-            structured_logs=[dict(item) for item in payload["structured_logs"]],
-            context=dict(payload["context"]),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            case_id=_require_non_empty_string(
+                _require_present(
+                    report_payload, "case_id", label="paper_shadow_stage_policy_report"
+                ),
+                label="paper_shadow_stage_policy_report.case_id",
+            ),
+            candidate_bundle_id=_require_non_empty_string(
+                _require_present(
+                    report_payload,
+                    "candidate_bundle_id",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.candidate_bundle_id",
+            ),
+            requested_lane=_require_non_empty_string(
+                _require_present(
+                    report_payload,
+                    "requested_lane",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.requested_lane",
+            ),
+            status=PaperShadowStageStatus(
+                _require_non_empty_string(
+                    _require_present(
+                        report_payload,
+                        "status",
+                        label="paper_shadow_stage_policy_report",
+                    ),
+                    label="paper_shadow_stage_policy_report.status",
+                )
+            ).value,
+            reason_code=_require_non_empty_string(
+                _require_present(
+                    report_payload,
+                    "reason_code",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.reason_code",
+            ),
+            paper_stage_complete=_require_bool(
+                _require_present(
+                    report_payload,
+                    "paper_stage_complete",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.paper_stage_complete",
+            ),
+            shadow_live_stage_complete=_require_bool(
+                _require_present(
+                    report_payload,
+                    "shadow_live_stage_complete",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.shadow_live_stage_complete",
+            ),
+            overnight_evidence_complete=_require_bool(
+                _require_present(
+                    report_payload,
+                    "overnight_evidence_complete",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.overnight_evidence_complete",
+            ),
+            requested_lane_permitted=_require_bool(
+                _require_present(
+                    report_payload,
+                    "requested_lane_permitted",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.requested_lane_permitted",
+            ),
+            live_activation_permitted=_require_bool(
+                _require_present(
+                    report_payload,
+                    "live_activation_permitted",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.live_activation_permitted",
+            ),
+            decision_trace=_require_mapping_sequence(
+                _require_present(
+                    report_payload,
+                    "decision_trace",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.decision_trace",
+            ),
+            expected_vs_actual_diffs=[
+                dict(item)
+                for item in _require_mapping_sequence(
+                    _require_present(
+                        report_payload,
+                        "expected_vs_actual_diffs",
+                        label="paper_shadow_stage_policy_report",
+                    ),
+                    label="paper_shadow_stage_policy_report.expected_vs_actual_diffs",
+                )
+            ],
+            retained_artifact_ids=_require_string_sequence(
+                _require_present(
+                    report_payload,
+                    "retained_artifact_ids",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.retained_artifact_ids",
+            ),
+            operator_reason_bundle=_require_mapping(
+                _require_present(
+                    report_payload,
+                    "operator_reason_bundle",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.operator_reason_bundle",
+            ),
+            artifact_manifest=_require_mapping(
+                _require_present(
+                    report_payload,
+                    "artifact_manifest",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.artifact_manifest",
+            ),
+            structured_logs=_require_mapping_sequence(
+                _require_present(
+                    report_payload,
+                    "structured_logs",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.structured_logs",
+            ),
+            context=_require_mapping(
+                _require_present(
+                    report_payload,
+                    "context",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.context",
+            ),
+            explanation=_require_non_empty_string(
+                _require_present(
+                    report_payload,
+                    "explanation",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.explanation",
+            ),
+            remediation=_require_non_empty_string(
+                _require_present(
+                    report_payload,
+                    "remediation",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.remediation",
+            ),
+            timestamp=_require_timestamp(
+                _require_present(
+                    report_payload,
+                    "timestamp",
+                    label="paper_shadow_stage_policy_report",
+                ),
+                label="paper_shadow_stage_policy_report.timestamp",
+            ),
         )
 
     @classmethod

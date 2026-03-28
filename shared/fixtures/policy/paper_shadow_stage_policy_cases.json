@@ -148,7 +148,8 @@
     "overnight_candidate_class": "none",
     "overnight_evidence_records": [],
     "correlation_id": "corr-paper-shadow-stage-policy-default",
-    "operator_reason_bundle": ["paper-shadow stage policy evaluated"]
+    "operator_reason_bundle": ["paper-shadow stage policy evaluated"],
+    "schema_version": 1
   },
   "cases": [
     {
