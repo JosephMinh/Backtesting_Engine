@@ -13,6 +13,7 @@ from shared.policy.research_state import (
     ResearchRunLifecycle,
     ResearchRunPurpose,
     ResearchRunRecord,
+    ResearchStateMutationReport,
     ResearchStateStore,
     ReviewerAttestation,
     VALIDATION_ERRORS,
@@ -339,6 +340,105 @@ class TestResearchStateContract(unittest.TestCase):
         payload["seeds"] = [False, 11]
         with self.assertRaisesRegex(ValueError, "seed values must be explicit integers"):
             ResearchRunRecord.from_dict(payload)
+
+    def test_persisted_loaders_reject_raw_string_coercion_and_malformed_sequences(self):
+        attestation_payload = sample_attestation().to_dict()
+        attestation_payload["reviewer_id"] = False
+        with self.assertRaisesRegex(ValueError, "reviewer_id must be a non-empty string"):
+            ReviewerAttestation.from_dict(attestation_payload)
+
+        attestation_payload = sample_attestation().to_dict()
+        attestation_payload["reviewer_id"] = "   "
+        with self.assertRaisesRegex(ValueError, "reviewer_id must be a non-empty string"):
+            ReviewerAttestation.from_dict(attestation_payload)
+
+        attestation_payload = sample_attestation().to_dict()
+        attestation_payload["attested_controls"] = "budget_review"
+        with self.assertRaisesRegex(
+            ValueError,
+            "attested_controls must be a sequence of non-empty strings",
+        ):
+            ReviewerAttestation.from_dict(attestation_payload)
+
+        run_payload = sample_research_run().to_dict()
+        run_payload["code_digests"] = "kernel:abc123"
+        with self.assertRaisesRegex(
+            ValueError,
+            "code_digests must be a sequence of non-empty strings",
+        ):
+            ResearchRunRecord.from_dict(run_payload)
+
+        decision_payload = sample_decision().to_dict()
+        decision_payload["reviewer_self_attestations"] = "bad"
+        with self.assertRaisesRegex(
+            ValueError,
+            "reviewer_self_attestations must be a sequence of objects",
+        ):
+            FamilyDecisionRecord.from_dict(decision_payload)
+
+        decision_payload = sample_decision().to_dict()
+        decision_payload["reason_bundle"] = ["evidence_quality_green", "   "]
+        with self.assertRaisesRegex(
+            ValueError,
+            "reason_bundle\\[1\\] must be a non-empty string",
+        ):
+            FamilyDecisionRecord.from_dict(decision_payload)
+
+    def test_mutation_and_store_loaders_validate_boundary_shapes(self):
+        report_payload = {
+            "record_type": "research_run",
+            "record_id": "run-001",
+            "operation": "record",
+            "status": "done",
+            "reason_code": "RESEARCH_RUN_RECORDED",
+            "previous_state": None,
+            "next_state": "recorded",
+            "explanation": "recorded",
+            "timestamp": "2026-03-26T15:00:00+00:00",
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "status must be a valid research-state report status",
+        ):
+            ResearchStateMutationReport.from_dict(report_payload)
+
+        report_payload["status"] = "pass"
+        report_payload["timestamp"] = "2026-03-26T15:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "timestamp must be timezone-aware and UTC-normalizable",
+        ):
+            ResearchStateMutationReport.from_dict(report_payload)
+
+        store_payload = sample_store_payload()
+        store_payload["audit_log"] = "bad"
+        with self.assertRaisesRegex(
+            ValueError,
+            "audit_log must be a sequence of objects",
+        ):
+            ResearchStateStore.from_dict(store_payload)
+
+
+def sample_store_payload() -> dict[str, object]:
+    run = sample_research_run().to_dict()
+    decision = sample_decision().to_dict()
+    return {
+        "research_runs": {"run-001": run},
+        "family_decision_records": {"decision-001": decision},
+        "audit_log": [
+            {
+                "record_type": "research_run",
+                "record_id": "run-001",
+                "operation": "record",
+                "status": "pass",
+                "reason_code": "RESEARCH_RUN_RECORDED",
+                "previous_state": None,
+                "next_state": "recorded",
+                "explanation": "recorded",
+                "timestamp": "2026-03-26T15:00:00+00:00",
+            }
+        ],
+    }
 
 
 if __name__ == "__main__":
