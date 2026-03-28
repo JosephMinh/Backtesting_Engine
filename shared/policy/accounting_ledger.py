@@ -403,11 +403,41 @@ class LedgerTotals:
     def from_dict(cls, payload: dict[str, object]) -> "LedgerTotals":
         payload = _require_mapping(payload, field_name="ledger_totals")
         return cls(
-            position_contracts=_decimal(payload["position_contracts"]),
-            cash_balance_usd=_decimal(payload["cash_balance_usd"]),
-            realized_pnl_usd=_decimal(payload["realized_pnl_usd"]),
-            fee_total_usd=_decimal(payload["fee_total_usd"]),
-            commission_total_usd=_decimal(payload["commission_total_usd"]),
+            position_contracts=_decimal(
+                _require_present(
+                    payload,
+                    "position_contracts",
+                    field_name="position_contracts",
+                )
+            ),
+            cash_balance_usd=_decimal(
+                _require_present(
+                    payload,
+                    "cash_balance_usd",
+                    field_name="cash_balance_usd",
+                )
+            ),
+            realized_pnl_usd=_decimal(
+                _require_present(
+                    payload,
+                    "realized_pnl_usd",
+                    field_name="realized_pnl_usd",
+                )
+            ),
+            fee_total_usd=_decimal(
+                _require_present(
+                    payload,
+                    "fee_total_usd",
+                    field_name="fee_total_usd",
+                )
+            ),
+            commission_total_usd=_decimal(
+                _require_present(
+                    payload,
+                    "commission_total_usd",
+                    field_name="commission_total_usd",
+                )
+            ),
         )
 
 
@@ -637,17 +667,32 @@ class LedgerCloseArtifact:
     def from_dict(cls, payload: dict[str, object]) -> "LedgerCloseArtifact":
         payload = _require_mapping(payload, field_name="ledger_close_artifact")
         return cls(
-            close_id=_require_non_empty_string(payload["close_id"], field_name="close_id"),
-            account_id=_require_non_empty_string(payload["account_id"], field_name="account_id"),
-            symbol=_require_non_empty_string(payload["symbol"], field_name="symbol"),
-            status=_require_close_status(payload["status"]),
+            close_id=_require_non_empty_string(
+                _require_present(payload, "close_id", field_name="close_id"),
+                field_name="close_id",
+            ),
+            account_id=_require_non_empty_string(
+                _require_present(payload, "account_id", field_name="account_id"),
+                field_name="account_id",
+            ),
+            symbol=_require_non_empty_string(
+                _require_present(payload, "symbol", field_name="symbol"),
+                field_name="symbol",
+            ),
+            status=_require_close_status(
+                _require_present(payload, "status", field_name="status")
+            ),
             reason_code=_require_non_empty_string(
-                payload["reason_code"],
+                _require_present(payload, "reason_code", field_name="reason_code"),
                 field_name="reason_code",
             ),
             append_only_integrity=AppendOnlyIntegrityReport.from_dict(
                 _require_mapping(
-                    payload["append_only_integrity"],
+                    _require_present(
+                        payload,
+                        "append_only_integrity",
+                        field_name="append_only_integrity",
+                    ),
                     field_name="append_only_integrity",
                 )
             ),
@@ -655,55 +700,82 @@ class LedgerCloseArtifact:
                 _require_event_class(item, field_name=f"event_classes_present[{index}]")
                 for index, item in enumerate(
                     _require_string_sequence(
-                        payload["event_classes_present"],
+                        _require_present(
+                            payload,
+                            "event_classes_present",
+                            field_name="event_classes_present",
+                        ),
                         field_name="event_classes_present",
                     )
                 )
             ),
             trace_event_ids=_require_string_sequence(
-                payload["trace_event_ids"],
+                _require_present(payload, "trace_event_ids", field_name="trace_event_ids"),
                 field_name="trace_event_ids",
             ),
             as_booked_totals=LedgerTotals.from_dict(
-                _require_mapping(payload["as_booked_totals"], field_name="as_booked_totals")
+                _require_mapping(
+                    _require_present(
+                        payload,
+                        "as_booked_totals",
+                        field_name="as_booked_totals",
+                    ),
+                    field_name="as_booked_totals",
+                )
             ),
             as_reconciled_totals=LedgerTotals.from_dict(
                 _require_mapping(
-                    payload["as_reconciled_totals"],
+                    _require_present(
+                        payload,
+                        "as_reconciled_totals",
+                        field_name="as_reconciled_totals",
+                    ),
                     field_name="as_reconciled_totals",
                 )
             ),
             broker_authoritative_snapshot=BrokerAuthoritativeSnapshot.from_dict(
                 _require_mapping(
-                    payload["broker_authoritative_snapshot"],
+                    _require_present(
+                        payload,
+                        "broker_authoritative_snapshot",
+                        field_name="broker_authoritative_snapshot",
+                    ),
                     field_name="broker_authoritative_snapshot",
                 )
             ),
             differences=tuple(
                 LedgerDifference.from_dict(item)
                 for item in _require_mapping_sequence(
-                    payload["differences"],
+                    _require_present(payload, "differences", field_name="differences"),
                     field_name="differences",
                 )
             ),
             unresolved_discrepancy_ids=_require_string_sequence(
-                payload["unresolved_discrepancy_ids"],
+                _require_present(
+                    payload,
+                    "unresolved_discrepancy_ids",
+                    field_name="unresolved_discrepancy_ids",
+                ),
                 field_name="unresolved_discrepancy_ids",
             ),
             restatement_event_ids=_require_string_sequence(
-                payload["restatement_event_ids"],
+                _require_present(
+                    payload,
+                    "restatement_event_ids",
+                    field_name="restatement_event_ids",
+                ),
                 field_name="restatement_event_ids",
             ),
             explanation=_require_non_empty_string(
-                payload["explanation"],
+                _require_present(payload, "explanation", field_name="explanation"),
                 field_name="explanation",
             ),
             timestamp=_normalize_utc_timestamp(
-                payload["timestamp"],
+                _require_present(payload, "timestamp", field_name="timestamp"),
                 field_name="timestamp",
             ),
             schema_version=_require_schema_version(
-                payload.get("schema_version"),
+                _require_present(payload, "schema_version", field_name="schema_version"),
                 label="ledger_close_artifact",
             ),
         )

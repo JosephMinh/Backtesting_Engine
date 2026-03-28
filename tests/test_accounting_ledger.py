@@ -366,7 +366,7 @@ class LedgerCloseTests(unittest.TestCase):
         payload_without_schema.pop("schema_version")
         with self.assertRaisesRegex(
             ValueError,
-            "ledger_close_artifact: schema_version must be an integer",
+            "schema_version missing required field",
         ):
             LedgerCloseArtifact.from_dict(payload_without_schema)
 
@@ -385,6 +385,34 @@ class LedgerCloseTests(unittest.TestCase):
             "ledger_close_artifact: unsupported schema_version",
         ):
             LedgerCloseArtifact.from_dict(payload_with_unsupported_schema)
+
+    def test_close_artifact_loader_rejects_missing_top_level_fields_with_contract_error(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_missing_top_level",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(1, "evt_fill", LedgerEventClass.BOOKED_FILL),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload.pop("close_id")
+
+        with self.assertRaisesRegex(ValueError, "close_id missing required field"):
+            LedgerCloseArtifact.from_dict(payload)
 
     def test_close_artifact_loader_rejects_invalid_status(self) -> None:
         artifact = evaluate_accounting_ledger_close(
@@ -537,6 +565,37 @@ class LedgerCloseTests(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError,
             "position_event_id missing required field",
+        ):
+            LedgerCloseArtifact.from_dict(payload)
+
+    def test_close_artifact_loader_rejects_missing_nested_totals_fields(self) -> None:
+        artifact = evaluate_accounting_ledger_close(
+            "ledger_close_missing_totals",
+            "acct_live_oneoz",
+            "1OZ",
+            (
+                ledger_event(1, "evt_fill", LedgerEventClass.BOOKED_FILL),
+                ledger_event(
+                    2,
+                    "evt_position",
+                    LedgerEventClass.BROKER_EOD_POSITION,
+                    authoritative_position_contracts=Decimal("1"),
+                ),
+                ledger_event(
+                    3,
+                    "evt_margin",
+                    LedgerEventClass.BROKER_EOD_MARGIN_SNAPSHOT,
+                    authoritative_initial_margin_requirement_usd=Decimal("1400.000"),
+                    authoritative_maintenance_margin_requirement_usd=Decimal("1275.000"),
+                ),
+            ),
+        )
+        payload = artifact.to_dict()
+        payload["as_booked_totals"].pop("position_contracts")
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "position_contracts missing required field",
         ):
             LedgerCloseArtifact.from_dict(payload)
 
