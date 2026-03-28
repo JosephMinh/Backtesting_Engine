@@ -155,6 +155,23 @@ class AbsoluteDollarViabilityContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "schema_version"):
             AbsoluteDollarViabilityRequest.from_dict(payload_with_bool_schema)
 
+        payload_without_schema = dict(case["request"])
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(ValueError, "schema_version"):
+            AbsoluteDollarViabilityRequest.from_dict(payload_without_schema)
+
+        payload_with_unsupported_schema = dict(case["request"])
+        payload_with_unsupported_schema["schema_version"] = 2
+        with self.assertRaisesRegex(ValueError, "unsupported schema_version 2"):
+            AbsoluteDollarViabilityRequest.from_dict(payload_with_unsupported_schema)
+
+    def test_public_loaders_reject_non_object_payloads(self) -> None:
+        with self.assertRaisesRegex(ValueError, "absolute_dollar_viability_request"):
+            AbsoluteDollarViabilityRequest.from_dict([])  # type: ignore[arg-type]
+
+        with self.assertRaisesRegex(ValueError, "absolute_dollar_viability_report"):
+            AbsoluteDollarViabilityReport.from_dict([])  # type: ignore[arg-type]
+
     def test_request_loader_rejects_boolean_and_non_finite_numeric_values(self) -> None:
         case = next(
             case
@@ -180,7 +197,7 @@ class AbsoluteDollarViabilityContractTests(unittest.TestCase):
         )
         invalid_status_payload = dict(case["request"])
         invalid_status_payload["account_fit_status"] = True
-        with self.assertRaisesRegex(ValueError, "True"):
+        with self.assertRaisesRegex(ValueError, "account_fit_status"):
             AbsoluteDollarViabilityRequest.from_dict(invalid_status_payload)
 
     def test_report_loader_rejects_invalid_status_bool_coercion_and_missing_timestamp(self) -> None:
@@ -212,6 +229,41 @@ class AbsoluteDollarViabilityContractTests(unittest.TestCase):
         naive_timestamp_payload["timestamp"] = "2026-03-28T01:05:00"
         with self.assertRaisesRegex(ValueError, "timestamp"):
             AbsoluteDollarViabilityReport.from_dict(naive_timestamp_payload)
+
+    def test_report_loader_rejects_fail_open_sequence_and_mapping_shapes(self) -> None:
+        case = next(
+            case
+            for case in load_cases()
+            if case["case_id"] == "keep_when_monthly_net_is_material_and_beats_required_benchmarks"
+        )
+        report_payload = evaluate_absolute_dollar_viability(
+            AbsoluteDollarViabilityRequest.from_dict(dict(case["request"]))
+        ).to_dict()
+
+        invalid_source_ids = dict(report_payload)
+        invalid_source_ids["source_ids"] = "source-1"
+        with self.assertRaisesRegex(ValueError, "source_ids"):
+            AbsoluteDollarViabilityReport.from_dict(invalid_source_ids)
+
+        invalid_benchmark_comparisons = dict(report_payload)
+        invalid_benchmark_comparisons["benchmark_comparisons"] = [False]
+        with self.assertRaisesRegex(ValueError, "benchmark_comparisons"):
+            AbsoluteDollarViabilityReport.from_dict(invalid_benchmark_comparisons)
+
+        missing_thresholds = dict(report_payload)
+        missing_thresholds.pop("thresholds")
+        with self.assertRaisesRegex(ValueError, "thresholds"):
+            AbsoluteDollarViabilityReport.from_dict(missing_thresholds)
+
+        missing_check_results = dict(report_payload)
+        missing_check_results.pop("check_results")
+        with self.assertRaisesRegex(ValueError, "check_results"):
+            AbsoluteDollarViabilityReport.from_dict(missing_check_results)
+
+        missing_nullable_metric = dict(report_payload)
+        missing_nullable_metric.pop("operator_maintenance_hours_per_month")
+        with self.assertRaisesRegex(ValueError, "operator_maintenance_hours_per_month"):
+            AbsoluteDollarViabilityReport.from_dict(missing_nullable_metric)
 
 
 if __name__ == "__main__":

@@ -59,6 +59,18 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_field(payload: dict[str, Any], key: str, *, field_name: str) -> object:
+    if key not in payload:
+        raise ValueError(f"{field_name}: field is required")
+    return payload[key]
+
+
 def _as_float(value: object, *, field_name: str) -> float:
     if isinstance(value, bool):
         raise ValueError(f"{field_name}: must be numeric")
@@ -101,6 +113,46 @@ def _require_boolean(value: object, *, field_name: str) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"{field_name}: must be boolean")
     return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _require_optional_non_empty_string(
+    value: object, *, field_name: str
+) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[]") for item in value
+    )
+
+
+def _require_object_sequence(
+    value: object, *, field_name: str
+) -> tuple[dict[str, Any], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list or tuple of objects")
+    return tuple(_require_mapping(item, field_name=f"{field_name}[]") for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _as_positive_int(value, field_name=field_name)
+    if parsed != SUPPORTED_ABSOLUTE_DOLLAR_VIABILITY_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema_version {parsed}; expected "
+            f"{SUPPORTED_ABSOLUTE_DOLLAR_VIABILITY_SCHEMA_VERSION}"
+        )
+    return parsed
 
 
 def _normalize_timestamp(value: object, *, field_name: str) -> str:
@@ -153,6 +205,7 @@ class AbsoluteDollarThresholds:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AbsoluteDollarThresholds":
+        payload = _require_mapping(payload, field_name="thresholds")
         return cls(
             de_minimis_monthly_net_usd=_as_non_negative_float(
                 payload["de_minimis_monthly_net_usd"],
@@ -208,6 +261,7 @@ class AbsoluteDollarViabilityRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AbsoluteDollarViabilityRequest":
+        payload = _require_mapping(payload, field_name="absolute_dollar_viability_request")
         lower_touch_alternative_monthly_net_usd = _as_optional_non_negative_float(
             payload.get("lower_touch_alternative_monthly_net_usd"),
             field_name="lower_touch_alternative_monthly_net_usd",
@@ -224,18 +278,45 @@ class AbsoluteDollarViabilityRequest:
                 "lower_touch_alternative_monthly_net_usd: required when lower-touch hours are set"
             )
         return cls(
-            case_id=str(payload["case_id"]),
-            evaluation_id=str(payload["evaluation_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            strategy_family_id=str(payload["strategy_family_id"]),
-            product_profile_id=str(payload["product_profile_id"]),
-            account_profile_id=str(payload["account_profile_id"]),
-            execution_symbol=str(payload["execution_symbol"]),
-            source_account_fit_case_id=str(payload["source_account_fit_case_id"]),
-            source_fully_loaded_economics_evaluation_id=str(
-                payload["source_fully_loaded_economics_evaluation_id"]
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            evaluation_id=_require_non_empty_string(
+                payload["evaluation_id"],
+                field_name="evaluation_id",
             ),
-            account_fit_status=AccountFitStatus(str(payload["account_fit_status"])).value,
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            strategy_family_id=_require_non_empty_string(
+                payload["strategy_family_id"],
+                field_name="strategy_family_id",
+            ),
+            product_profile_id=_require_non_empty_string(
+                payload["product_profile_id"],
+                field_name="product_profile_id",
+            ),
+            account_profile_id=_require_non_empty_string(
+                payload["account_profile_id"],
+                field_name="account_profile_id",
+            ),
+            execution_symbol=_require_non_empty_string(
+                payload["execution_symbol"],
+                field_name="execution_symbol",
+            ),
+            source_account_fit_case_id=_require_non_empty_string(
+                payload["source_account_fit_case_id"],
+                field_name="source_account_fit_case_id",
+            ),
+            source_fully_loaded_economics_evaluation_id=_require_non_empty_string(
+                payload["source_fully_loaded_economics_evaluation_id"],
+                field_name="source_fully_loaded_economics_evaluation_id",
+            ),
+            account_fit_status=AccountFitStatus(
+                _require_non_empty_string(
+                    payload["account_fit_status"],
+                    field_name="account_fit_status",
+                )
+            ).value,
             approved_starting_equity_usd=_as_positive_int(
                 payload["approved_starting_equity_usd"],
                 field_name="approved_starting_equity_usd",
@@ -264,7 +345,9 @@ class AbsoluteDollarViabilityRequest:
                 payload["worst_session_loss_usd"],
                 field_name="worst_session_loss_usd",
             ),
-            thresholds=AbsoluteDollarThresholds.from_dict(dict(payload["thresholds"])),
+            thresholds=AbsoluteDollarThresholds.from_dict(
+                _require_mapping(payload["thresholds"], field_name="thresholds")
+            ),
             operator_maintenance_hours_per_month=_as_optional_non_negative_float(
                 payload.get("operator_maintenance_hours_per_month"),
                 field_name="operator_maintenance_hours_per_month",
@@ -273,11 +356,8 @@ class AbsoluteDollarViabilityRequest:
             lower_touch_alternative_operator_hours_per_month=(
                 lower_touch_alternative_operator_hours_per_month
             ),
-            schema_version=_as_positive_int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_ABSOLUTE_DOLLAR_VIABILITY_SCHEMA_VERSION,
-                ),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
                 field_name="schema_version",
             ),
         )
@@ -304,9 +384,13 @@ class BenchmarkComparison:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "BenchmarkComparison":
+        payload = _require_mapping(payload, field_name="benchmark_comparison")
         return cls(
-            benchmark_id=str(payload["benchmark_id"]),
-            title=str(payload["title"]),
+            benchmark_id=_require_non_empty_string(
+                payload["benchmark_id"],
+                field_name="benchmark_id",
+            ),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
             benchmark_monthly_usd=_as_float(
                 payload["benchmark_monthly_usd"],
                 field_name="benchmark_monthly_usd",
@@ -317,10 +401,9 @@ class BenchmarkComparison:
             ),
             excess_usd=_as_float(payload["excess_usd"], field_name="excess_usd"),
             passed=_require_boolean(payload["passed"], field_name="passed"),
-            reason_code=(
-                str(payload["reason_code"])
-                if payload.get("reason_code") not in (None, "")
-                else None
+            reason_code=_require_optional_non_empty_string(
+                payload.get("reason_code"),
+                field_name="reason_code",
             ),
         )
 
@@ -338,9 +421,13 @@ class SensitivityScenario:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SensitivityScenario":
+        payload = _require_mapping(payload, field_name="sensitivity_scenario")
         return cls(
-            scenario_id=str(payload["scenario_id"]),
-            title=str(payload["title"]),
+            scenario_id=_require_non_empty_string(
+                payload["scenario_id"],
+                field_name="scenario_id",
+            ),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
             monthly_net_usd=_as_float(
                 payload["monthly_net_usd"],
                 field_name="monthly_net_usd",
@@ -349,7 +436,10 @@ class SensitivityScenario:
                 payload["delta_vs_baseline_usd"],
                 field_name="delta_vs_baseline_usd",
             ),
-            narrative=str(payload["narrative"]),
+            narrative=_require_non_empty_string(
+                payload["narrative"],
+                field_name="narrative",
+            ),
         )
 
 
@@ -369,16 +459,19 @@ class AbsoluteDollarCheckResult:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AbsoluteDollarCheckResult":
+        payload = _require_mapping(payload, field_name="check_result")
         return cls(
-            check_id=str(payload["check_id"]),
-            title=str(payload["title"]),
+            check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
+            title=_require_non_empty_string(payload["title"], field_name="title"),
             passed=_require_boolean(payload["passed"], field_name="passed"),
-            reason_code=(
-                str(payload["reason_code"])
-                if payload.get("reason_code") not in (None, "")
-                else None
+            reason_code=_require_optional_non_empty_string(
+                payload.get("reason_code"),
+                field_name="reason_code",
             ),
-            diagnostic=str(payload["diagnostic"]),
+            diagnostic=_require_non_empty_string(
+                payload["diagnostic"],
+                field_name="diagnostic",
+            ),
             actual_usd=(
                 _as_float(payload["actual_usd"], field_name="actual_usd")
                 if payload.get("actual_usd") is not None
@@ -389,7 +482,7 @@ class AbsoluteDollarCheckResult:
                 if payload.get("threshold_usd") is not None
                 else None
             ),
-            context=dict(payload.get("context", {})),
+            context=_require_mapping(payload.get("context", {}), field_name="context"),
         )
 
 
@@ -450,21 +543,85 @@ class AbsoluteDollarViabilityReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "AbsoluteDollarViabilityReport":
+        payload = _require_mapping(payload, field_name="absolute_dollar_viability_report")
+        thresholds_payload = _require_field(payload, "thresholds", field_name="thresholds")
+        operator_maintenance_hours = _require_field(
+            payload,
+            "operator_maintenance_hours_per_month",
+            field_name="operator_maintenance_hours_per_month",
+        )
+        net_per_operator_hour = _require_field(
+            payload,
+            "net_per_operator_maintenance_hour_usd",
+            field_name="net_per_operator_maintenance_hour_usd",
+        )
+        lower_touch_monthly_net = _require_field(
+            payload,
+            "lower_touch_alternative_monthly_net_usd",
+            field_name="lower_touch_alternative_monthly_net_usd",
+        )
+        lower_touch_operator_hours = _require_field(
+            payload,
+            "lower_touch_alternative_operator_hours_per_month",
+            field_name="lower_touch_alternative_operator_hours_per_month",
+        )
+        lower_touch_net_per_hour = _require_field(
+            payload,
+            "lower_touch_alternative_net_per_hour_usd",
+            field_name="lower_touch_alternative_net_per_hour_usd",
+        )
+        conservative_return = _require_field(
+            payload,
+            "conservative_return_on_committed_margin",
+            field_name="conservative_return_on_committed_margin",
+        )
+        worst_loss_fraction = _require_field(
+            payload,
+            "worst_session_loss_fraction_of_free_cash",
+            field_name="worst_session_loss_fraction_of_free_cash",
+        )
         return cls(
-            case_id=str(payload["case_id"]),
-            evaluation_id=str(payload["evaluation_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            strategy_family_id=str(payload["strategy_family_id"]),
-            status=AbsoluteDollarViabilityStatus(str(payload["status"])).value,
-            decision=AbsoluteDollarDecision(str(payload["decision"])).value,
-            reason_code=str(payload["reason_code"]),
-            product_profile_id=str(payload["product_profile_id"]),
-            account_profile_id=str(payload["account_profile_id"]),
-            execution_symbol=str(payload["execution_symbol"]),
-            source_ids=tuple(str(item) for item in payload["source_ids"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            evaluation_id=_require_non_empty_string(
+                payload["evaluation_id"],
+                field_name="evaluation_id",
+            ),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            strategy_family_id=_require_non_empty_string(
+                payload["strategy_family_id"],
+                field_name="strategy_family_id",
+            ),
+            status=AbsoluteDollarViabilityStatus(
+                _require_non_empty_string(payload["status"], field_name="status")
+            ).value,
+            decision=AbsoluteDollarDecision(
+                _require_non_empty_string(payload["decision"], field_name="decision")
+            ).value,
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            product_profile_id=_require_non_empty_string(
+                payload["product_profile_id"],
+                field_name="product_profile_id",
+            ),
+            account_profile_id=_require_non_empty_string(
+                payload["account_profile_id"],
+                field_name="account_profile_id",
+            ),
+            execution_symbol=_require_non_empty_string(
+                payload["execution_symbol"],
+                field_name="execution_symbol",
+            ),
+            source_ids=_require_string_sequence(payload["source_ids"], field_name="source_ids"),
             thresholds=(
-                AbsoluteDollarThresholds.from_dict(dict(payload["thresholds"]))
-                if payload.get("thresholds") is not None
+                AbsoluteDollarThresholds.from_dict(
+                    _require_mapping(thresholds_payload, field_name="thresholds")
+                )
+                if thresholds_payload is not None
                 else None
             ),
             approved_starting_equity_usd=_as_positive_int(
@@ -502,43 +659,42 @@ class AbsoluteDollarViabilityReport:
             ),
             operator_maintenance_hours_per_month=(
                 _as_float(
-                    payload["operator_maintenance_hours_per_month"],
+                    operator_maintenance_hours,
                     field_name="operator_maintenance_hours_per_month",
                 )
-                if payload.get("operator_maintenance_hours_per_month") is not None
+                if operator_maintenance_hours is not None
                 else None
             ),
             net_per_operator_maintenance_hour_usd=(
                 _as_float(
-                    payload["net_per_operator_maintenance_hour_usd"],
+                    net_per_operator_hour,
                     field_name="net_per_operator_maintenance_hour_usd",
                 )
-                if payload.get("net_per_operator_maintenance_hour_usd") is not None
+                if net_per_operator_hour is not None
                 else None
             ),
             lower_touch_alternative_monthly_net_usd=(
                 _as_float(
-                    payload["lower_touch_alternative_monthly_net_usd"],
+                    lower_touch_monthly_net,
                     field_name="lower_touch_alternative_monthly_net_usd",
                 )
-                if payload.get("lower_touch_alternative_monthly_net_usd") is not None
+                if lower_touch_monthly_net is not None
                 else None
             ),
             lower_touch_alternative_operator_hours_per_month=(
                 _as_float(
-                    payload["lower_touch_alternative_operator_hours_per_month"],
+                    lower_touch_operator_hours,
                     field_name="lower_touch_alternative_operator_hours_per_month",
                 )
-                if payload.get("lower_touch_alternative_operator_hours_per_month")
-                is not None
+                if lower_touch_operator_hours is not None
                 else None
             ),
             lower_touch_alternative_net_per_hour_usd=(
                 _as_float(
-                    payload["lower_touch_alternative_net_per_hour_usd"],
+                    lower_touch_net_per_hour,
                     field_name="lower_touch_alternative_net_per_hour_usd",
                 )
-                if payload.get("lower_touch_alternative_net_per_hour_usd") is not None
+                if lower_touch_net_per_hour is not None
                 else None
             ),
             lower_touch_dominates=_require_boolean(
@@ -547,10 +703,10 @@ class AbsoluteDollarViabilityReport:
             ),
             conservative_return_on_committed_margin=(
                 _as_float(
-                    payload["conservative_return_on_committed_margin"],
+                    conservative_return,
                     field_name="conservative_return_on_committed_margin",
                 )
-                if payload.get("conservative_return_on_committed_margin") is not None
+                if conservative_return is not None
                 else None
             ),
             worst_session_loss_usd=_as_float(
@@ -559,27 +715,45 @@ class AbsoluteDollarViabilityReport:
             ),
             worst_session_loss_fraction_of_free_cash=(
                 _as_float(
-                    payload["worst_session_loss_fraction_of_free_cash"],
+                    worst_loss_fraction,
                     field_name="worst_session_loss_fraction_of_free_cash",
                 )
-                if payload.get("worst_session_loss_fraction_of_free_cash") is not None
+                if worst_loss_fraction is not None
                 else None
             ),
             benchmark_comparisons=tuple(
-                BenchmarkComparison.from_dict(dict(item))
-                for item in payload.get("benchmark_comparisons", ())
+                BenchmarkComparison.from_dict(item)
+                for item in _require_object_sequence(
+                    payload.get("benchmark_comparisons"),
+                    field_name="benchmark_comparisons",
+                )
             ),
             sensitivity_scenarios=tuple(
-                SensitivityScenario.from_dict(dict(item))
-                for item in payload.get("sensitivity_scenarios", ())
+                SensitivityScenario.from_dict(item)
+                for item in _require_object_sequence(
+                    payload.get("sensitivity_scenarios"),
+                    field_name="sensitivity_scenarios",
+                )
             ),
-            failed_check_ids=tuple(str(item) for item in payload.get("failed_check_ids", ())),
+            failed_check_ids=_require_string_sequence(
+                payload.get("failed_check_ids"),
+                field_name="failed_check_ids",
+            ),
             check_results=tuple(
-                AbsoluteDollarCheckResult.from_dict(dict(item))
-                for item in payload.get("check_results", ())
+                AbsoluteDollarCheckResult.from_dict(item)
+                for item in _require_object_sequence(
+                    payload.get("check_results"),
+                    field_name="check_results",
+                )
             ),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
             timestamp=_normalize_timestamp(
                 payload.get("timestamp"),
                 field_name="timestamp",
