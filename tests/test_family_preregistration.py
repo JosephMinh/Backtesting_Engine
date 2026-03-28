@@ -187,6 +187,57 @@ class FamilyBudgetDecisionFixtureTests(unittest.TestCase):
 
 
 class FamilyPreregistrationJsonValidationTests(unittest.TestCase):
+    def test_preregistration_loader_requires_explicit_integer_schema_version(self) -> None:
+        payload = dict(load_cases()["shared_preregistration_defaults"])
+        payload.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "family_preregistration: schema_version must be an integer",
+        ):
+            StrategyFamilyPreregistration.from_dict(payload)
+
+        payload = dict(load_cases()["shared_preregistration_defaults"])
+        payload["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "family_preregistration: schema_version must be an integer",
+        ):
+            StrategyFamilyPreregistration.from_dict(payload)
+
+    def test_persisted_policy_booleans_must_be_real_booleans(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            "deep_budget_requires_viability must be a boolean",
+        ):
+            build_preregistration(
+                {
+                    "budget_limits": {
+                        "deep_budget_requires_viability": "false",
+                    }
+                }
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "deep_promotable_budget_allowed must be a boolean",
+        ):
+            build_budget_request(
+                {
+                    "viability_reference": {
+                        "deep_promotable_budget_allowed": "false",
+                    }
+                }
+            )
+
+    def test_budget_report_loader_rejects_truthy_string_flags(self) -> None:
+        payload = evaluate_family_budget_decision(build_budget_request()).to_dict()
+        payload["deep_budget_requested"] = "false"
+        with self.assertRaisesRegex(
+            ValueError,
+            "deep_budget_requested must be a boolean",
+        ):
+            FamilyBudgetDecisionReport.from_dict(payload)
+
     def test_request_json_must_decode_to_object(self) -> None:
         with self.assertRaises(ValueError):
             FamilyBudgetDecisionRequest.from_json("[]")

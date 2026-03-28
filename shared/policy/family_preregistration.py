@@ -65,6 +65,28 @@ def _jsonable(value: Any) -> Any:
     return value
 
 
+def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
+    try:
+        decoded = json.JSONDecoder().decode(payload)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{label} must be valid JSON") from exc
+    if not isinstance(decoded, dict):
+        raise ValueError(f"{label} must decode to an object")
+    return decoded
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
 @unique
 class FamilyGovernanceStatus(str, Enum):
     PASS = "pass"  # nosec B105 - policy status literal, not a credential
@@ -127,8 +149,10 @@ class FamilyBudgetLimits:
             continuation_budget_limit_usd=float(
                 payload["continuation_budget_limit_usd"]
             ),
-            deep_budget_requires_viability=bool(
+            deep_budget_requires_viability=_require_bool(
                 payload.get("deep_budget_requires_viability", True)
+                ,
+                field_name="deep_budget_requires_viability",
             ),
         )
 
@@ -187,7 +211,10 @@ class StrategyFamilyPreregistration:
             ),
             budget_limits=FamilyBudgetLimits.from_dict(dict(payload["budget_limits"])),
             created_at_utc=_normalize_timestamp(str(payload["created_at_utc"])),
-            schema_version=int(payload.get("schema_version", 1)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="family_preregistration",
+            ),
         )
 
     def to_json(self) -> str:
@@ -195,13 +222,9 @@ class StrategyFamilyPreregistration:
 
     @classmethod
     def from_json(cls, payload: str) -> "StrategyFamilyPreregistration":
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError("family preregistration payload must be valid JSON") from exc
-        if not isinstance(data, dict):
-            raise ValueError("family preregistration payload must decode to an object")
-        return cls.from_dict(data)
+        return cls.from_dict(
+            _decode_json_object(payload, label="family preregistration payload")
+        )
 
 
 @dataclass(frozen=True)
@@ -246,9 +269,13 @@ class ViabilityDecisionReference:
             gate_type=str(payload["gate_type"]),
             report_id=str(payload["report_id"]),
             execution_symbol=str(payload["execution_symbol"]),
-            viability_passed=bool(payload["viability_passed"]),
-            deep_promotable_budget_allowed=bool(
-                payload["deep_promotable_budget_allowed"]
+            viability_passed=_require_bool(
+                payload["viability_passed"],
+                field_name="viability_passed",
+            ),
+            deep_promotable_budget_allowed=_require_bool(
+                payload["deep_promotable_budget_allowed"],
+                field_name="deep_promotable_budget_allowed",
             ),
             reason_code=str(payload["reason_code"]),
         )
@@ -299,7 +326,10 @@ class FamilyBudgetDecisionRequest:
                 if payload.get("evaluated_at_utc") is None
                 else _normalize_timestamp(str(payload["evaluated_at_utc"]))
             ),
-            schema_version=int(payload.get("schema_version", 1)),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="family_budget_decision_request",
+            ),
         )
 
     def to_json(self) -> str:
@@ -307,13 +337,9 @@ class FamilyBudgetDecisionRequest:
 
     @classmethod
     def from_json(cls, payload: str) -> "FamilyBudgetDecisionRequest":
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError("family budget decision payload must be valid JSON") from exc
-        if not isinstance(data, dict):
-            raise ValueError("family budget decision payload must decode to an object")
-        return cls.from_dict(data)
+        return cls.from_dict(
+            _decode_json_object(payload, label="family budget decision payload")
+        )
 
 
 @dataclass(frozen=True)
@@ -330,7 +356,7 @@ class FamilyGovernanceCheckResult:
     def from_dict(cls, payload: dict[str, Any]) -> "FamilyGovernanceCheckResult":
         return cls(
             check_id=str(payload["check_id"]),
-            passed=bool(payload["passed"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
             reason_code=str(payload["reason_code"]),
             diagnostic=str(payload["diagnostic"]),
         )
@@ -414,17 +440,9 @@ class FamilyPreregistrationReport:
 
     @classmethod
     def from_json(cls, payload: str) -> "FamilyPreregistrationReport":
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                "family preregistration report payload must be valid JSON"
-            ) from exc
-        if not isinstance(data, dict):
-            raise ValueError(
-                "family preregistration report payload must decode to an object"
-            )
-        return cls.from_dict(data)
+        return cls.from_dict(
+            _decode_json_object(payload, label="family preregistration report payload")
+        )
 
 
 @dataclass(frozen=True)
@@ -477,9 +495,18 @@ class FamilyBudgetDecisionReport:
             decision=str(payload["decision"]),
             reason_code=str(payload["reason_code"]),
             authorized_budget_usd=float(payload["authorized_budget_usd"]),
-            deep_budget_requested=bool(payload["deep_budget_requested"]),
-            viability_gate_required=bool(payload["viability_gate_required"]),
-            viability_gate_passed=bool(payload["viability_gate_passed"]),
+            deep_budget_requested=_require_bool(
+                payload["deep_budget_requested"],
+                field_name="deep_budget_requested",
+            ),
+            viability_gate_required=_require_bool(
+                payload["viability_gate_required"],
+                field_name="viability_gate_required",
+            ),
+            viability_gate_passed=_require_bool(
+                payload["viability_gate_passed"],
+                field_name="viability_gate_passed",
+            ),
             triggered_check_ids=tuple(
                 str(item) for item in payload["triggered_check_ids"]
             ),
@@ -504,17 +531,9 @@ class FamilyBudgetDecisionReport:
 
     @classmethod
     def from_json(cls, payload: str) -> "FamilyBudgetDecisionReport":
-        try:
-            data = json.loads(payload)
-        except json.JSONDecodeError as exc:
-            raise ValueError(
-                "family budget decision report payload must be valid JSON"
-            ) from exc
-        if not isinstance(data, dict):
-            raise ValueError(
-                "family budget decision report payload must decode to an object"
-            )
-        return cls.from_dict(data)
+        return cls.from_dict(
+            _decode_json_object(payload, label="family budget decision report payload")
+        )
 
 
 def _check(
