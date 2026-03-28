@@ -57,6 +57,96 @@ def _decode_json(payload: str, label: str) -> dict[str, Any]:
     return decoded
 
 
+def _parse_utc(value: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string")
+    try:
+        parsed = _parse_utc(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name}: must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name}: must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    parsed = value.strip()
+    if not parsed:
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return parsed
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_int(
+    value: object,
+    *,
+    field_name: str,
+    minimum: int | None = None,
+) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be an integer")
+    if minimum is not None and value < minimum:
+        qualifier = "positive" if minimum == 1 else f">= {minimum}"
+        raise ValueError(f"{field_name}: must be {qualifier}")
+    return value
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of strings")
+    return tuple(_require_non_empty_string(item, field_name=field_name) for item in value)
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name}: must be a list of objects")
+    return tuple(_require_mapping(item, field_name=field_name) for item in value)
+
+
+def _require_schema_version(value: object, *, field_name: str) -> int:
+    parsed = _require_int(value, field_name=field_name, minimum=1)
+    if parsed != SUPPORTED_FAILURE_PATH_DRILL_SCHEMA_VERSION:
+        raise ValueError(
+            f"{field_name}: unsupported schema version {parsed}; "
+            f"expected {SUPPORTED_FAILURE_PATH_DRILL_SCHEMA_VERSION}"
+        )
+    return parsed
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name}: must be a valid {description}") from exc
+
+
 @unique
 class FailurePathScenario(str, Enum):
     RECONNECT_BEFORE_ACK = "reconnect_before_ack"
@@ -102,16 +192,40 @@ class DrillTimelineEvent:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "DrillTimelineEvent":
+        payload = _require_mapping(payload, field_name="drill_timeline_event")
         return cls(
-            sequence_number=int(payload["sequence_number"]),
-            event_id=str(payload["event_id"]),
-            event_type=str(payload["event_type"]),
-            correlation_id=str(payload["correlation_id"]),
-            referenced_ids=tuple(str(item) for item in payload["referenced_ids"]),
-            artifact_ids=tuple(str(item) for item in payload["artifact_ids"]),
-            reason_code=str(payload["reason_code"]),
+            sequence_number=_require_int(
+                payload["sequence_number"],
+                field_name="sequence_number",
+                minimum=1,
+            ),
+            event_id=_require_non_empty_string(payload["event_id"], field_name="event_id"),
+            event_type=_require_non_empty_string(payload["event_type"], field_name="event_type"),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            referenced_ids=_require_string_sequence(
+                payload["referenced_ids"],
+                field_name="referenced_ids",
+            ),
+            artifact_ids=_require_string_sequence(
+                payload["artifact_ids"],
+                field_name="artifact_ids",
+            ),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
             declared_safe_outcome=(
-                SafeOutcome(payload["declared_safe_outcome"])
+                SafeOutcome(
+                    _require_enum_value(
+                        payload["declared_safe_outcome"],
+                        field_name="declared_safe_outcome",
+                        enum_type=SafeOutcome,
+                        description="safe outcome",
+                    )
+                )
                 if payload.get("declared_safe_outcome") is not None
                 else None
             ),
@@ -194,62 +308,124 @@ class FailurePathDrillRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FailurePathDrillRequest":
+        payload = _require_mapping(payload, field_name="failure_path_drill_request")
         return cls(
-            drill_id=str(payload["drill_id"]),
-            scenario=FailurePathScenario(payload["scenario"]),
-            target_deployment_instance_id=str(payload["target_deployment_instance_id"]),
-            correlation_id=str(payload["correlation_id"]),
-            decision_trace_id=str(payload["decision_trace_id"]),
-            expected_safe_outcome=SafeOutcome(payload["expected_safe_outcome"]),
+            drill_id=_require_non_empty_string(payload["drill_id"], field_name="drill_id"),
+            scenario=FailurePathScenario(
+                _require_enum_value(
+                    payload["scenario"],
+                    field_name="scenario",
+                    enum_type=FailurePathScenario,
+                    description="failure-path scenario",
+                )
+            ),
+            target_deployment_instance_id=_require_non_empty_string(
+                payload["target_deployment_instance_id"],
+                field_name="target_deployment_instance_id",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            decision_trace_id=_require_non_empty_string(
+                payload["decision_trace_id"],
+                field_name="decision_trace_id",
+            ),
+            expected_safe_outcome=SafeOutcome(
+                _require_enum_value(
+                    payload["expected_safe_outcome"],
+                    field_name="expected_safe_outcome",
+                    enum_type=SafeOutcome,
+                    description="safe outcome",
+                )
+            ),
             timeline_events=tuple(
-                DrillTimelineEvent.from_dict(dict(item))
-                for item in payload["timeline_events"]
+                DrillTimelineEvent.from_dict(item)
+                for item in _require_object_sequence(
+                    payload["timeline_events"],
+                    field_name="timeline_events",
+                )
             ),
             recovery_request=(
-                RecoveryFenceRequest.from_dict(dict(payload["recovery_request"]))
+                RecoveryFenceRequest.from_dict(
+                    _require_mapping(
+                        payload["recovery_request"],
+                        field_name="recovery_request",
+                    )
+                )
                 if payload.get("recovery_request") is not None
                 else None
             ),
             degradation_assessment=(
-                DegradationAssessment.from_dict(dict(payload["degradation_assessment"]))
+                DegradationAssessment.from_dict(
+                    _require_mapping(
+                        payload["degradation_assessment"],
+                        field_name="degradation_assessment",
+                    )
+                )
                 if payload.get("degradation_assessment") is not None
                 else None
             ),
             dependency_request=(
-                DependencyPropagationRequest.from_dict(dict(payload["dependency_request"]))
+                DependencyPropagationRequest.from_dict(
+                    _require_mapping(
+                        payload["dependency_request"],
+                        field_name="dependency_request",
+                    )
+                )
                 if payload.get("dependency_request") is not None
                 else None
             ),
             withdrawal_review_request=(
                 EmergencyWithdrawalReviewRequest.from_dict(
-                    dict(payload["withdrawal_review_request"])
+                    _require_mapping(
+                        payload["withdrawal_review_request"],
+                        field_name="withdrawal_review_request",
+                    )
                 )
                 if payload.get("withdrawal_review_request") is not None
                 else None
             ),
             ledger_close_artifact=(
-                LedgerCloseArtifact.from_dict(dict(payload["ledger_close_artifact"]))
+                LedgerCloseArtifact.from_dict(
+                    _require_mapping(
+                        payload["ledger_close_artifact"],
+                        field_name="ledger_close_artifact",
+                    )
+                )
                 if payload.get("ledger_close_artifact") is not None
                 else None
             ),
             restore_drill_artifact=(
-                RestoreDrillArtifact.from_dict(dict(payload["restore_drill_artifact"]))
+                RestoreDrillArtifact.from_dict(
+                    _require_mapping(
+                        payload["restore_drill_artifact"],
+                        field_name="restore_drill_artifact",
+                    )
+                )
                 if payload.get("restore_drill_artifact") is not None
                 else None
             ),
             shutdown_record=(
-                GracefulShutdownRecord.from_dict(dict(payload["shutdown_record"]))
+                GracefulShutdownRecord.from_dict(
+                    _require_mapping(
+                        payload["shutdown_record"],
+                        field_name="shutdown_record",
+                    )
+                )
                 if payload.get("shutdown_record") is not None
                 else None
             ),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload.get("operator_reason_bundle", ())
+            operator_reason_bundle=_require_string_sequence(
+                payload.get("operator_reason_bundle", ()),
+                field_name="operator_reason_bundle",
             ),
-            schema_version=int(
+            schema_version=_require_schema_version(
                 payload.get(
                     "schema_version",
                     SUPPORTED_FAILURE_PATH_DRILL_SCHEMA_VERSION,
-                )
+                ),
+                field_name="schema_version",
             ),
         )
 
@@ -280,6 +456,80 @@ class FailurePathDrillReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "FailurePathDrillReport":
+        payload = _require_mapping(payload, field_name="failure_path_drill_report")
+        if "observed_safe_outcome" not in payload:
+            raise ValueError("observed_safe_outcome: field is required")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            drill_id=_require_non_empty_string(payload["drill_id"], field_name="drill_id"),
+            scenario=_require_enum_value(
+                payload["scenario"],
+                field_name="scenario",
+                enum_type=FailurePathScenario,
+                description="failure-path scenario",
+            ),
+            status=_require_enum_value(
+                payload["status"],
+                field_name="status",
+                enum_type=PacketStatus,
+                description="packet status",
+            ),
+            reason_code=_require_non_empty_string(payload["reason_code"], field_name="reason_code"),
+            expected_safe_outcome=_require_enum_value(
+                payload["expected_safe_outcome"],
+                field_name="expected_safe_outcome",
+                enum_type=SafeOutcome,
+                description="safe outcome",
+            ),
+            observed_safe_outcome=(
+                _require_enum_value(
+                    payload["observed_safe_outcome"],
+                    field_name="observed_safe_outcome",
+                    enum_type=SafeOutcome,
+                    description="safe outcome",
+                )
+                if payload.get("observed_safe_outcome") is not None
+                else None
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            retained_artifact_ids=_require_string_sequence(
+                payload["retained_artifact_ids"],
+                field_name="retained_artifact_ids",
+            ),
+            subreport_reason_codes=_require_string_sequence(
+                payload["subreport_reason_codes"],
+                field_name="subreport_reason_codes",
+            ),
+            timeline_events=tuple(
+                DrillTimelineEvent.from_dict(item).to_dict()
+                for item in _require_object_sequence(
+                    payload["timeline_events"],
+                    field_name="timeline_events",
+                )
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload["timestamp"],
+                field_name="timestamp",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "FailurePathDrillReport":
+        return cls.from_dict(_decode_json(payload, "failure_path_drill_report"))
 
 
 def _timeline_validation_error(request: FailurePathDrillRequest) -> tuple[str, str] | None:
