@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from shared.policy.foundation_harness import (
@@ -97,6 +98,100 @@ class FoundationHarnessContractTest(unittest.TestCase):
             ],
             failed_reason_codes(report),
         )
+
+    def test_request_loader_rejects_truthy_bool_and_bad_shapes(self) -> None:
+        base_payload = deepcopy(load_cases()["cases"][0]["request"])
+        invalid_cases = (
+            (
+                "schema_loaded_truthy_string",
+                lambda payload: payload["schema_surfaces"][0].__setitem__("loaded", "true"),
+                "loaded must be a boolean",
+            ),
+            (
+                "property_seed_bool",
+                lambda payload: payload["property_harness"].__setitem__("seed", True),
+                "seed must be an integer",
+            ),
+            (
+                "operator_reason_bundle_string",
+                lambda payload: payload.__setitem__("operator_reason_bundle", "boot"),
+                "operator_reason_bundle must be a sequence of non-empty strings",
+            ),
+            (
+                "deterministic_clock_naive",
+                lambda payload: payload.__setitem__(
+                    "deterministic_clock_utc",
+                    "2026-03-28T00:00:00",
+                ),
+                "deterministic_clock_utc must be a timezone-aware ISO-8601 timestamp",
+            ),
+            (
+                "clock_probe_not_object",
+                lambda payload: payload.__setitem__("clock_probe", []),
+                "clock_probe must be an object",
+            ),
+            (
+                "schema_surface_error_detail_missing",
+                lambda payload: payload["schema_surfaces"][0].pop("error_detail"),
+                "error_detail missing required field",
+            ),
+            (
+                "startup_mismatch_details_missing",
+                lambda payload: payload["startup_compatibility"].pop("mismatch_details"),
+                "mismatch_details missing required field",
+            ),
+            (
+                "round_trip_expected_diff_missing",
+                lambda payload: payload["round_trip_smoke"].pop("expected_vs_actual_diff_id"),
+                "expected_vs_actual_diff_id missing required field",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(base_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    FoundationHarnessRequest.from_dict(payload)
+
+    def test_report_loader_rejects_invalid_status_and_bad_sequences(self) -> None:
+        report_payload = evaluate_foundation_harness(
+            FoundationHarnessRequest.from_dict(load_cases()["cases"][0]["request"])
+        ).to_dict()
+        invalid_cases = (
+            (
+                "status_invalid",
+                lambda payload: payload.__setitem__("status", "ready"),
+                "status must be a valid foundation harness status",
+            ),
+            (
+                "failure_classes_invalid",
+                lambda payload: payload.__setitem__("failure_classes", ["bad_class"]),
+                "bad_class",
+            ),
+            (
+                "check_results_string",
+                lambda payload: payload.__setitem__("check_results", "FH01"),
+                "check_results must be a sequence of objects",
+            ),
+            (
+                "timestamp_missing",
+                lambda payload: payload.pop("timestamp"),
+                "timestamp missing required field",
+            ),
+            (
+                "check_failure_class_missing",
+                lambda payload: payload["check_results"][0].pop("failure_class"),
+                "failure_class missing required field",
+            ),
+        )
+
+        for case_id, mutate, error in invalid_cases:
+            with self.subTest(case_id=case_id):
+                payload = deepcopy(report_payload)
+                mutate(payload)
+                with self.assertRaisesRegex(ValueError, error):
+                    FoundationHarnessReport.from_dict(payload)
 
 
 if __name__ == "__main__":

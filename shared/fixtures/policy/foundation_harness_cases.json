@@ -16,17 +16,20 @@
           {
             "surface_id": "release_schemas",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           },
           {
             "surface_id": "metadata_telemetry",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           },
           {
             "surface_id": "lifecycle_specs",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           }
         ],
         "startup_compatibility": {
@@ -89,7 +92,8 @@
           {
             "surface_id": "release_schemas",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           },
           {
             "surface_id": "policy_engine",
@@ -160,7 +164,8 @@
           {
             "surface_id": "release_schemas",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           }
         ],
         "startup_compatibility": {
@@ -228,7 +233,8 @@
           {
             "surface_id": "release_schemas",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           }
         ],
         "startup_compatibility": {
@@ -293,7 +299,8 @@
           {
             "surface_id": "release_schemas",
             "loaded": true,
-            "schema_version": "1"
+            "schema_version": "1",
+            "error_detail": null
           }
         ],
         "startup_compatibility": {

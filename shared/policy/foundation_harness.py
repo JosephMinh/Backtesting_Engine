@@ -23,6 +23,79 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    return value
+
+
+def _require_present(
+    payload: dict[str, Any],
+    key: str,
+    *,
+    field_name: str,
+) -> object:
+    if key not in payload:
+        raise ValueError(f"{field_name} missing required field")
+    return payload[key]
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of non-empty strings")
+    return tuple(
+        _require_non_empty_string(item, field_name=f"{field_name}[{index}]")
+        for index, item in enumerate(value)
+    )
+
+
+def _require_mapping_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of objects")
+    return tuple(
+        _require_mapping(item, field_name=f"{field_name}[{index}]")
+        for index, item in enumerate(value)
+    )
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name} must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
 @unique
 class FoundationFailureClass(str, Enum):
     SETUP_ERROR = "setup_error"
@@ -36,6 +109,24 @@ class FoundationHarnessStatus(str, Enum):
     PASS = "pass"
     VIOLATION = "violation"
     INVALID = "invalid"
+
+
+def _require_harness_status(value: object, *, field_name: str) -> str:
+    normalized = _require_non_empty_string(value, field_name=field_name)
+    try:
+        return FoundationHarnessStatus(normalized).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid foundation harness status") from exc
+
+
+def _optional_failure_class(value: object, *, field_name: str) -> str | None:
+    if value in (None, ""):
+        return None
+    normalized = _require_non_empty_string(value, field_name=field_name)
+    try:
+        return FoundationFailureClass(normalized).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid foundation failure class") from exc
 
 
 @dataclass(frozen=True)
@@ -55,20 +146,32 @@ class FoundationCheckResult:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FoundationCheckResult":
+        payload = _require_mapping(payload, field_name="foundation_check_result")
         return cls(
-            check_id=str(payload["check_id"]),
-            check_name=str(payload["check_name"]),
-            passed=bool(payload["passed"]),
-            status=str(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            failure_class=(
-                str(payload["failure_class"])
-                if payload.get("failure_class") is not None
-                else None
+            check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
+            check_name=_require_non_empty_string(
+                payload["check_name"],
+                field_name="check_name",
             ),
-            diagnostic=str(payload["diagnostic"]),
-            evidence=dict(payload["evidence"]),
-            remediation=str(payload["remediation"]),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            status=_require_harness_status(payload["status"], field_name="status"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            failure_class=_optional_failure_class(
+                _require_present(payload, "failure_class", field_name="failure_class"),
+                field_name="failure_class",
+            ),
+            diagnostic=_require_non_empty_string(
+                payload["diagnostic"],
+                field_name="diagnostic",
+            ),
+            evidence=_require_mapping(payload["evidence"], field_name="evidence"),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
         )
 
 
@@ -84,14 +187,17 @@ class SchemaLoadSurface:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SchemaLoadSurface":
+        payload = _require_mapping(payload, field_name="schema_load_surface")
         return cls(
-            surface_id=str(payload["surface_id"]),
-            loaded=bool(payload["loaded"]),
-            schema_version=str(payload["schema_version"]),
-            error_detail=(
-                str(payload["error_detail"])
-                if payload.get("error_detail") is not None
-                else None
+            surface_id=_require_non_empty_string(payload["surface_id"], field_name="surface_id"),
+            loaded=_require_bool(payload["loaded"], field_name="loaded"),
+            schema_version=_require_non_empty_string(
+                payload["schema_version"],
+                field_name="schema_version",
+            ),
+            error_detail=_optional_non_empty_string(
+                _require_present(payload, "error_detail", field_name="error_detail"),
+                field_name="error_detail",
             ),
         )
 
@@ -113,15 +219,32 @@ class StartupCompatibilityEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "StartupCompatibilityEvidence":
+        payload = _require_mapping(payload, field_name="startup_compatibility")
         return cls(
-            compatible=bool(payload["compatible"]),
-            binary_version=str(payload["binary_version"]),
-            database_schema_version=str(payload["database_schema_version"]),
-            snapshot_journal_format=str(payload["snapshot_journal_format"]),
-            policy_bundle_hash=str(payload["policy_bundle_hash"]),
-            compatibility_matrix_version=str(payload["compatibility_matrix_version"]),
-            mismatch_details=tuple(
-                str(item) for item in payload.get("mismatch_details", ())
+            compatible=_require_bool(payload["compatible"], field_name="compatible"),
+            binary_version=_require_non_empty_string(
+                payload["binary_version"],
+                field_name="binary_version",
+            ),
+            database_schema_version=_require_non_empty_string(
+                payload["database_schema_version"],
+                field_name="database_schema_version",
+            ),
+            snapshot_journal_format=_require_non_empty_string(
+                payload["snapshot_journal_format"],
+                field_name="snapshot_journal_format",
+            ),
+            policy_bundle_hash=_require_non_empty_string(
+                payload["policy_bundle_hash"],
+                field_name="policy_bundle_hash",
+            ),
+            compatibility_matrix_version=_require_non_empty_string(
+                payload["compatibility_matrix_version"],
+                field_name="compatibility_matrix_version",
+            ),
+            mismatch_details=_require_string_sequence(
+                _require_present(payload, "mismatch_details", field_name="mismatch_details"),
+                field_name="mismatch_details",
             ),
         )
 
@@ -137,10 +260,14 @@ class ProbeEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ProbeEvidence":
+        payload = _require_mapping(payload, field_name="probe_evidence")
         return cls(
-            status=str(payload["status"]),
-            evidence_id=str(payload["evidence_id"]),
-            detail=str(payload["detail"]),
+            status=_require_non_empty_string(payload["status"], field_name="status"),
+            evidence_id=_require_non_empty_string(
+                payload["evidence_id"],
+                field_name="evidence_id",
+            ),
+            detail=_require_non_empty_string(payload["detail"], field_name="detail"),
         )
 
 
@@ -157,16 +284,23 @@ class PropertyHarnessEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "PropertyHarnessEvidence":
+        payload = _require_mapping(payload, field_name="property_harness")
         return cls(
-            passed=bool(payload["passed"]),
-            seed=int(payload["seed"]),
-            case_count=int(payload["case_count"]),
-            failure_example_id=(
-                str(payload["failure_example_id"])
-                if payload.get("failure_example_id") is not None
-                else None
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            seed=_require_int(payload["seed"], field_name="seed"),
+            case_count=_require_int(payload["case_count"], field_name="case_count"),
+            failure_example_id=_optional_non_empty_string(
+                _require_present(
+                    payload,
+                    "failure_example_id",
+                    field_name="failure_example_id",
+                ),
+                field_name="failure_example_id",
             ),
-            report_artifact_id=str(payload["report_artifact_id"]),
+            report_artifact_id=_require_non_empty_string(
+                payload["report_artifact_id"],
+                field_name="report_artifact_id",
+            ),
         )
 
 
@@ -183,15 +317,31 @@ class RoundTripSmokeEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RoundTripSmokeEvidence":
+        payload = _require_mapping(payload, field_name="round_trip_smoke")
         return cls(
-            boot_succeeded=bool(payload["boot_succeeded"]),
-            round_trip_completed=bool(payload["round_trip_completed"]),
-            smoke_log_artifact_id=str(payload["smoke_log_artifact_id"]),
-            smoke_trace_id=str(payload["smoke_trace_id"]),
-            expected_vs_actual_diff_id=(
-                str(payload["expected_vs_actual_diff_id"])
-                if payload.get("expected_vs_actual_diff_id") is not None
-                else None
+            boot_succeeded=_require_bool(
+                payload["boot_succeeded"],
+                field_name="boot_succeeded",
+            ),
+            round_trip_completed=_require_bool(
+                payload["round_trip_completed"],
+                field_name="round_trip_completed",
+            ),
+            smoke_log_artifact_id=_require_non_empty_string(
+                payload["smoke_log_artifact_id"],
+                field_name="smoke_log_artifact_id",
+            ),
+            smoke_trace_id=_require_non_empty_string(
+                payload["smoke_trace_id"],
+                field_name="smoke_trace_id",
+            ),
+            expected_vs_actual_diff_id=_optional_non_empty_string(
+                _require_present(
+                    payload,
+                    "expected_vs_actual_diff_id",
+                    field_name="expected_vs_actual_diff_id",
+                ),
+                field_name="expected_vs_actual_diff_id",
             ),
         )
 
@@ -226,32 +376,65 @@ class FoundationHarnessRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FoundationHarnessRequest":
+        payload = _require_mapping(payload, field_name="foundation_harness_request")
         return cls(
-            case_id=str(payload["case_id"]),
-            environment_lock_id=str(payload["environment_lock_id"]),
-            deterministic_clock_utc=str(payload["deterministic_clock_utc"]),
-            artifact_manifest_id=str(payload["artifact_manifest_id"]),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            environment_lock_id=_require_non_empty_string(
+                payload["environment_lock_id"],
+                field_name="environment_lock_id",
+            ),
+            deterministic_clock_utc=_normalize_utc_timestamp(
+                payload["deterministic_clock_utc"],
+                field_name="deterministic_clock_utc",
+            ),
+            artifact_manifest_id=_require_non_empty_string(
+                payload["artifact_manifest_id"],
+                field_name="artifact_manifest_id",
+            ),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
             ),
             schema_surfaces=tuple(
                 SchemaLoadSurface.from_dict(item)
-                for item in payload["schema_surfaces"]
+                for item in _require_mapping_sequence(
+                    payload["schema_surfaces"],
+                    field_name="schema_surfaces",
+                )
             ),
             startup_compatibility=StartupCompatibilityEvidence.from_dict(
-                dict(payload["startup_compatibility"])
+                _require_mapping(
+                    payload["startup_compatibility"],
+                    field_name="startup_compatibility",
+                )
             ),
-            clock_probe=ProbeEvidence.from_dict(dict(payload["clock_probe"])),
-            secret_probe=ProbeEvidence.from_dict(dict(payload["secret_probe"])),
+            clock_probe=ProbeEvidence.from_dict(
+                _require_mapping(payload["clock_probe"], field_name="clock_probe")
+            ),
+            secret_probe=ProbeEvidence.from_dict(
+                _require_mapping(payload["secret_probe"], field_name="secret_probe")
+            ),
             journal_digest_probe=ProbeEvidence.from_dict(
-                dict(payload["journal_digest_probe"])
+                _require_mapping(
+                    payload["journal_digest_probe"],
+                    field_name="journal_digest_probe",
+                )
             ),
             property_harness=PropertyHarnessEvidence.from_dict(
-                dict(payload["property_harness"])
+                _require_mapping(
+                    payload["property_harness"],
+                    field_name="property_harness",
+                )
             ),
             round_trip_smoke=RoundTripSmokeEvidence.from_dict(
-                dict(payload["round_trip_smoke"])
+                _require_mapping(
+                    payload["round_trip_smoke"],
+                    field_name="round_trip_smoke",
+                )
             ),
         )
 
@@ -287,28 +470,59 @@ class FoundationHarnessReport:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "FoundationHarnessReport":
+        payload = _require_mapping(payload, field_name="foundation_harness_report")
         return cls(
-            case_id=str(payload["case_id"]),
-            phase_gate=str(payload["phase_gate"]),
-            status=str(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            passed_count=int(payload["passed_count"]),
-            failed_count=int(payload["failed_count"]),
-            failure_classes=tuple(str(item) for item in payload["failure_classes"]),
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            phase_gate=_require_non_empty_string(payload["phase_gate"], field_name="phase_gate"),
+            status=_require_harness_status(payload["status"], field_name="status"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            passed_count=_require_int(payload["passed_count"], field_name="passed_count"),
+            failed_count=_require_int(payload["failed_count"], field_name="failed_count"),
+            failure_classes=tuple(
+                FoundationFailureClass(
+                    _require_non_empty_string(item, field_name=f"failure_classes[{index}]")
+                ).value
+                for index, item in enumerate(
+                    _require_string_sequence(
+                        payload["failure_classes"],
+                        field_name="failure_classes",
+                    )
+                )
+            ),
             check_results=tuple(
-                FoundationCheckResult.from_dict(dict(item))
-                for item in payload["check_results"]
+                FoundationCheckResult.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["check_results"],
+                    field_name="check_results",
+                )
             ),
-            correlation_id=str(payload["correlation_id"]),
-            retained_artifact_ids=tuple(
-                str(item) for item in payload["retained_artifact_ids"]
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
             ),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload["operator_reason_bundle"]
+            retained_artifact_ids=_require_string_sequence(
+                payload["retained_artifact_ids"],
+                field_name="retained_artifact_ids",
             ),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utc_now())),
+            operator_reason_bundle=_require_string_sequence(
+                payload["operator_reason_bundle"],
+                field_name="operator_reason_bundle",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                _require_present(payload, "timestamp", field_name="timestamp"),
+                field_name="timestamp",
+            ),
         )
 
     def to_json(self) -> str:
