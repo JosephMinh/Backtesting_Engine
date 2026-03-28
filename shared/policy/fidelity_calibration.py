@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -117,6 +118,77 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     return loaded
 
 
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(item) for item in value]
+    return value
+
+
+def _require_mapping(
+    value: object,
+    *,
+    field_name: str,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _require_float(value: object, *, field_name: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a finite number")
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError(f"{field_name} must be a finite number")
+    return parsed
+
+
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    values: list[str] = []
+    try:
+        for item in value:
+            values.append(_require_non_empty_string(item, field_name=field_name))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a sequence of strings") from exc
+    return tuple(values)
+
+
 @dataclass(frozen=True)
 class SessionCalibrationEvidence:
     """Session-conditioned evidence for fidelity calibration."""
@@ -137,14 +209,36 @@ class SessionCalibrationEvidence:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> SessionCalibrationEvidence:
+        payload = _require_mapping(payload, field_name="session_calibration")
         return cls(
-            session_class=str(payload["session_class"]),
-            bar_interval_seconds=int(payload["bar_interval_seconds"]),
-            bar_sufficiency_passed=bool(payload["bar_sufficiency_passed"]),
-            realistic_slippage_bps=float(payload["realistic_slippage_bps"]),
-            max_allowed_slippage_bps=float(payload["max_allowed_slippage_bps"]),
-            passive_assumption_credible=bool(payload["passive_assumption_credible"]),
-            supporting_data_refs=tuple(str(item) for item in payload.get("supporting_data_refs", ())),
+            session_class=_require_non_empty_string(
+                payload["session_class"],
+                field_name="session_class",
+            ),
+            bar_interval_seconds=_require_int(
+                payload["bar_interval_seconds"],
+                field_name="bar_interval_seconds",
+            ),
+            bar_sufficiency_passed=_require_bool(
+                payload["bar_sufficiency_passed"],
+                field_name="bar_sufficiency_passed",
+            ),
+            realistic_slippage_bps=_require_float(
+                payload["realistic_slippage_bps"],
+                field_name="realistic_slippage_bps",
+            ),
+            max_allowed_slippage_bps=_require_float(
+                payload["max_allowed_slippage_bps"],
+                field_name="max_allowed_slippage_bps",
+            ),
+            passive_assumption_credible=_require_bool(
+                payload["passive_assumption_credible"],
+                field_name="passive_assumption_credible",
+            ),
+            supporting_data_refs=_require_string_sequence(
+                payload.get("supporting_data_refs", ()),
+                field_name="supporting_data_refs",
+            ),
         )
 
 
@@ -177,23 +271,60 @@ class FidelityCalibrationRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> FidelityCalibrationRequest:
+        payload = _require_mapping(payload, field_name="fidelity_calibration_request")
+        session_calibrations = payload["session_calibrations"]
+        if isinstance(session_calibrations, (str, bytes)) or not isinstance(
+            session_calibrations,
+            (list, tuple),
+        ):
+            raise ValueError("session_calibrations must be a sequence of objects")
         return cls(
-            case_id=str(payload["case_id"]),
-            candidate_id=str(payload["candidate_id"]),
-            strategy_class_id=str(payload["strategy_class_id"]),
-            decision_interval_seconds=int(payload["decision_interval_seconds"]),
-            decision_basis=str(payload["decision_basis"]),
-            requires_passive_fill_assumption=bool(payload["requires_passive_fill_assumption"]),
-            depends_on_order_book_imbalance=bool(payload["depends_on_order_book_imbalance"]),
-            requires_queue_position_edge=bool(payload["requires_queue_position_edge"]),
-            exhibits_sub_minute_market_making=bool(payload["exhibits_sub_minute_market_making"]),
-            requires_premium_depth_data=bool(payload["requires_premium_depth_data"]),
-            material_session_liquidity_difference=bool(
-                payload["material_session_liquidity_difference"]
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            strategy_class_id=_require_non_empty_string(
+                payload["strategy_class_id"],
+                field_name="strategy_class_id",
+            ),
+            decision_interval_seconds=_require_int(
+                payload["decision_interval_seconds"],
+                field_name="decision_interval_seconds",
+            ),
+            decision_basis=_require_non_empty_string(
+                payload["decision_basis"],
+                field_name="decision_basis",
+            ),
+            requires_passive_fill_assumption=_require_bool(
+                payload["requires_passive_fill_assumption"],
+                field_name="requires_passive_fill_assumption",
+            ),
+            depends_on_order_book_imbalance=_require_bool(
+                payload["depends_on_order_book_imbalance"],
+                field_name="depends_on_order_book_imbalance",
+            ),
+            requires_queue_position_edge=_require_bool(
+                payload["requires_queue_position_edge"],
+                field_name="requires_queue_position_edge",
+            ),
+            exhibits_sub_minute_market_making=_require_bool(
+                payload["exhibits_sub_minute_market_making"],
+                field_name="exhibits_sub_minute_market_making",
+            ),
+            requires_premium_depth_data=_require_bool(
+                payload["requires_premium_depth_data"],
+                field_name="requires_premium_depth_data",
+            ),
+            material_session_liquidity_difference=_require_bool(
+                payload["material_session_liquidity_difference"],
+                field_name="material_session_liquidity_difference",
             ),
             session_calibrations=tuple(
-                SessionCalibrationEvidence.from_dict(item)
-                for item in payload["session_calibrations"]
+                SessionCalibrationEvidence.from_dict(
+                    _require_mapping(item, field_name="session_calibration")
+                )
+                for item in session_calibrations
             ),
         )
 
@@ -220,10 +351,43 @@ class FidelityCheckResult:
     )
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return _jsonable(asdict(self))
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> FidelityCheckResult:
+        payload = _require_mapping(payload, field_name="fidelity_check_result")
+        return cls(
+            check_id=_require_non_empty_string(payload["check_id"], field_name="check_id"),
+            check_name=_require_non_empty_string(
+                payload["check_name"],
+                field_name="check_name",
+            ),
+            passed=_require_bool(payload["passed"], field_name="passed"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            diagnostic=_require_non_empty_string(
+                payload["diagnostic"],
+                field_name="diagnostic",
+            ),
+            evidence=_require_mapping(payload.get("evidence", {}), field_name="evidence"),
+            session_class=(
+                _require_non_empty_string(
+                    payload["session_class"],
+                    field_name="session_class",
+                )
+                if payload.get("session_class") not in (None, "")
+                else None
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -253,6 +417,92 @@ class FidelityCalibrationReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> FidelityCalibrationReport:
+        payload = _require_mapping(payload, field_name="fidelity_calibration_report")
+        decision_trace = payload["decision_trace"]
+        if isinstance(decision_trace, (str, bytes)) or not isinstance(
+            decision_trace,
+            (list, tuple),
+        ):
+            raise ValueError("decision_trace must be a sequence of objects")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            candidate_id=_require_non_empty_string(
+                payload["candidate_id"],
+                field_name="candidate_id",
+            ),
+            strategy_class_id=_require_non_empty_string(
+                payload["strategy_class_id"],
+                field_name="strategy_class_id",
+            ),
+            status=FidelityCalibrationStatus(
+                _require_non_empty_string(payload["status"], field_name="status")
+            ).value,
+            live_lane_eligible=_require_bool(
+                payload["live_lane_eligible"],
+                field_name="live_lane_eligible",
+            ),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            decision_trace=[
+                FidelityCheckResult.from_dict(
+                    _require_mapping(item, field_name="decision_trace")
+                ).to_dict()
+                for item in decision_trace
+            ],
+            failed_check_ids=list(
+                _require_string_sequence(
+                    payload["failed_check_ids"],
+                    field_name="failed_check_ids",
+                )
+            ),
+            known_excluded_strategy_class_ids=list(
+                _require_string_sequence(
+                    payload["known_excluded_strategy_class_ids"],
+                    field_name="known_excluded_strategy_class_ids",
+                )
+            ),
+            matched_excluded_strategy_class_ids=list(
+                _require_string_sequence(
+                    payload["matched_excluded_strategy_class_ids"],
+                    field_name="matched_excluded_strategy_class_ids",
+                )
+            ),
+            session_classes=list(
+                _require_string_sequence(
+                    payload["session_classes"],
+                    field_name="session_classes",
+                )
+            ),
+            supporting_data_refs=list(
+                _require_string_sequence(
+                    payload["supporting_data_refs"],
+                    field_name="supporting_data_refs",
+                )
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_utc_timestamp(
+                payload.get("timestamp"),
+                field_name="timestamp",
+            ),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> FidelityCalibrationReport:
+        return cls.from_dict(
+            _decode_json_object(payload, label="fidelity_calibration_report")
+        )
 
 
 def _find_matching_exclusions(strategy_class_id: str) -> list[str]:
