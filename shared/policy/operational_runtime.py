@@ -15,9 +15,106 @@ def _utcnow() -> str:
 
 def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     try:
-        return json.JSONDecoder().decode(payload)
+        decoded = json.JSONDecoder().decode(payload)
     except json.JSONDecodeError as exc:
         raise ValueError(f"{label}: invalid JSON payload") from exc
+    if not isinstance(decoded, dict):
+        raise ValueError(f"{label}: expected JSON object")
+    return decoded
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field_name} must be a non-empty string")
+    return value
+
+
+def _require_optional_non_empty_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_non_empty_string(value, field_name=field_name)
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_int(value: object, *, field_name: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _normalize_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field_name} must be a timezone-aware ISO-8601 timestamp")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_object_sequence(value: object, *, field_name: str) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of objects")
+    return tuple(_require_mapping(item, field_name=field_name) for item in value)
+
+
+def _require_enum_value(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> str:
+    if isinstance(value, enum_type):
+        return value.value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a valid {description}")
+    try:
+        return enum_type(value).value
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid {description}") from exc
+
+
+def _require_enum_sequence(
+    value: object,
+    *,
+    field_name: str,
+    enum_type: type[Enum],
+    description: str,
+) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise ValueError(f"{field_name} must be a sequence of {description} values")
+    return tuple(
+        _require_enum_value(
+            item,
+            field_name=field_name,
+            enum_type=enum_type,
+            description=description,
+        )
+        for item in value
+    )
+
+
+def _require_report_status(value: object, *, field_name: str) -> str:
+    return _require_enum_value(
+        value,
+        field_name=field_name,
+        enum_type=RuntimeReportStatus,
+        description="runtime report status",
+    )
 
 
 @unique
@@ -73,6 +170,13 @@ class RuntimeControlAction(str, Enum):
     RESTART_OPSD = "restart_opsd"
     RESTART_GUARDIAN = "restart_guardian"
     RESTART_BROKER_GATEWAY = "restart_broker_gateway"
+
+
+@unique
+class RuntimeReportStatus(str, Enum):
+    PASS = "pass"
+    VIOLATION = "violation"
+    INVALID = "invalid"
 
 
 @dataclass(frozen=True)
@@ -133,6 +237,53 @@ class RuntimeStateOwnershipReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "RuntimeStateOwnershipReport":
+        payload = _require_mapping(payload, field_name="runtime_state_ownership_report")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            state_surface=_require_enum_value(
+                payload["state_surface"],
+                field_name="state_surface",
+                enum_type=RuntimeStateSurface,
+                description="runtime state surface",
+            ),
+            claimant_module=_require_enum_value(
+                payload["claimant_module"],
+                field_name="claimant_module",
+                enum_type=RuntimeModuleId,
+                description="runtime module id",
+            ),
+            owner_module=_require_enum_value(
+                payload["owner_module"],
+                field_name="owner_module",
+                enum_type=RuntimeModuleId,
+                description="runtime module id",
+            ),
+            status=_require_report_status(payload["status"], field_name="status"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            diagnostic_context=_require_mapping(
+                payload["diagnostic_context"],
+                field_name="diagnostic_context",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_timestamp(payload.get("timestamp"), field_name="timestamp"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "RuntimeStateOwnershipReport":
+        return cls.from_dict(_decode_json_object(payload, label="runtime_state_ownership_report"))
+
 
 @dataclass(frozen=True)
 class ControlActionRequest:
@@ -164,24 +315,44 @@ class ControlActionRequest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ControlActionRequest":
+        payload = _require_mapping(payload, field_name="control_action_request")
         return cls(
-            case_id=str(payload["case_id"]),
-            action=RuntimeControlAction(payload["action"]),
-            requested_by=RuntimeModuleId(payload["requested_by"]),
-            authorization_token_present=bool(payload.get("authorization_token_present", False)),
-            independent_broker_connectivity_verified=bool(
-                payload.get("independent_broker_connectivity_verified", False)
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            action=RuntimeControlAction(
+                _require_enum_value(
+                    payload["action"],
+                    field_name="action",
+                    enum_type=RuntimeControlAction,
+                    description="runtime control action",
+                )
             ),
-            high_priority_lane_available=bool(payload.get("high_priority_lane_available", False)),
-            target_deployment_instance_id=(
-                str(payload["target_deployment_instance_id"])
-                if payload.get("target_deployment_instance_id") is not None
-                else None
+            requested_by=RuntimeModuleId(
+                _require_enum_value(
+                    payload["requested_by"],
+                    field_name="requested_by",
+                    enum_type=RuntimeModuleId,
+                    description="runtime module id",
+                )
             ),
-            target_order_intent_id=(
-                str(payload["target_order_intent_id"])
-                if payload.get("target_order_intent_id") is not None
-                else None
+            authorization_token_present=_require_bool(
+                payload.get("authorization_token_present", False),
+                field_name="authorization_token_present",
+            ),
+            independent_broker_connectivity_verified=_require_bool(
+                payload.get("independent_broker_connectivity_verified", False),
+                field_name="independent_broker_connectivity_verified",
+            ),
+            high_priority_lane_available=_require_bool(
+                payload.get("high_priority_lane_available", False),
+                field_name="high_priority_lane_available",
+            ),
+            target_deployment_instance_id=_require_optional_non_empty_string(
+                payload.get("target_deployment_instance_id"),
+                field_name="target_deployment_instance_id",
+            ),
+            target_order_intent_id=_require_optional_non_empty_string(
+                payload.get("target_order_intent_id"),
+                field_name="target_order_intent_id",
             ),
         )
 
@@ -223,6 +394,54 @@ class ControlActionAuthorityReport:
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "ControlActionAuthorityReport":
+        payload = _require_mapping(payload, field_name="control_action_authority_report")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            action=_require_enum_value(
+                payload["action"],
+                field_name="action",
+                enum_type=RuntimeControlAction,
+                description="runtime control action",
+            ),
+            requested_by=_require_enum_value(
+                payload["requested_by"],
+                field_name="requested_by",
+                enum_type=RuntimeModuleId,
+                description="runtime module id",
+            ),
+            owner_module=_require_enum_value(
+                payload["owner_module"],
+                field_name="owner_module",
+                enum_type=RuntimeModuleId,
+                description="runtime module id",
+            ),
+            status=_require_report_status(payload["status"], field_name="status"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            allowed=_require_bool(payload["allowed"], field_name="allowed"),
+            diagnostic_context=_require_mapping(
+                payload["diagnostic_context"],
+                field_name="diagnostic_context",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_timestamp(payload.get("timestamp"), field_name="timestamp"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "ControlActionAuthorityReport":
+        return cls.from_dict(_decode_json_object(payload, label="control_action_authority_report"))
+
 
 @dataclass(frozen=True)
 class RuntimeTraceEvent:
@@ -254,21 +473,58 @@ class RuntimeTraceEvent:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "RuntimeTraceEvent":
+        payload = _require_mapping(payload, field_name="runtime_trace_event")
         return cls(
-            module_id=RuntimeModuleId(payload["module_id"]),
-            event_type=str(payload["event_type"]),
-            correlation_id=str(payload["correlation_id"]),
-            decision_trace_id=str(payload["decision_trace_id"]),
-            artifact_manifest_id=str(payload["artifact_manifest_id"]),
-            high_priority_lane=bool(payload["high_priority_lane"]),
-            sequence_number=int(payload["sequence_number"]),
+            module_id=RuntimeModuleId(
+                _require_enum_value(
+                    payload["module_id"],
+                    field_name="module_id",
+                    enum_type=RuntimeModuleId,
+                    description="runtime module id",
+                )
+            ),
+            event_type=_require_non_empty_string(payload["event_type"], field_name="event_type"),
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="correlation_id",
+            ),
+            decision_trace_id=_require_non_empty_string(
+                payload["decision_trace_id"],
+                field_name="decision_trace_id",
+            ),
+            artifact_manifest_id=_require_non_empty_string(
+                payload["artifact_manifest_id"],
+                field_name="artifact_manifest_id",
+            ),
+            high_priority_lane=_require_bool(
+                payload["high_priority_lane"],
+                field_name="high_priority_lane",
+            ),
+            sequence_number=_require_int(
+                payload["sequence_number"],
+                field_name="sequence_number",
+            ),
             state_surface=(
-                RuntimeStateSurface(payload["state_surface"])
+                RuntimeStateSurface(
+                    _require_enum_value(
+                        payload["state_surface"],
+                        field_name="state_surface",
+                        enum_type=RuntimeStateSurface,
+                        description="runtime state surface",
+                    )
+                )
                 if payload.get("state_surface") is not None
                 else None
             ),
             control_action=(
-                RuntimeControlAction(payload["control_action"])
+                RuntimeControlAction(
+                    _require_enum_value(
+                        payload["control_action"],
+                        field_name="control_action",
+                        enum_type=RuntimeControlAction,
+                        description="runtime control action",
+                    )
+                )
                 if payload.get("control_action") is not None
                 else None
             ),
@@ -293,12 +549,25 @@ class SupervisionTraceBundle:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "SupervisionTraceBundle":
+        payload = _require_mapping(payload, field_name="supervision_trace_bundle")
         return cls(
-            path_kind=str(payload["path_kind"]),
+            path_kind=_require_non_empty_string(payload["path_kind"], field_name="path_kind"),
             required_processes=tuple(
-                RuntimeProcess(process) for process in payload["required_processes"]
+                RuntimeProcess(process)
+                for process in _require_enum_sequence(
+                    payload["required_processes"],
+                    field_name="required_processes",
+                    enum_type=RuntimeProcess,
+                    description="runtime process",
+                )
             ),
-            events=tuple(RuntimeTraceEvent.from_dict(item) for item in payload["events"]),
+            events=tuple(
+                RuntimeTraceEvent.from_dict(item)
+                for item in _require_object_sequence(
+                    payload["events"],
+                    field_name="events",
+                )
+            ),
         )
 
     @classmethod
@@ -334,6 +603,37 @@ class SupervisionTraceReport:
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), default=str)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "SupervisionTraceReport":
+        payload = _require_mapping(payload, field_name="supervision_trace_report")
+        return cls(
+            case_id=_require_non_empty_string(payload["case_id"], field_name="case_id"),
+            path_kind=_require_non_empty_string(payload["path_kind"], field_name="path_kind"),
+            status=_require_report_status(payload["status"], field_name="status"),
+            reason_code=_require_non_empty_string(
+                payload["reason_code"],
+                field_name="reason_code",
+            ),
+            correlated=_require_bool(payload["correlated"], field_name="correlated"),
+            diagnostic_context=_require_mapping(
+                payload["diagnostic_context"],
+                field_name="diagnostic_context",
+            ),
+            explanation=_require_non_empty_string(
+                payload["explanation"],
+                field_name="explanation",
+            ),
+            remediation=_require_non_empty_string(
+                payload["remediation"],
+                field_name="remediation",
+            ),
+            timestamp=_normalize_timestamp(payload.get("timestamp"), field_name="timestamp"),
+        )
+
+    @classmethod
+    def from_json(cls, payload: str) -> "SupervisionTraceReport":
+        return cls.from_dict(_decode_json_object(payload, label="supervision_trace_report"))
 
 
 RUNTIME_MODULES: tuple[RuntimeModuleBoundary, ...] = (
