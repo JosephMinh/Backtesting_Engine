@@ -193,6 +193,91 @@ class OperationalEvidenceGateContractTest(unittest.TestCase):
         self.assertEqual(report.requested_transition, reparsed.requested_transition)
         self.assertEqual(report.context, reparsed.context)
 
+    def test_request_loader_rejects_truthy_booleans_and_bad_sequence_shapes(self) -> None:
+        case = load_fixture(FIXTURE_PATH)["cases"][0]
+        payload = build_request(case).to_dict()
+        payload["operational_evidence"][0]["sealed"] = "true"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_record.sealed: must be boolean",
+        ):
+            OperationalEvidenceGateRequest.from_dict(payload)
+
+        payload = build_request(case).to_dict()
+        payload["operator_reason_bundle"] = "operator_note"
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_gate_request.operator_reason_bundle: must be a sequence of strings",
+        ):
+            OperationalEvidenceGateRequest.from_dict(payload)
+
+        payload = build_request(case).to_dict()
+        payload["operational_evidence"][0]["artifact_ids"] = [""]
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_record.artifact_ids: must be a sequence of strings",
+        ):
+            OperationalEvidenceGateRequest.from_dict(payload)
+
+    def test_request_loader_rejects_invalid_transition_and_state(self) -> None:
+        case = load_fixture(FIXTURE_PATH)["cases"][0]
+        payload = build_request(case).to_dict()
+        payload["requested_transition"] = "paper_to_live"
+
+        with self.assertRaises(ValueError):
+            OperationalEvidenceGateRequest.from_dict(payload)
+
+        payload = build_request(case).to_dict()
+        payload["current_deployment_state"] = "LIVE"
+        with self.assertRaises(ValueError):
+            OperationalEvidenceGateRequest.from_dict(payload)
+
+    def test_report_loader_rejects_invalid_status_shape_and_missing_timestamp(self) -> None:
+        case = next(
+            case
+            for case in load_fixture(FIXTURE_PATH)["cases"]
+            if case["case_id"] == "allow_shadow_live_to_live_canary_after_shadow_review"
+        )
+        payload = evaluate_operational_evidence_gate(build_request(case)).to_dict()
+
+        with self.assertRaises(ValueError):
+            OperationalEvidenceGateReport.from_dict(
+                deep_merge(dict(payload), {"status": "green"})
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_gate_report.promotion_allowed: must be boolean",
+        ):
+            OperationalEvidenceGateReport.from_dict(
+                deep_merge(dict(payload), {"promotion_allowed": "true"})
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_gate_report.decision_trace: must be a sequence of mappings",
+        ):
+            OperationalEvidenceGateReport.from_dict(
+                deep_merge(dict(payload), {"decision_trace": "not-a-trace"})
+            )
+
+        payload_without_timestamp = dict(payload)
+        payload_without_timestamp.pop("timestamp")
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_gate_report.timestamp: must be a timezone-aware ISO-8601 timestamp",
+        ):
+            OperationalEvidenceGateReport.from_dict(payload_without_timestamp)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "operational_evidence_gate_report.retained_artifact_ids: must be a sequence of strings",
+        ):
+            OperationalEvidenceGateReport.from_dict(
+                deep_merge(dict(payload), {"retained_artifact_ids": [""]})
+            )
+
     def test_smoke_script_emits_selected_case(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             output_path = Path(temp_dir) / "smoke.json"

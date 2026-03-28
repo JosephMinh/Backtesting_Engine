@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as _dt
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from typing import Any
@@ -66,6 +67,87 @@ def _decode_json_object(payload: str, *, label: str) -> dict[str, Any]:
     if not isinstance(decoded, dict):
         raise ValueError(f"{label}: expected JSON object")
     return decoded
+
+
+def _normalize_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a timezone-aware ISO-8601 timestamp")
+    try:
+        parsed = _dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name}: must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+    try:
+        return canonicalize_persisted_timestamp(parsed).isoformat()
+    except ValueError as exc:
+        raise ValueError(
+            f"{field_name}: must be a timezone-aware ISO-8601 timestamp"
+        ) from exc
+
+
+def _require_boolean(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name}: must be boolean")
+    return value
+
+
+def _require_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name}: must be a string")
+    return value
+
+
+def _require_non_empty_string(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str) or value == "":
+        raise ValueError(f"{field_name}: must be a non-empty string")
+    return value
+
+
+def _require_optional_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_string(value, field_name=field_name)
+
+
+def _require_string_sequence(value: object, *, field_name: str) -> tuple[str, ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name}: must be a sequence of strings")
+    items: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or item == "":
+            raise ValueError(f"{field_name}: must be a sequence of strings")
+        items.append(item)
+    return tuple(items)
+
+
+def _require_mapping(value: object, *, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{field_name}: must be a mapping")
+    return dict(value)
+
+
+def _require_mapping_sequence(
+    value: object,
+    *,
+    field_name: str,
+) -> tuple[dict[str, Any], ...]:
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(f"{field_name}: must be a sequence of mappings")
+    items: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ValueError(f"{field_name}: must be a sequence of mappings")
+        items.append(dict(item))
+    return tuple(items)
+
+
+def _require_positive_int(value: object, *, field_name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{field_name}: must be a positive integer")
+    if value < 1:
+        raise ValueError(f"{field_name}: must be a positive integer")
+    return value
 
 
 def _jsonable(value: Any) -> Any:
@@ -144,17 +226,44 @@ class OperationalEvidenceRecord:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OperationalEvidenceRecord":
         return cls(
-            evidence_id=str(payload["evidence_id"]),
-            evidence_class=str(payload["evidence_class"]),
-            sealed=bool(payload["sealed"]),
-            reconciled=bool(payload["reconciled"]),
-            minimum_sample_check_passed=bool(payload["minimum_sample_check_passed"]),
-            policy_approved=bool(payload["policy_approved"]),
-            allowed_update_domains=tuple(
-                str(item) for item in payload.get("allowed_update_domains", ())
+            evidence_id=_require_non_empty_string(
+                payload["evidence_id"],
+                field_name="operational_evidence_record.evidence_id",
             ),
-            detail=str(payload["detail"]),
-            artifact_ids=tuple(str(item) for item in payload.get("artifact_ids", ())),
+            evidence_class=OperationalEvidenceClass(
+                _require_string(
+                    payload["evidence_class"],
+                    field_name="operational_evidence_record.evidence_class",
+                )
+            ).value,
+            sealed=_require_boolean(
+                payload["sealed"],
+                field_name="operational_evidence_record.sealed",
+            ),
+            reconciled=_require_boolean(
+                payload["reconciled"],
+                field_name="operational_evidence_record.reconciled",
+            ),
+            minimum_sample_check_passed=_require_boolean(
+                payload["minimum_sample_check_passed"],
+                field_name="operational_evidence_record.minimum_sample_check_passed",
+            ),
+            policy_approved=_require_boolean(
+                payload["policy_approved"],
+                field_name="operational_evidence_record.policy_approved",
+            ),
+            allowed_update_domains=_require_string_sequence(
+                payload.get("allowed_update_domains", ()),
+                field_name="operational_evidence_record.allowed_update_domains",
+            ),
+            detail=_require_string(
+                payload["detail"],
+                field_name="operational_evidence_record.detail",
+            ),
+            artifact_ids=_require_string_sequence(
+                payload.get("artifact_ids", ()),
+                field_name="operational_evidence_record.artifact_ids",
+            ),
         )
 
 
@@ -172,12 +281,25 @@ class ExitCriterionRecord:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "ExitCriterionRecord":
         return cls(
-            criterion_id=str(payload["criterion_id"]),
-            satisfied=bool(payload["satisfied"]),
-            reference_id=str(payload["reference_id"]),
-            detail=str(payload["detail"]),
-            supporting_evidence_ids=tuple(
-                str(item) for item in payload.get("supporting_evidence_ids", ())
+            criterion_id=_require_non_empty_string(
+                payload["criterion_id"],
+                field_name="exit_criterion_record.criterion_id",
+            ),
+            satisfied=_require_boolean(
+                payload["satisfied"],
+                field_name="exit_criterion_record.satisfied",
+            ),
+            reference_id=_require_non_empty_string(
+                payload["reference_id"],
+                field_name="exit_criterion_record.reference_id",
+            ),
+            detail=_require_string(
+                payload["detail"],
+                field_name="exit_criterion_record.detail",
+            ),
+            supporting_evidence_ids=_require_string_sequence(
+                payload.get("supporting_evidence_ids", ()),
+                field_name="exit_criterion_record.supporting_evidence_ids",
             ),
         )
 
@@ -213,28 +335,55 @@ class OperationalEvidenceGateRequest:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OperationalEvidenceGateRequest":
         return cls(
-            case_id=str(payload["case_id"]),
-            stage_policy_report=PaperShadowStagePolicyReport.from_dict(
-                dict(payload["stage_policy_report"])
+            case_id=_require_non_empty_string(
+                payload["case_id"],
+                field_name="operational_evidence_gate_request.case_id",
             ),
-            requested_transition=str(payload["requested_transition"]),
-            current_deployment_state=str(payload["current_deployment_state"]),
+            stage_policy_report=PaperShadowStagePolicyReport.from_dict(
+                _require_mapping(
+                    payload["stage_policy_report"],
+                    field_name="operational_evidence_gate_request.stage_policy_report",
+                )
+            ),
+            requested_transition=PromotionTransition(
+                _require_string(
+                    payload["requested_transition"],
+                    field_name="operational_evidence_gate_request.requested_transition",
+                )
+            ).value,
+            current_deployment_state=DeploymentState(
+                _require_string(
+                    payload["current_deployment_state"],
+                    field_name="operational_evidence_gate_request.current_deployment_state",
+                )
+            ).value,
             operational_evidence=tuple(
-                OperationalEvidenceRecord.from_dict(dict(item))
-                for item in payload["operational_evidence"]
+                OperationalEvidenceRecord.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["operational_evidence"],
+                    field_name="operational_evidence_gate_request.operational_evidence",
+                )
             ),
             exit_criteria=tuple(
-                ExitCriterionRecord.from_dict(dict(item))
-                for item in payload["exit_criteria"]
+                ExitCriterionRecord.from_dict(item)
+                for item in _require_mapping_sequence(
+                    payload["exit_criteria"],
+                    field_name="operational_evidence_gate_request.exit_criteria",
+                )
             ),
-            correlation_id=str(payload["correlation_id"]),
-            operator_reason_bundle=tuple(
-                str(item) for item in payload.get("operator_reason_bundle", ())
+            correlation_id=_require_non_empty_string(
+                payload["correlation_id"],
+                field_name="operational_evidence_gate_request.correlation_id",
             ),
-            schema_version=int(
+            operator_reason_bundle=_require_string_sequence(
+                payload.get("operator_reason_bundle", ()),
+                field_name="operational_evidence_gate_request.operator_reason_bundle",
+            ),
+            schema_version=_require_positive_int(
                 payload.get(
                     "schema_version", SUPPORTED_OPERATIONAL_EVIDENCE_GATE_SCHEMA_VERSION
-                )
+                ),
+                field_name="operational_evidence_gate_request.schema_version",
             ),
         )
 
@@ -275,36 +424,104 @@ class OperationalEvidenceGateReport:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "OperationalEvidenceGateReport":
         return cls(
-            schema_version=int(payload["schema_version"]),
-            case_id=str(payload["case_id"]),
-            requested_transition=str(payload["requested_transition"]),
-            current_deployment_state=str(payload["current_deployment_state"]),
+            schema_version=_require_positive_int(
+                payload["schema_version"],
+                field_name="operational_evidence_gate_report.schema_version",
+            ),
+            case_id=_require_non_empty_string(
+                payload["case_id"],
+                field_name="operational_evidence_gate_report.case_id",
+            ),
+            requested_transition=PromotionTransition(
+                _require_string(
+                    payload["requested_transition"],
+                    field_name="operational_evidence_gate_report.requested_transition",
+                )
+            ).value,
+            current_deployment_state=DeploymentState(
+                _require_string(
+                    payload["current_deployment_state"],
+                    field_name="operational_evidence_gate_report.current_deployment_state",
+                )
+            ).value,
             approved_target_state=(
-                str(payload["approved_target_state"])
-                if payload.get("approved_target_state") is not None
-                else None
+                None
+                if payload.get("approved_target_state") is None
+                else DeploymentState(
+                    _require_string(
+                        payload["approved_target_state"],
+                        field_name="operational_evidence_gate_report.approved_target_state",
+                    )
+                ).value
             ),
-            status=str(payload["status"]),
-            reason_code=str(payload["reason_code"]),
-            promotion_allowed=bool(payload["promotion_allowed"]),
-            promotion_admissible_evidence_ids=tuple(
-                str(item) for item in payload["promotion_admissible_evidence_ids"]
+            status=OperationalEvidenceGateStatus(
+                _require_string(
+                    payload["status"],
+                    field_name="operational_evidence_gate_report.status",
+                )
+            ).value,
+            reason_code=_require_string(
+                payload["reason_code"],
+                field_name="operational_evidence_gate_report.reason_code",
             ),
-            blocked_evidence_ids=tuple(str(item) for item in payload["blocked_evidence_ids"]),
-            decision_trace=[dict(item) for item in payload["decision_trace"]],
-            expected_vs_actual_diffs=[
-                dict(item) for item in payload["expected_vs_actual_diffs"]
-            ],
-            retained_artifact_ids=tuple(
-                str(item) for item in payload["retained_artifact_ids"]
+            promotion_allowed=_require_boolean(
+                payload["promotion_allowed"],
+                field_name="operational_evidence_gate_report.promotion_allowed",
             ),
-            operator_reason_bundle=dict(payload["operator_reason_bundle"]),
-            artifact_manifest=dict(payload["artifact_manifest"]),
-            structured_logs=[dict(item) for item in payload["structured_logs"]],
-            context=dict(payload["context"]),
-            explanation=str(payload["explanation"]),
-            remediation=str(payload["remediation"]),
-            timestamp=str(payload.get("timestamp", _utcnow())),
+            promotion_admissible_evidence_ids=_require_string_sequence(
+                payload["promotion_admissible_evidence_ids"],
+                field_name="operational_evidence_gate_report.promotion_admissible_evidence_ids",
+            ),
+            blocked_evidence_ids=_require_string_sequence(
+                payload["blocked_evidence_ids"],
+                field_name="operational_evidence_gate_report.blocked_evidence_ids",
+            ),
+            decision_trace=list(
+                _require_mapping_sequence(
+                    payload["decision_trace"],
+                    field_name="operational_evidence_gate_report.decision_trace",
+                )
+            ),
+            expected_vs_actual_diffs=list(
+                _require_mapping_sequence(
+                    payload["expected_vs_actual_diffs"],
+                    field_name="operational_evidence_gate_report.expected_vs_actual_diffs",
+                )
+            ),
+            retained_artifact_ids=_require_string_sequence(
+                payload["retained_artifact_ids"],
+                field_name="operational_evidence_gate_report.retained_artifact_ids",
+            ),
+            operator_reason_bundle=_require_mapping(
+                payload["operator_reason_bundle"],
+                field_name="operational_evidence_gate_report.operator_reason_bundle",
+            ),
+            artifact_manifest=_require_mapping(
+                payload["artifact_manifest"],
+                field_name="operational_evidence_gate_report.artifact_manifest",
+            ),
+            structured_logs=list(
+                _require_mapping_sequence(
+                    payload["structured_logs"],
+                    field_name="operational_evidence_gate_report.structured_logs",
+                )
+            ),
+            context=_require_mapping(
+                payload["context"],
+                field_name="operational_evidence_gate_report.context",
+            ),
+            explanation=_require_string(
+                payload["explanation"],
+                field_name="operational_evidence_gate_report.explanation",
+            ),
+            remediation=_require_string(
+                payload["remediation"],
+                field_name="operational_evidence_gate_report.remediation",
+            ),
+            timestamp=_normalize_timestamp(
+                payload.get("timestamp"),
+                field_name="operational_evidence_gate_report.timestamp",
+            ),
         )
 
     @classmethod
