@@ -18,6 +18,38 @@ from shared.policy.release_schemas import (
 SUPPORTED_RELEASE_CERTIFICATION_SCHEMA_VERSION = 1
 
 
+def _normalize_utc_timestamp(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string")
+    try:
+        parsed = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be an ISO-8601 timestamp string") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field_name} must be timezone-aware")
+    return parsed.astimezone(datetime.timezone.utc).isoformat()
+
+
+def _require_bool(value: object, *, field_name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _require_schema_version(value: object, *, label: str) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{label}: schema_version must be an integer")
+    return value
+
+
+def _optional_string(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
 @unique
 class CorrectionImpactClass(str, Enum):
     NONE = "none"
@@ -101,19 +133,23 @@ class ReleaseCertificationRecord:
             prior_release_semantic_diff_hash=str(payload["prior_release_semantic_diff_hash"]),
             validation_summary_hash=str(payload["validation_summary_hash"]),
             policy_evaluation_hash=str(payload["policy_evaluation_hash"]),
-            canary_or_parity_required=bool(payload["canary_or_parity_required"]),
+            canary_or_parity_required=_require_bool(
+                payload["canary_or_parity_required"],
+                field_name="canary_or_parity_required",
+            ),
             canary_or_parity_evidence_ids=tuple(
                 str(item) for item in payload["canary_or_parity_evidence_ids"]
             ),
             signed_certification_report_hash=str(payload["signed_certification_report_hash"]),
             signer_ids=tuple(str(item) for item in payload["signer_ids"]),
-            certified_at_utc=str(payload["certified_at_utc"]),
+            certified_at_utc=_normalize_utc_timestamp(
+                payload["certified_at_utc"],
+                field_name="certified_at_utc",
+            ),
             lifecycle_state=ReleaseLifecycleState(payload["lifecycle_state"]),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RELEASE_CERTIFICATION_SCHEMA_VERSION,
-                )
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="release_certification_record",
             ),
         )
 
@@ -157,22 +193,25 @@ class ReleaseCorrectionEvent:
             corrected_vendor_revision_watermark=str(payload["corrected_vendor_revision_watermark"]),
             semantic_impact_diff_hash=str(payload["semantic_impact_diff_hash"]),
             impact_class=CorrectionImpactClass(payload["impact_class"]),
-            preserves_prior_reproducibility=bool(payload["preserves_prior_reproducibility"]),
-            superseding_release_id=(
-                str(payload["superseding_release_id"])
-                if payload.get("superseding_release_id")
-                else None
+            preserves_prior_reproducibility=_require_bool(
+                payload["preserves_prior_reproducibility"],
+                field_name="preserves_prior_reproducibility",
+            ),
+            superseding_release_id=_optional_string(
+                payload.get("superseding_release_id"),
+                field_name="superseding_release_id",
             ),
             dependent_updates=tuple(
                 DependentPolicyUpdate.from_dict(item) for item in payload["dependent_updates"]
             ),
             justification=str(payload["justification"]),
-            recorded_at_utc=str(payload["recorded_at_utc"]),
-            schema_version=int(
-                payload.get(
-                    "schema_version",
-                    SUPPORTED_RELEASE_CERTIFICATION_SCHEMA_VERSION,
-                )
+            recorded_at_utc=_normalize_utc_timestamp(
+                payload["recorded_at_utc"],
+                field_name="recorded_at_utc",
+            ),
+            schema_version=_require_schema_version(
+                payload.get("schema_version"),
+                label="release_correction_event",
             ),
         )
 

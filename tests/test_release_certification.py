@@ -176,6 +176,87 @@ class ReleaseCertificationContractTest(unittest.TestCase):
             report.reason_code,
         )
 
+    def test_certification_loader_rejects_truthy_bool_coercion(self) -> None:
+        payload = make_certification_record().to_dict()
+        payload["canary_or_parity_required"] = "false"
+        with self.assertRaisesRegex(
+            ValueError,
+            "canary_or_parity_required must be a boolean",
+        ):
+            ReleaseCertificationRecord.from_dict(payload)
+
+    def test_certification_loader_requires_explicit_integer_schema_and_aware_timestamp(self) -> None:
+        payload = make_certification_record().to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "release_certification_record: schema_version must be an integer",
+        ):
+            ReleaseCertificationRecord.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = True
+        with self.assertRaisesRegex(
+            ValueError,
+            "release_certification_record: schema_version must be an integer",
+        ):
+            ReleaseCertificationRecord.from_dict(payload_with_bool_schema)
+
+        payload_with_naive_timestamp = dict(payload)
+        payload_with_naive_timestamp["certified_at_utc"] = "2026-03-26T16:00:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "certified_at_utc must be timezone-aware",
+        ):
+            ReleaseCertificationRecord.from_dict(payload_with_naive_timestamp)
+
+    def test_correction_loader_rejects_truthy_bool_coercion(self) -> None:
+        payload = make_correction_event().to_dict()
+        payload["preserves_prior_reproducibility"] = 1
+        with self.assertRaisesRegex(
+            ValueError,
+            "preserves_prior_reproducibility must be a boolean",
+        ):
+            ReleaseCorrectionEvent.from_dict(payload)
+
+    def test_correction_loader_requires_explicit_integer_schema_and_aware_timestamp(self) -> None:
+        payload = make_correction_event().to_dict()
+
+        payload_without_schema = dict(payload)
+        payload_without_schema.pop("schema_version")
+        with self.assertRaisesRegex(
+            ValueError,
+            "release_correction_event: schema_version must be an integer",
+        ):
+            ReleaseCorrectionEvent.from_dict(payload_without_schema)
+
+        payload_with_bool_schema = dict(payload)
+        payload_with_bool_schema["schema_version"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "release_correction_event: schema_version must be an integer",
+        ):
+            ReleaseCorrectionEvent.from_dict(payload_with_bool_schema)
+
+        payload_with_naive_timestamp = dict(payload)
+        payload_with_naive_timestamp["recorded_at_utc"] = "2026-03-26T16:05:00"
+        with self.assertRaisesRegex(
+            ValueError,
+            "recorded_at_utc must be timezone-aware",
+        ):
+            ReleaseCorrectionEvent.from_dict(payload_with_naive_timestamp)
+
+    def test_correction_loader_rejects_non_string_superseding_release_id(self) -> None:
+        payload = make_correction_event().to_dict()
+        payload["superseding_release_id"] = False
+        with self.assertRaisesRegex(
+            ValueError,
+            "superseding_release_id must be a string",
+        ):
+            ReleaseCorrectionEvent.from_dict(payload)
+
 
 if __name__ == "__main__":
     unittest.main()
