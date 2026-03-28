@@ -339,6 +339,19 @@ def _is_open_unit_fraction(value: object) -> bool:
     return math.isfinite(value) and 0 < value < 1
 
 
+def _is_positive_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value > 0
+
+
+def _is_positive_finite_number(value: object) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, int | float)
+        and math.isfinite(value)
+        and value > 0
+    )
+
+
 def validate_profile_catalogs() -> list[str]:
     errors: list[str] = []
 
@@ -362,14 +375,32 @@ def validate_profile_catalogs() -> list[str]:
             errors.append(
                 f"{profile.profile_id}: exchange-local times must come from compiled calendars"
             )
-        if profile.contract_specification.tick_value_usd <= 0:
+        if not _is_positive_int(profile.contract_specification.contract_size_oz):
+            errors.append(f"{profile.profile_id}: contract_size_oz must be a positive integer")
+        if not _is_positive_finite_number(
+            profile.contract_specification.minimum_price_fluctuation_usd_per_oz
+        ):
+            errors.append(
+                f"{profile.profile_id}: minimum_price_fluctuation_usd_per_oz must be positive and finite"
+            )
+        if not _is_positive_finite_number(profile.contract_specification.tick_value_usd):
             errors.append(f"{profile.profile_id}: tick economics must be positive")
 
     for profile in ACCOUNT_RISK_PROFILES:
-        if profile.approved_starting_equity_usd <= 0:
+        if not _is_positive_int(profile.approved_starting_equity_usd):
             errors.append(f"{profile.profile_id}: approved_starting_equity_usd must be positive")
         if not profile.approved_symbols:
             errors.append(f"{profile.profile_id}: approved_symbols must not be empty")
+        for symbol, size in profile.approved_starting_size_by_symbol.items():
+            if not _is_positive_int(size):
+                errors.append(
+                    f"{profile.profile_id}: approved_starting_size_by_symbol[{symbol}] must be a positive integer"
+                )
+        for symbol, size in profile.max_position_size_by_symbol.items():
+            if not _is_positive_int(size):
+                errors.append(
+                    f"{profile.profile_id}: max_position_size_by_symbol[{symbol}] must be a positive integer"
+                )
         if not _is_open_unit_fraction(profile.max_initial_margin_fraction):
             errors.append(f"{profile.profile_id}: max_initial_margin_fraction must be within (0, 1)")
         if (
@@ -501,6 +532,11 @@ def validate_profile_binding(request: ProfileBindingRequest) -> ProfileBindingRe
             "actual": request.requested_symbol,
             "expected": sorted(account.max_position_size_by_symbol),
         }
+    elif not _is_positive_int(request.requested_contract_count):
+        differences["requested_contract_count"] = {
+            "actual": request.requested_contract_count,
+            "expected": {"type": "positive_integer"},
+        }
     elif request.requested_contract_count > max_position_size or request.requested_contract_count < 1:
         differences["requested_contract_count"] = {
             "actual": request.requested_contract_count,
@@ -564,7 +600,12 @@ def validate_profile_binding(request: ProfileBindingRequest) -> ProfileBindingRe
         differences["broker_contract.exchange"] = {"actual": descriptor.exchange, "expected": invariants.exchange}
     if descriptor.currency != invariants.currency:
         differences["broker_contract.currency"] = {"actual": descriptor.currency, "expected": invariants.currency}
-    if descriptor.contract_size_oz != invariants.contract_size_oz:
+    if not _is_positive_int(descriptor.contract_size_oz):
+        differences["broker_contract.contract_size_oz"] = {
+            "actual": descriptor.contract_size_oz,
+            "expected": {"type": "positive_integer", "value": invariants.contract_size_oz},
+        }
+    elif descriptor.contract_size_oz != invariants.contract_size_oz:
         differences["broker_contract.contract_size_oz"] = {
             "actual": descriptor.contract_size_oz,
             "expected": invariants.contract_size_oz,
